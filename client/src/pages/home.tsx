@@ -67,10 +67,10 @@ export default function Home() {
           />
           <StatsCard 
             label="Active Vaults" 
-            value="1,284" 
+            value="1,284 / 1,500" 
             icon={Shield} 
             color="green" 
-            trend="Secured by Solana"
+            trend="85% Minted"
           />
           <StatsCard 
             label="Network Status" 

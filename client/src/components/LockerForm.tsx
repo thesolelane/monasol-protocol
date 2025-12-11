@@ -32,7 +32,12 @@ export function LockerForm({ isConnected, hasNftKey }: LockerFormProps) {
           {isLocked ? <Lock className="h-6 w-6" /> : <Unlock className="h-6 w-6" />}
         </div>
         <div>
-          <h2 className="font-display text-2xl font-bold text-white">Vault Controls</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display text-2xl font-bold text-white">Vault Controls</h2>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-white/60 border border-white/5">
+              ID #0442
+            </span>
+          </div>
           <p className="text-sm text-gray-400">Manage your EVM assets via Solana Key</p>
         </div>
       </div>
