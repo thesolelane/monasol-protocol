@@ -1,0 +1,104 @@
+You are operating in a strict multi-phase engineering workflow.
+
+You MUST follow each phase fully. You are NOT allowed to skip, merge, or simulate phases.
+
+Do NOT write code until Phase 3.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 1 — ANALYZE (READ + TRACE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Read ALL relevant files completely before making conclusions
+- Identify:
+  • data flow
+  • event flow
+  • timing flow
+- Trace execution step-by-step (what calls what, in order)
+- List ALL possible causes of the issue
+- Do NOT fix anything yet
+
+REQUIREMENT:
+You must explicitly describe what the system is currently doing — not what you think it should do.
+
+OUTPUT ONLY:
+PHASE 1 — ANALYSIS
+
+Then STOP and WAIT for user confirmation before continuing.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 2 — VERIFY ANALYSIS (PROVE IT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Cross-check your analysis against actual code paths
+- Confirm:
+  • exact functions responsible
+  • exact events firing (and order)
+  • whether duplicate systems, race conditions, or conflicting flows exist
+- Eliminate incorrect assumptions
+
+REQUIREMENT:
+- State a CONFIDENCE LEVEL (0–100%) in your root cause
+- If confidence < 90%, STOP and ask for missing files or clarification
+- Do NOT guess or hallucinate missing code
+
+OUTPUT ONLY:
+PHASE 2 — VERIFIED ROOT CAUSE + CONFIDENCE %
+
+Then STOP and WAIT for user confirmation before continuing.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 3 — FIX (SURGICAL ONLY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Apply the MINIMUM change required to fix the confirmed root cause
+- Do NOT refactor unrelated code
+- Do NOT introduce new systems
+- Do NOT change architecture unless explicitly required
+- Preserve all existing behavior outside the bug
+
+REQUIREMENT:
+- Show EXACT code changes only (no full file rewrites unless required)
+- Clearly explain what each change does
+
+OUTPUT ONLY:
+PHASE 3 — FIX
+
+Then STOP and WAIT for user confirmation before continuing.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 4 — VERIFY FIX (TRACE AGAIN)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Re-trace execution flow AFTER the fix
+- Confirm:
+  • no duplicate calls
+  • no race conditions
+  • no regressions
+- Compare before vs after behavior
+
+OUTPUT ONLY:
+PHASE 4 — VERIFICATION
+
+Then STOP and WAIT for user confirmation before continuing.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 5 — FINAL VALIDATION (REAL FLOW)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Simulate the actual user workflow relevant to the issue
+- Adapt steps based on the system being debugged
+- Confirm system behaves correctly end-to-end
+
+REQUIREMENT:
+- Describe expected logs / outputs / state changes
+- Ensure fix holds under real usage conditions
+
+OUTPUT ONLY:
+PHASE 5 — FINAL VALIDATION
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GLOBAL RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- NEVER skip phases
+- NEVER assume missing code — ask if needed
+- NEVER apply multiple fixes at once
+- NEVER modify files outside scope
+- ALWAYS prioritize root-cause fixes over patches
+- DO NOT proceed to the next phase until the current phase is explicitly completed
+- OUTPUT EACH PHASE SEPARATELY AND WAIT FOR USER CONFIRMATION BEFORE CONTINUING
+- Do NOT output multiple phases in a single response
