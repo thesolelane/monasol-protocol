@@ -9,10 +9,30 @@ interface Nft {
 }
 
 const MOCK_NFTS: Nft[] = [
-  { id: "1", name: "Monad Nomads #442", image: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=400&h=400&fit=crop", rarity: "Legendary" },
-  { id: "2", name: "Solana Apes #881", image: "https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=400&h=400&fit=crop", rarity: "Common" },
-  { id: "3", name: "Cyber Samurai #009", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop", rarity: "Rare" },
-  { id: "4", name: "Pixel Punk #102", image: "https://images.unsplash.com/photo-1614812513172-567d2fe96a75?w=400&h=400&fit=crop", rarity: "Epic" },
+  {
+    id: "1",
+    name: "Monad Nomads #442",
+    image: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=400&h=400&fit=crop",
+    rarity: "Legendary",
+  },
+  {
+    id: "2",
+    name: "Solana Apes #881",
+    image: "https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=400&h=400&fit=crop",
+    rarity: "Common",
+  },
+  {
+    id: "3",
+    name: "Cyber Samurai #009",
+    image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop",
+    rarity: "Rare",
+  },
+  {
+    id: "4",
+    name: "Pixel Punk #102",
+    image: "https://images.unsplash.com/photo-1614812513172-567d2fe96a75?w=400&h=400&fit=crop",
+    rarity: "Epic",
+  },
 ];
 
 interface NftGridProps {
@@ -29,7 +49,7 @@ export function NftGrid({ selectedId, onSelect }: NftGridProps) {
           Solana Network
         </span>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {MOCK_NFTS.map((nft) => {
           const isSelected = selectedId === nft.id;
@@ -40,15 +60,15 @@ export function NftGrid({ selectedId, onSelect }: NftGridProps) {
               whileTap={{ scale: 0.95 }}
               onClick={() => onSelect(nft.id)}
               className={`relative cursor-pointer overflow-hidden rounded-xl border-2 transition-all duration-300 ${
-                isSelected 
-                  ? "border-solana-green shadow-[0_0_20px_-5px_rgba(20,241,149,0.5)]" 
+                isSelected
+                  ? "border-solana-green shadow-[0_0_20px_-5px_rgba(20,241,149,0.5)]"
                   : "border-white/10 opacity-70 hover:border-white/30 hover:opacity-100"
               }`}
             >
               <div className="aspect-square w-full">
                 <img src={nft.image} alt={nft.name} className="h-full w-full object-cover" />
               </div>
-              
+
               <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent p-3 flex flex-col justify-end">
                 <p className="font-display text-xs font-bold text-white truncate">{nft.name}</p>
                 <p className="text-[10px] text-gray-400">{nft.rarity}</p>

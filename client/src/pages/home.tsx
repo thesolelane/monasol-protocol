@@ -15,17 +15,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
-       {/* Background Image Layer */}
-       <div 
+      {/* Background Image Layer */}
+      <div
         className="fixed inset-0 z-0 opacity-40 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${background})` }}
       />
-      
+
       {/* Overlay Gradient */}
       <div className="fixed inset-0 z-0 bg-linear-to-b from-background/80 via-background/90 to-background pointer-events-none" />
 
       <div className="relative z-10 container mx-auto px-4 py-8 sm:py-12 max-w-6xl">
-        
         {/* Header */}
         <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
@@ -43,47 +42,46 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-            <WalletConnect 
-              type="evm" 
-              isConnected={evmConnected} 
-              onConnect={() => setEvmConnected(!evmConnected)} 
+            <WalletConnect
+              type="evm"
+              isConnected={evmConnected}
+              onConnect={() => setEvmConnected(!evmConnected)}
             />
-            <WalletConnect 
-              type="solana" 
-              isConnected={solanaConnected} 
-              onConnect={() => setSolanaConnected(!solanaConnected)} 
+            <WalletConnect
+              type="solana"
+              isConnected={solanaConnected}
+              onConnect={() => setSolanaConnected(!solanaConnected)}
             />
           </div>
         </header>
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-          <StatsCard 
-            label="Total Value Locked" 
-            value="$4.2M" 
-            icon={Coins} 
-            color="purple" 
+          <StatsCard
+            label="Total Value Locked"
+            value="$4.2M"
+            icon={Coins}
+            color="purple"
             trend="+12% this week"
           />
-          <StatsCard 
-            label="Active Vaults" 
-            value="1,284 / 1,500" 
-            icon={Shield} 
-            color="green" 
+          <StatsCard
+            label="Active Vaults"
+            value="1,284 / 1,500"
+            icon={Shield}
+            color="green"
             trend="85% Minted"
           />
-          <StatsCard 
-            label="Network Status" 
-            value="Optimal" 
-            icon={Activity} 
-            color="blue" 
+          <StatsCard
+            label="Network Status"
+            value="Optimal"
+            icon={Activity}
+            color="blue"
             trend="Monad Mainnet Beta"
           />
         </div>
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-12 gap-8">
-          
           {/* Left Column: NFT Selector */}
           <div className="lg:col-span-7 space-y-6">
             <div className="glass-panel rounded-2xl p-6 sm:p-8 min-h-[500px]">
@@ -99,9 +97,9 @@ export default function Home() {
                       <p className="font-mono text-sm text-solana-green">8xR...3kL</p>
                     </div>
                   </div>
-                  
+
                   <NftGrid selectedId={selectedNft} onSelect={setSelectedNft} />
-                  
+
                   {selectedNft && (
                     <div className="mt-8 p-4 rounded-xl bg-white/5 border border-white/10">
                       <h4 className="text-sm font-semibold text-white mb-2">Key Permissions</h4>
@@ -138,21 +136,18 @@ export default function Home() {
 
           {/* Right Column: Locker Controls */}
           <div className="lg:col-span-5">
-            <LockerForm 
-              isConnected={allConnected} 
-              hasNftKey={!!selectedNft} 
-            />
+            <LockerForm isConnected={allConnected} hasNftKey={!!selectedNft} />
 
             <div className="mt-6 p-6 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-xs">
               <h3 className="text-sm font-semibold text-white mb-3">How it works</h3>
               <div className="space-y-4 relative">
                 <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-white/10" />
-                
+
                 {[
                   "Connect Monad (Vault) & Solana (Key) wallets",
                   "Select a Solana NFT to act as the key",
                   "Deposit tokens into the EVM Vault",
-                  "Unlock anytime by proving NFT ownership"
+                  "Unlock anytime by proving NFT ownership",
                 ].map((step, i) => (
                   <div key={i} className="relative flex items-start gap-4">
                     <div className="h-5 w-5 rounded-full bg-black border border-white/20 flex items-center justify-center text-[10px] text-white font-bold relative z-10 shrink-0">
@@ -164,7 +159,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-          
         </div>
       </div>
     </div>
