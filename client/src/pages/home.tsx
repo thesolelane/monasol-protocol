@@ -6,6 +6,7 @@ import { VaultExplorer } from "@/components/VaultExplorer";
 import { StatsCard } from "@/components/StatsCard";
 import { CircuitBreaker } from "@/components/CircuitBreaker";
 import { RentVaultModal } from "@/components/RentVaultModal";
+import { MoveInModal } from "@/components/MoveInModal";
 import { Shield, Coins, Activity, Zap, Wallet, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import background from "@assets/generated_images/abstract_dark_futuristic_blockchain_network_background_with_purple_and_green_neon_accents.png";
@@ -15,6 +16,7 @@ export default function Home() {
   const [solanaConnected, setSolanaConnected] = useState(false);
   const [selectedNft, setSelectedNft] = useState<string | null>(null);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
+  const [isMoveInOpen, setIsMoveInOpen] = useState(false);
 
   const allConnected = evmConnected && solanaConnected;
 
@@ -47,6 +49,12 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+            <Button
+              onClick={() => setIsMoveInOpen(true)}
+              className="h-10 bg-monad-purple hover:bg-monad-purple/90 text-black font-bold shadow-[0_0_15px_-3px_rgba(130,71,229,0.4)]"
+            >
+              Move In
+            </Button>
             <Button
               onClick={() => setIsRentModalOpen(true)}
               variant="outline"
@@ -181,6 +189,17 @@ export default function Home() {
         isOpen={isRentModalOpen}
         onClose={() => setIsRentModalOpen(false)}
         onSuccess={() => console.log('Vault Rented')}
+      />
+
+      <MoveInModal
+        isOpen={isMoveInOpen}
+        onClose={() => setIsMoveInOpen(false)}
+        onSuccess={(vault) => console.log('Moved in:', vault)}
+        connectedWallet={solanaConnected ? "8xR...3kL" : null}
+        availableNfts={solanaConnected ? [
+          { mint: "7x2...9aB", name: "Vault Key #042", image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=100&h=100&fit=crop", tokenId: "1" },
+          { mint: "3vP...m1K", name: "Alpha Access Pass", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop", tokenId: "2" }
+        ] : []}
       />
     </div>
   );
