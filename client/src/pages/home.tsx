@@ -182,13 +182,6 @@ export default function Home() {
         onClose={() => setIsRentModalOpen(false)}
         onSuccess={() => console.log('Vault Rented')}
       />
-
-      {/* Admin Link */}
-      <div className="absolute bottom-4 right-4 z-20">
-        <a href="/admin" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
-          Platform Admin
-        </a>
-      </div>
     </div>
   );
 }
