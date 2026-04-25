@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DeployLockerModal } from "@/components/DeployLockerModal";
+import { LockerZoomModal } from "@/components/LockerZoomModal";
 import { Shield, Server, Activity, Users, Settings, ArrowLeft, ShieldAlert, KeyRound, Link as LinkIcon, EyeOff, FileCode2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -7,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function AdminDashboard() {
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
+  const [zoomedLockerId, setZoomedLockerId] = useState<string | null>(null);
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-black text-white p-4 sm:p-8">
@@ -123,12 +125,13 @@ export default function AdminDashboard() {
                     return (
                       <div 
                         key={`t2-${i}`} 
-                        className={`h-6 w-6 rounded-sm border ${
+                        onClick={() => isDistressed && setZoomedLockerId(i.toString())}
+                        className={`h-6 w-6 rounded-sm border ${isDistressed ? 'cursor-pointer' : 'cursor-default'} ${
                           isDistressed ? 'bg-red-500 border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse z-10 relative' :
                           i < 31 ? 'bg-solana-green/80 border-solana-green' : 
                           'bg-solana-green/40 border-solana-green/50'
                         }`}
-                        title={`Locker LCK-T2-${i} ${isDistressed ? '(DISTRESSED)' : i < 31 ? '(Full)' : '(Filling)'}`}
+                        title={`Locker LCK-T2-${i} ${isDistressed ? '(DISTRESSED - CLICK TO VIEW)' : i < 31 ? '(Full)' : '(Filling)'}`}
                       />
                     )
                   })}
@@ -312,6 +315,12 @@ export default function AdminDashboard() {
         isOpen={isDeployModalOpen}
         onClose={() => setIsDeployModalOpen(false)}
         onSuccess={() => console.log('Locker deployed')}
+      />
+
+      <LockerZoomModal
+        isOpen={!!zoomedLockerId}
+        onClose={() => setZoomedLockerId(null)}
+        lockerId={zoomedLockerId || ""}
       />
     </div>
   );
