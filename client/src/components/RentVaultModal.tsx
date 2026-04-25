@@ -96,7 +96,12 @@ export function RentVaultModal({ isOpen, onClose, onSuccess }: RentVaultModalPro
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl bg-black/90 border-white/10 text-white backdrop-blur-xl">
+      <DialogContent 
+        className="sm:max-w-2xl bg-black/90 border-white/10 text-white backdrop-blur-xl max-h-[90vh] flex flex-col overflow-hidden"
+        onInteractOutside={(e) => {
+          e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="font-display text-xl flex items-center gap-2">
             <Key className="h-5 w-5 text-solana-green" />
@@ -114,10 +119,11 @@ export function RentVaultModal({ isOpen, onClose, onSuccess }: RentVaultModalPro
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="space-y-4 py-4"
+              className="flex flex-col max-h-[70vh] py-4"
             >
-              <div className="grid gap-4">
-                {AVAILABLE_VAULTS.map((vault) => (
+              <div className="overflow-y-auto pr-2 py-2 flex-1 relative min-h-[300px] pb-4">
+                <div className="grid gap-4">
+                  {AVAILABLE_VAULTS.map((vault) => (
                   <div
                     key={vault.id}
                     onClick={() => setSelectedVault(vault.id)}
@@ -168,8 +174,10 @@ export function RentVaultModal({ isOpen, onClose, onSuccess }: RentVaultModalPro
                   </div>
                 ))}
               </div>
+            </div>
 
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 mt-4">
+            <div className="flex flex-col gap-2 shrink-0 pt-4 bg-transparent border-t border-white/10 mt-2">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                 <Info className="h-4 w-4 text-blue-400 shrink-0" />
                 <p className="text-xs text-blue-400">
                   Renting a vault immediately mints a new Solana NFT Key to your connected wallet. You will have exclusive access to this Monad vault.
@@ -179,10 +187,11 @@ export function RentVaultModal({ isOpen, onClose, onSuccess }: RentVaultModalPro
               <Button
                 onClick={handleRent}
                 disabled={!selectedVault}
-                className="w-full h-12 mt-4 bg-solana-green hover:bg-solana-green/90 text-black font-bold shadow-[0_0_15px_-3px_rgba(20,241,149,0.4)]"
+                className="w-full h-12 bg-solana-green hover:bg-solana-green/90 text-black font-bold shadow-[0_0_15px_-3px_rgba(20,241,149,0.4)]"
               >
                 Mint NFT Key & Rent Vault
               </Button>
+            </div>
             </motion.div>
           )}
 
