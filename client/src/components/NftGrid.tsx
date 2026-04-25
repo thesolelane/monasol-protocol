@@ -12,20 +12,20 @@ interface Nft {
 
 const INITIAL_NFTS: Nft[] = [
   {
-    id: "1",
-    name: "Monad Nomads #442",
-    image: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=400&h=400&fit=crop",
+    id: "7x2...9aB",
+    name: "Vault Key #042",
+    image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=400&h=400&fit=crop",
     rarity: "Legendary",
   },
   {
-    id: "2",
-    name: "Solana Apes #881",
+    id: "3vP...m1K",
+    name: "Alpha Access Pass",
     image: "https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=400&h=400&fit=crop",
     rarity: "Common",
   },
   {
-    id: "3",
-    name: "Cyber Samurai #009",
+    id: "9qZ...4tY",
+    name: "Genesis Locker Key",
     image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop",
     rarity: "Rare",
   },
