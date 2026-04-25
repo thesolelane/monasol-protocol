@@ -17,8 +17,49 @@ export default function Home() {
   const [selectedNft, setSelectedNft] = useState<string | null>(null);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isMoveInOpen, setIsMoveInOpen] = useState(false);
+  const [activeVault, setActiveVault] = useState<{ id: string, balance: string, nftName: string } | null>(null);
 
   const allConnected = evmConnected && solanaConnected;
+
+  // Mock data for NFTs (Keys)
+  const availableNfts = [
+    { mint: "7x2...9aB", name: "Vault Key #042", image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=100&h=100&fit=crop", tokenId: "1", vaultRef: "VLT-042" },
+    { mint: "3vP...m1K", name: "Alpha Access Pass", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop", tokenId: "2", vaultRef: "VLT-881" }
+  ];
+
+  // Auto-connect logic when Solana wallet connects
+  const handleSolanaConnect = () => {
+    const isConnecting = !solanaConnected;
+    setSolanaConnected(isConnecting);
+    
+    if (isConnecting) {
+      if (availableNfts.length === 0) {
+        // No NFTs -> Auto open Rent Vault
+        setIsRentModalOpen(true);
+      } else if (availableNfts.length === 1) {
+        // Exactly 1 NFT -> Auto select and connect to vault
+        setSelectedNft(availableNfts[0].mint);
+        setActiveVault({ id: availableNfts[0].vaultRef, balance: "24.50 SOL", nftName: availableNfts[0].name });
+      } else {
+        // Multiple NFTs -> Wait for user to select from the grid
+        setSelectedNft(null);
+        setActiveVault(null);
+      }
+    } else {
+      // Disconnecting
+      setSelectedNft(null);
+      setActiveVault(null);
+    }
+  };
+
+  // Handle manual NFT selection from the grid
+  const handleNftSelect = (id: string) => {
+    setSelectedNft(id);
+    const nft = availableNfts.find(n => n.mint === id);
+    if (nft) {
+      setActiveVault({ id: nft.vaultRef, balance: "12.00 SOL", nftName: nft.name });
+    }
+  };
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
@@ -71,7 +112,7 @@ export default function Home() {
             <WalletConnect
               type="solana"
               isConnected={solanaConnected}
-              onConnect={() => setSolanaConnected(!solanaConnected)}
+              onConnect={handleSolanaConnect}
             />
           </div>
         </header>
@@ -111,7 +152,11 @@ export default function Home() {
                   <div className="flex items-center justify-between border-b border-white/10 pb-6">
                     <div>
                       <h2 className="font-display text-xl font-bold text-white">Your Wallet</h2>
-                      <p className="text-sm text-gray-400">Select an NFT to use as a key</p>
+                      {availableNfts.length > 1 && !selectedNft ? (
+                        <p className="text-sm text-solana-green animate-pulse">Select a key to access its vault</p>
+                      ) : (
+                        <p className="text-sm text-gray-400">Select an NFT to use as a key</p>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-gray-500 uppercase">Address</p>
@@ -119,25 +164,39 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <NftGrid selectedId={selectedNft} onSelect={setSelectedNft} />
+                  <NftGrid selectedId={selectedNft} onSelect={handleNftSelect} />
 
-                  {selectedNft && (
-                    <div className="mt-8 p-4 rounded-xl bg-white/5 border border-white/10">
-                      <h4 className="text-sm font-semibold text-white mb-2">Key Permissions</h4>
-                      <ul className="space-y-2 text-xs text-gray-400">
+                  {selectedNft && activeVault && (
+                    <div className="mt-8 p-6 rounded-xl bg-white/5 border border-white/10 animate-in fade-in slide-in-from-bottom-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-semibold text-white">Active Vault Connection</h4>
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-solana-green/20 border border-solana-green/30">
+                          <div className="h-2 w-2 rounded-full bg-solana-green animate-pulse" />
+                          <span className="text-xs font-bold text-solana-green">Connected</span>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="p-3 bg-black/40 rounded-lg border border-white/5">
+                          <p className="text-xs text-gray-500 mb-1">Vault Reference</p>
+                          <p className="font-mono text-sm text-white">{activeVault.id}</p>
+                        </div>
+                        <div className="p-3 bg-black/40 rounded-lg border border-white/5">
+                          <p className="text-xs text-gray-500 mb-1">Locked Balance</p>
+                          <p className="font-mono text-sm text-monad-purple">{activeVault.balance}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 text-xs text-gray-400">
                         <li className="flex items-center gap-2">
-                          <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                          Can unlock connected vault
+                          <Key className="h-3 w-3 text-solana-green" />
+                          Authenticated via {activeVault.nftName}
                         </li>
                         <li className="flex items-center gap-2">
-                          <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                          Transferable rights enabled
+                          <Shield className="h-3 w-3 text-solana-green" />
+                          Full withdrawal rights active
                         </li>
-                        <li className="flex items-center gap-2">
-                          <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                          Yield generation active
-                        </li>
-                      </ul>
+                      </div>
                     </div>
                   )}
                 </div>
