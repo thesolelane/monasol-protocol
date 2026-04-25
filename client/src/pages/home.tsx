@@ -17,14 +17,15 @@ export default function Home() {
   const [selectedNft, setSelectedNft] = useState<string | null>(null);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isMoveInOpen, setIsMoveInOpen] = useState(false);
-  const [activeVault, setActiveVault] = useState<{ id: string, balance: string, nftName: string } | null>(null);
+  const [activeVault, setActiveVault] = useState<{ id: string, lockerId: string, balance: string, nftName: string } | null>(null);
 
   const allConnected = evmConnected && solanaConnected;
 
   // Mock data for NFTs (Keys)
   const availableNfts = [
-    { mint: "7x2...9aB", name: "Vault Key #042", image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=100&h=100&fit=crop", tokenId: "1", vaultRef: "VLT-042" },
-    { mint: "3vP...m1K", name: "Alpha Access Pass", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop", tokenId: "2", vaultRef: "VLT-881" }
+    { mint: "7x2...9aB", name: "Vault Key #042", image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=100&h=100&fit=crop", tokenId: "1", vaultRef: "VLT-042", lockerRef: "LCK-99A" },
+    { mint: "3vP...m1K", name: "Alpha Access Pass", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop", tokenId: "2", vaultRef: "VLT-881", lockerRef: "LCK-22B" },
+    { mint: "9qZ...4tY", name: "Genesis Locker Key", image: "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=100&h=100&fit=crop", tokenId: "3", vaultRef: "VLT-112", lockerRef: "LCK-45C" }
   ];
 
   // Auto-connect logic when Solana wallet connects
@@ -39,7 +40,7 @@ export default function Home() {
       } else if (availableNfts.length === 1) {
         // Exactly 1 NFT -> Auto select and connect to vault
         setSelectedNft(availableNfts[0].mint);
-        setActiveVault({ id: availableNfts[0].vaultRef, balance: "24.50 SOL", nftName: availableNfts[0].name });
+        setActiveVault({ id: availableNfts[0].vaultRef, lockerId: availableNfts[0].lockerRef, balance: "24.50 SOL", nftName: availableNfts[0].name });
       } else {
         // Multiple NFTs -> Wait for user to select from the grid
         setSelectedNft(null);
@@ -57,7 +58,18 @@ export default function Home() {
     setSelectedNft(id);
     const nft = availableNfts.find(n => n.mint === id);
     if (nft) {
-      setActiveVault({ id: nft.vaultRef, balance: "12.00 SOL", nftName: nft.name });
+      // Different balances for different vaults to make it feel real
+      const balances: Record<string, string> = {
+        "1": "12.50 SOL",
+        "2": "145.00 SOL",
+        "3": "3.14 SOL"
+      };
+      setActiveVault({ 
+        id: nft.vaultRef, 
+        lockerId: nft.lockerRef,
+        balance: balances[nft.tokenId] || "0.00 SOL", 
+        nftName: nft.name 
+      });
     }
   };
 
@@ -176,13 +188,17 @@ export default function Home() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="grid grid-cols-3 gap-4 mb-4">
                         <div className="p-3 bg-black/40 rounded-lg border border-white/5">
-                          <p className="text-xs text-gray-500 mb-1">Vault Reference</p>
+                          <p className="text-xs text-gray-500 mb-1">Vault Ref</p>
                           <p className="font-mono text-sm text-white">{activeVault.id}</p>
                         </div>
                         <div className="p-3 bg-black/40 rounded-lg border border-white/5">
-                          <p className="text-xs text-gray-500 mb-1">Locked Balance</p>
+                          <p className="text-xs text-gray-500 mb-1">Locker Ref</p>
+                          <p className="font-mono text-sm text-white">{activeVault.lockerId}</p>
+                        </div>
+                        <div className="p-3 bg-black/40 rounded-lg border border-white/5">
+                          <p className="text-xs text-gray-500 mb-1">Locked Bal</p>
                           <p className="font-mono text-sm text-monad-purple">{activeVault.balance}</p>
                         </div>
                       </div>
@@ -263,10 +279,7 @@ export default function Home() {
           setIsRentModalOpen(true);
         }}
         onConnectWallet={() => setSolanaConnected(true)}
-        availableNfts={solanaConnected ? [
-          { mint: "7x2...9aB", name: "Vault Key #042", image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=100&h=100&fit=crop", tokenId: "1" },
-          { mint: "3vP...m1K", name: "Alpha Access Pass", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop", tokenId: "2" }
-        ] : []}
+        availableNfts={solanaConnected ? availableNfts : []}
       />
     </div>
   );
