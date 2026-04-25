@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Unlock, Check } from "lucide-react";
+import { Lock, Unlock, Check, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -14,11 +14,20 @@ export function LockerForm({ isConnected, hasNftKey }: LockerFormProps) {
   const [amount, setAmount] = useState("");
   const [token, setToken] = useState("");
   const [isLocked, setIsLocked] = useState(false);
+  const [unlockError, setUnlockError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isConnected && hasNftKey) {
-      setIsLocked(!isLocked);
+    if (!isLocked) {
+      setIsLocked(true);
+      setUnlockError(false);
+    } else {
+      if (isConnected && hasNftKey) {
+        setIsLocked(false);
+        setUnlockError(false);
+      } else {
+        setUnlockError(true);
+      }
     }
   };
 
@@ -78,32 +87,30 @@ export function LockerForm({ isConnected, hasNftKey }: LockerFormProps) {
         </div>
 
         <div className="pt-2">
-          {!isConnected ? (
-            <Button disabled className="w-full h-12 bg-white/5 text-gray-500 font-medium">
-              Connect Wallets First
-            </Button>
-          ) : !hasNftKey ? (
-            <Button
-              disabled
-              className="w-full h-12 bg-white/5 text-gray-500 font-medium border border-red-500/20 text-red-400"
-            >
-              Select NFT Key to Proceed
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              className={`w-full h-12 text-base font-bold tracking-wide transition-all ${
-                isLocked
-                  ? "bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50"
-                  : "bg-monad-purple hover:bg-monad-purple/90 text-black shadow-[0_0_20px_-5px_rgba(130,71,229,0.5)]"
-              }`}
-            >
-              {isLocked ? "UNLOCK VAULT" : "LOCK ASSETS"}
-            </Button>
-          )}
+          <Button
+            type="submit"
+            className={`w-full h-12 text-sm font-bold tracking-wide transition-all ${
+              isLocked
+                ? "bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50"
+                : "bg-monad-purple hover:bg-monad-purple/90 text-black shadow-[0_0_20px_-5px_rgba(130,71,229,0.5)]"
+            }`}
+          >
+            {isLocked ? "UNLOCK VAULT" : "DEPOSIT & LOCK ASSETS (NO SIGN-IN REQUIRED)"}
+          </Button>
         </div>
 
-        {isLocked && (
+        {unlockError && isLocked && (
+          <motion.div
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-400 text-xs"
+          >
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>You must connect your Solana wallet and select the correct NFT Key to unlock.</span>
+          </motion.div>
+        )}
+
+        {isLocked && !unlockError && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
