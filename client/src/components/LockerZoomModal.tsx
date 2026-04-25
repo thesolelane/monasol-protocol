@@ -86,8 +86,24 @@ export function LockerZoomModal({ isOpen, onClose, lockerId }: LockerZoomModalPr
               <div className="grid grid-cols-[repeat(25,minmax(0,1fr))] gap-1">
                 {Array.from({ length: 500 }).map((_, i) => {
                   // Simulate some random scattered faults
-                  const isFaulty = [42, 43, 88, 102, 103, 104, 215, 344, 345, 401, 402, 418, 489, 490].includes(i);
+                  const isActiveFaulty = [42, 43, 88, 102, 103, 104, 215, 344, 345, 401, 402, 418].includes(i);
+                  const isEmptyFaulty = [489, 490].includes(i);
+                  const isFaulty = isActiveFaulty || isEmptyFaulty;
                   const isEmpty = i > 460 && !isFaulty;
+                  
+                  // Determine specific error type for tooltip
+                  let errorType = "";
+                  let errorDesc = "";
+                  if (isActiveFaulty) {
+                    errorType = "STATE MISMATCH";
+                    errorDesc = "Solana NFT Key: Unverified";
+                  } else if (i === 489) {
+                    errorType = "INITIALIZATION ERROR";
+                    errorDesc = "Access control mapping corrupted";
+                  } else if (i === 490) {
+                    errorType = "STORAGE COLLISION";
+                    errorDesc = "Deterministic address conflict";
+                  }
                   
                   return (
                     <div 
@@ -96,14 +112,16 @@ export function LockerZoomModal({ isOpen, onClose, lockerId }: LockerZoomModalPr
                         ${isFaulty ? 'bg-red-500 border-red-400 z-10' : 
                           isEmpty ? 'bg-white/5 border-white/5' : 
                           'bg-solana-green/20 border-solana-green/30 hover:bg-solana-green/40'}`}
-                      title={`Vault #${i} ${isFaulty ? '(STATE MISMATCH)' : isEmpty ? '(Empty)' : '(Healthy)'}`}
+                      title={`Vault #${i} ${isFaulty ? `(${errorType})` : isEmpty ? '(Empty)' : '(Healthy)'}`}
                     >
                       {/* Tooltip on hover */}
                       {isFaulty && (
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 p-2 bg-gray-900 border border-red-500/50 rounded-lg shadow-xl z-50 text-left">
                           <p className="text-[10px] font-bold text-red-400 mb-1">VAULT #{i} ERROR</p>
-                          <p className="text-[10px] text-gray-300">Monad balance: 145 SOL</p>
-                          <p className="text-[10px] text-gray-300">Solana NFT Key: Unverified</p>
+                          <p className="text-[10px] text-gray-300 font-mono mb-1">{errorType}</p>
+                          <p className="text-[10px] text-gray-400">{errorDesc}</p>
+                          {isActiveFaulty && <p className="text-[10px] text-gray-500 mt-1">Locked TVL: ~145 SOL</p>}
+                          {isEmptyFaulty && <p className="text-[10px] text-gray-500 mt-1">Status: Quarantined</p>}
                         </div>
                       )}
                     </div>
