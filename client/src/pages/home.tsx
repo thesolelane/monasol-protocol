@@ -188,7 +188,10 @@ export default function Home() {
       <RentVaultModal 
         isOpen={isRentModalOpen}
         onClose={() => setIsRentModalOpen(false)}
-        onSuccess={() => console.log('Vault Rented')}
+        onSuccess={() => {
+          setIsRentModalOpen(false);
+          setIsMoveInOpen(true);
+        }}
       />
 
       <MoveInModal

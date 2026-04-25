@@ -224,7 +224,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess }: RentVaultModalPro
                 onClick={handleFinish}
                 className="w-full h-12 mt-4 bg-white hover:bg-gray-200 text-black font-bold"
               >
-                Return to Dashboard
+                Move In Now
               </Button>
             </motion.div>
           )}
