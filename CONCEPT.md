@@ -7,7 +7,13 @@ By divorcing the **asset storage** from the **access key**, NexusBridge turns an
 
 ## The Security & Architecture Model
 
-1. **Compartmentalized Risk (The Submarine Model):** Instead of a single monolithic smart contract holding all user funds, NexusBridge deploys isolated "Locker Collections" capped at specific sizes (e.g., 10, 500, or 1,500 vaults). If one Locker experiences a vulnerability, the blast radius is strictly contained.
+1. **Compartmentalized Risk (The "Apartment Building" Model):** Instead of a single monolithic smart contract holding all user funds, NexusBridge deploys isolated smart contracts called **"Lockers"**.
+   * Think of the platform as a massive digital real estate development with multiple **Buildings (Lockers)**.
+   * Each Building has its own unique address on the blockchain.
+   * Inside each Building are individual **Apartments (Vaults)**.
+   * Some Buildings are massive and hold 20,000 Apartments. These are cheaper to use because the "maintenance fees" (gas costs) are spread across many users.
+   * Some Buildings are highly exclusive and only hold 10 Apartments. These cost more to use, but they offer maximum isolation.
+   * **The Security Benefit:** If a hacker finds a way to break into the 20,000-Apartment Building, the platform can instantly freeze that specific building. Meanwhile, the people in the 10-Apartment Building are completely safe and unaffected because they are in an entirely different smart contract at a different address. The blast radius of any exploit is strictly contained to that specific Locker.
 2. **Zero-Trust Execution:** NexusBridge does not run an exchange or take custody of trades. Users execute trustless OTC (Over-The-Counter) trades using established Solana NFT marketplaces (like Magic Eden or Tensor). The marketplace handles the secure swap of the NFT key for funds; NexusBridge simply honors the new key holder.
 3. **Zero-Knowledge Privacy:** Vault contents are hidden on the EVM side. A buyer can only verify the contents of a vault if the current owner generates and shares a cryptographic "Access Key" for the NexusBridge Private Explorer.
 
