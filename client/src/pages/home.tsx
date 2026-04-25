@@ -73,11 +73,11 @@ export default function Home() {
             trend="85% Minted"
           />
           <StatsCard
-            label="Network Status"
-            value="Optimal"
+            label="Security Status"
+            value="User-Controlled"
             icon={Activity}
             color="blue"
-            trend="Monad Mainnet Beta"
+            trend="Circuit Breakers Active"
           />
         </div>
 
