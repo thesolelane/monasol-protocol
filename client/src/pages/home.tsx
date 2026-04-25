@@ -281,6 +281,18 @@ export default function Home() {
         onConnectWallet={() => setSolanaConnected(true)}
         availableNfts={solanaConnected ? availableNfts : []}
       />
+
+      {/* Discrete Admin Link */}
+      <div className="fixed bottom-4 right-4 z-50 opacity-20 hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.location.href = '/admin'}
+          className="text-gray-500 hover:text-white"
+        >
+          <Shield className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }
