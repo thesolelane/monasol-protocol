@@ -132,21 +132,21 @@ export default function Home() {
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
           <StatsCard
-            label="Total Value Locked"
+            label="Protocol TVL"
             value="$4.2M"
             icon={Coins}
             color="purple"
             trend="+12% this week"
           />
           <StatsCard
-            label="Active Vaults"
+            label="Global Active Vaults"
             value="1,284 / 1,500"
             icon={Shield}
             color="green"
             trend="85% Minted"
           />
           <StatsCard
-            label="Security Status"
+            label="Platform Security"
             value="User-Controlled"
             icon={Activity}
             color="blue"
