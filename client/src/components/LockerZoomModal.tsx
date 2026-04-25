@@ -87,7 +87,7 @@ export function LockerZoomModal({ isOpen, onClose, lockerId }: LockerZoomModalPr
                 {Array.from({ length: 500 }).map((_, i) => {
                   // Simulate some random scattered faults
                   const isActiveFaulty = [42, 43, 88, 102, 103, 104, 215, 344, 345, 401, 402, 418].includes(i);
-                  const isEmptyFaulty = [489, 490].includes(i);
+                  const isEmptyFaulty = [485, 489, 490].includes(i);
                   const isFaulty = isActiveFaulty || isEmptyFaulty;
                   const isEmpty = i > 460 && !isFaulty;
                   
@@ -95,8 +95,19 @@ export function LockerZoomModal({ isOpen, onClose, lockerId }: LockerZoomModalPr
                   let errorType = "";
                   let errorDesc = "";
                   if (isActiveFaulty) {
-                    errorType = "STATE MISMATCH";
-                    errorDesc = "Solana NFT Key: Unverified";
+                    if (i % 3 === 0) {
+                      errorType = "STATE MISMATCH";
+                      errorDesc = "Solana NFT Key: Unverified";
+                    } else if (i % 3 === 1) {
+                      errorType = "RPC TIMEOUT";
+                      errorDesc = "Cross-chain relayer failed to respond";
+                    } else {
+                      errorType = "FRONT-RUN DETECTED";
+                      errorDesc = "MEV bot attempted to intercept payload";
+                    }
+                  } else if (i === 485) {
+                    errorType = "HONEYPOT QUARANTINE";
+                    errorDesc = "Suspicious pre-funding detected";
                   } else if (i === 489) {
                     errorType = "INITIALIZATION ERROR";
                     errorDesc = "Access control mapping corrupted";
