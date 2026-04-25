@@ -4,6 +4,7 @@ import { NftGrid } from "@/components/NftGrid";
 import { LockerForm } from "@/components/LockerForm";
 import { VaultExplorer } from "@/components/VaultExplorer";
 import { StatsCard } from "@/components/StatsCard";
+import { CircuitBreaker } from "@/components/CircuitBreaker";
 import { Shield, Coins, Activity, Zap, Wallet } from "lucide-react";
 import background from "@assets/generated_images/abstract_dark_futuristic_blockchain_network_background_with_purple_and_green_neon_accents.png";
 
@@ -138,6 +139,7 @@ export default function Home() {
           {/* Right Column: Locker Controls & Explorer */}
           <div className="lg:col-span-5">
             <LockerForm isConnected={allConnected} hasNftKey={!!selectedNft} />
+            <CircuitBreaker />
             <VaultExplorer />
 
             <div className="mt-6 p-6 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-xs">

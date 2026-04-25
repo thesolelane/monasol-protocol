@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Plus } from "lucide-react";
+import { useState } from "react";
+import { MintNftModal } from "./MintNftModal";
 
 interface Nft {
   id: string;
@@ -8,7 +10,7 @@ interface Nft {
   rarity: string;
 }
 
-const MOCK_NFTS: Nft[] = [
+const INITIAL_NFTS: Nft[] = [
   {
     id: "1",
     name: "Monad Nomads #442",
@@ -27,12 +29,6 @@ const MOCK_NFTS: Nft[] = [
     image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop",
     rarity: "Rare",
   },
-  {
-    id: "4",
-    name: "Pixel Punk #102",
-    image: "https://images.unsplash.com/photo-1614812513172-567d2fe96a75?w=400&h=400&fit=crop",
-    rarity: "Epic",
-  },
 ];
 
 interface NftGridProps {
@@ -41,6 +37,14 @@ interface NftGridProps {
 }
 
 export function NftGrid({ selectedId, onSelect }: NftGridProps) {
+  const [nfts, setNfts] = useState<Nft[]>(INITIAL_NFTS);
+  const [isMintModalOpen, setIsMintModalOpen] = useState(false);
+
+  const handleMintSuccess = (newNft: Nft) => {
+    setNfts([newNft, ...nfts]);
+    onSelect(newNft.id); // Automatically select the newly minted NFT
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -51,7 +55,21 @@ export function NftGrid({ selectedId, onSelect }: NftGridProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {MOCK_NFTS.map((nft) => {
+        {/* Mint New NFT Button */}
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsMintModalOpen(true)}
+          className="relative cursor-pointer overflow-hidden rounded-xl border-2 border-dashed border-white/20 bg-white/5 hover:border-solana-green/50 hover:bg-solana-green/5 transition-all duration-300 flex flex-col items-center justify-center min-h-[140px] aspect-square"
+        >
+          <div className="h-10 w-10 rounded-full bg-solana-green/20 flex items-center justify-center mb-2">
+            <Plus className="h-5 w-5 text-solana-green" />
+          </div>
+          <p className="font-display text-sm font-bold text-white">Mint New</p>
+          <p className="text-[10px] text-gray-400">Vault Key</p>
+        </motion.div>
+
+        {nfts.map((nft) => {
           const isSelected = selectedId === nft.id;
           return (
             <motion.div
@@ -59,13 +77,13 @@ export function NftGrid({ selectedId, onSelect }: NftGridProps) {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onSelect(nft.id)}
-              className={`relative cursor-pointer overflow-hidden rounded-xl border-2 transition-all duration-300 ${
+              className={`relative cursor-pointer overflow-hidden rounded-xl border-2 transition-all duration-300 aspect-square ${
                 isSelected
                   ? "border-solana-green shadow-[0_0_20px_-5px_rgba(20,241,149,0.5)]"
                   : "border-white/10 opacity-70 hover:border-white/30 hover:opacity-100"
               }`}
             >
-              <div className="aspect-square w-full">
+              <div className="h-full w-full">
                 <img src={nft.image} alt={nft.name} className="h-full w-full object-cover" />
               </div>
 
@@ -83,6 +101,12 @@ export function NftGrid({ selectedId, onSelect }: NftGridProps) {
           );
         })}
       </div>
+
+      <MintNftModal 
+        isOpen={isMintModalOpen} 
+        onClose={() => setIsMintModalOpen(false)} 
+        onSuccess={handleMintSuccess}
+      />
     </div>
   );
 }
