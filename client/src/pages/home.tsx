@@ -147,10 +147,10 @@ export default function Home() {
           />
           <StatsCard
             label="Platform Security"
-            value="User-Controlled"
+            value="Active"
             icon={Activity}
             color="blue"
-            trend="Circuit Breakers Active"
+            trend="100% User-Controlled"
           />
         </div>
 
