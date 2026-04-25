@@ -59,3 +59,17 @@ Because the NexusBridge protocol acts as a secure, composable wrapper for EVM li
 ## Why This Works
 
 By utilizing Solana for the **access layer** (fast, cheap, highly liquid NFT infrastructure) and Monad for the **storage layer** (deep EVM liquidity, battle-tested DeFi standards), NexusBridge bypasses the traditional "bridging" dilemma. It doesn't move the money; it simply moves the deed to the vault.
+
+---
+
+## Recommended Tech Stack (For Maximum Security & Strictness)
+
+To build a system with this level of compartmentalized security, cryptography, and cross-chain logic, the protocol must be written in languages explicitly designed for formal verification, strict typing, and auditable security.
+
+1. **Solana Access Layer (The NFT Keys): Rust & Anchor**
+   * **Why:** Rust is famous for its "borrow checker," which prevents entire classes of memory management bugs (like buffer overflows or dangling pointers) at compile time. It is the most secure mainstream systems language.
+   * **The Framework:** The Solana programs will be written using the **Anchor framework**, which adds another layer of strict security checks specifically for validating Solana accounts and preventing authorization bypasses.
+
+2. **Monad Storage Layer (The Vaults): Vyper**
+   * **Why:** While most EVM smart contracts are written in Solidity, **Vyper** is a Pythonic language for the EVM designed explicitly for security and auditability. 
+   * **The Benefit:** Vyper intentionally removes features that make Solidity dangerous (like infinite loops, recursive calling, and complex inheritance). This makes the code incredibly easy to read, audit, and mathematically prove. You can determine exactly how much gas a Vyper contract will use and exactly what paths the execution can take, making it the ideal choice for holding high-value, compartmentalized assets.
