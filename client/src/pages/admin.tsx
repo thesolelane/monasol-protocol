@@ -64,6 +64,112 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Active Lockers Landscape */}
+        <div className="mb-8">
+          <h2 className="text-lg font-bold flex items-center gap-2 text-white mb-4">
+            <Server className="h-5 w-5 text-gray-400" />
+            Locker Landscape
+          </h2>
+          <div className="bg-black/40 border border-white/5 rounded-xl p-6 backdrop-blur-sm">
+            <div className="flex flex-col gap-6">
+              {/* Tier 1 */}
+              <div>
+                <div className="flex justify-between items-end mb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      Tier 1: High Capacity <Badge variant="outline" className="border-green-500/30 text-green-400 bg-green-500/10 text-[10px] ml-2">Healthy</Badge>
+                    </h3>
+                    <p className="text-xs text-gray-500">100 Vaults per Locker • 10 SOL Min Deposit</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-mono text-white">82 Lockers</p>
+                    <p className="text-xs text-gray-500">76% full</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {Array.from({ length: 82 }).map((_, i) => (
+                    <div 
+                      key={`t1-${i}`} 
+                      className={`h-6 w-6 rounded-sm border ${
+                        i < 62 ? 'bg-monad-purple/80 border-monad-purple' : 
+                        i < 75 ? 'bg-monad-purple/40 border-monad-purple/50' : 
+                        'bg-white/5 border-white/10'
+                      }`}
+                      title={`Locker LCK-T1-${i} ${i < 62 ? '(Full)' : i < 75 ? '(Filling)' : '(Empty)'}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Tier 2 */}
+              <div>
+                <div className="flex justify-between items-end mb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      Tier 2: Standard <Badge variant="outline" className="border-yellow-500/30 text-yellow-400 bg-yellow-500/10 text-[10px] ml-2">Near Capacity</Badge>
+                    </h3>
+                    <p className="text-xs text-gray-500">500 Vaults per Locker • 1 SOL Min Deposit</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-mono text-white">34 Lockers</p>
+                    <p className="text-xs text-gray-500">92% full</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {Array.from({ length: 34 }).map((_, i) => (
+                    <div 
+                      key={`t2-${i}`} 
+                      className={`h-6 w-6 rounded-sm border ${
+                        i < 31 ? 'bg-solana-green/80 border-solana-green' : 
+                        'bg-solana-green/40 border-solana-green/50'
+                      }`}
+                      title={`Locker LCK-T2-${i} ${i < 31 ? '(Full)' : '(Filling)'}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Tier 3 */}
+              <div>
+                <div className="flex justify-between items-end mb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      Tier 3: Institutional <Badge variant="outline" className="border-blue-400/30 text-blue-400 bg-blue-400/10 text-[10px] ml-2">Scaling</Badge>
+                    </h3>
+                    <p className="text-xs text-gray-500">10 Vaults per Locker • 1000 SOL Min Deposit</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-mono text-white">12 Lockers</p>
+                    <p className="text-xs text-gray-500">45% full</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <div 
+                      key={`t3-${i}`} 
+                      className={`h-8 w-12 rounded-sm border ${
+                        i < 5 ? 'bg-blue-500/80 border-blue-500' : 
+                        i < 9 ? 'bg-blue-500/40 border-blue-500/50' : 
+                        'bg-white/5 border-white/10'
+                      }`}
+                      title={`Locker LCK-T3-${i} ${i < 5 ? '(Full)' : i < 9 ? '(Filling)' : '(Empty)'}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center text-xs text-gray-500">
+              <div className="flex gap-4">
+                <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-white/80" /> Full Capacity</span>
+                <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-white/40 border border-white/50" /> Accepting Deposits</span>
+                <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-white/5 border border-white/10" /> Empty / Ready</span>
+              </div>
+              <p>Landscape auto-updates every 12s</p>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Column 1: Monad Controls */}
           <div className="lg:col-span-1 space-y-6">
