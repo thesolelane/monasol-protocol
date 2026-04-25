@@ -7,7 +7,7 @@ import { StatsCard } from "@/components/StatsCard";
 import { CircuitBreaker } from "@/components/CircuitBreaker";
 import { RentVaultModal } from "@/components/RentVaultModal";
 import { MoveInModal } from "@/components/MoveInModal";
-import { Shield, Coins, Activity, Zap, Wallet, Key, ArrowLeftRight } from "lucide-react";
+import { Shield, Coins, Activity, Zap, Wallet, Key, ArrowLeftRight, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import background from "@assets/generated_images/abstract_dark_futuristic_blockchain_network_background_with_purple_and_green_neon_accents.png";
 
@@ -284,6 +284,16 @@ export default function Home() {
 
       {/* Discrete Admin Link */}
       <div className="fixed bottom-4 right-4 z-50 flex gap-2 opacity-20 hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.location.href = '/events'}
+          className="text-gray-500 hover:text-white"
+          title="Event Ticketing"
+        >
+          <Ticket className="h-4 w-4" />
+        </Button>
+        <div className="w-px h-4 bg-white/10 mx-1" />
         <Button
           variant="ghost"
           size="icon"
