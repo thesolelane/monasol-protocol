@@ -17,6 +17,8 @@ interface MoveInModalProps {
   onSuccess: (vault: VaultResult) => void;
   connectedWallet: string | null;
   availableNfts: Nft[];
+  onMintKey?: () => void;
+  onConnectWallet?: () => void;
 }
 
 interface VaultResult {
@@ -34,7 +36,7 @@ const TOTAL_FEE     = LEASE_FEE + MOVE_IN_FEE;
 // ── Step definitions ─────────────────────────────────────────
 const STEPS = ['Select key', 'Set deposit', 'Review', 'Done'];
 
-export function MoveInModal({ isOpen, onClose, onSuccess, connectedWallet, availableNfts }: MoveInModalProps) {
+export function MoveInModal({ isOpen, onClose, onSuccess, connectedWallet, availableNfts, onMintKey, onConnectWallet }: MoveInModalProps) {
   const [step, setStep]               = useState(0);
   const [selectedNft, setSelectedNft] = useState<Nft | null>(null);
   const [depositSol, setDepositSol]   = useState('');
@@ -68,7 +70,19 @@ export function MoveInModal({ isOpen, onClose, onSuccess, connectedWallet, avail
             <Key className="h-5 w-5 text-gray-500" />
           </div>
           <p className="text-sm text-gray-500">No NFTs found in your wallet.</p>
-          <p className="text-xs text-gray-600">Connect your Solana wallet or mint a NexusBridge key.</p>
+          <p className="text-xs text-gray-600 mb-4">Connect your Solana wallet or mint a NexusBridge key.</p>
+          <div className="flex flex-col gap-2 pt-2 max-w-[200px] mx-auto">
+            {!connectedWallet && (
+              <Button onClick={onConnectWallet} variant="outline" className="w-full bg-black/40 border-solana-green/30 text-solana-green hover:bg-solana-green/10 h-10">
+                <Wallet className="h-4 w-4 mr-2" />
+                Connect Wallet
+              </Button>
+            )}
+            <Button onClick={onMintKey} className="w-full bg-solana-green hover:bg-solana-green/90 text-black font-bold h-10 shadow-[0_0_15px_-3px_rgba(20,241,149,0.4)]">
+              <Key className="h-4 w-4 mr-2" />
+              Mint NFT Key
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-1">
@@ -102,14 +116,16 @@ export function MoveInModal({ isOpen, onClose, onSuccess, connectedWallet, avail
         </div>
       )}
 
-      <Button
-        onClick={() => setStep(1)}
-        disabled={!selectedNft}
-        className="w-full bg-monad-purple hover:bg-monad-purple/90 text-black font-bold"
-      >
-        Continue
-        <ArrowRight className="h-4 w-4 ml-2" />
-      </Button>
+      {availableNfts.length > 0 && (
+        <Button
+          onClick={() => setStep(1)}
+          disabled={!selectedNft}
+          className="w-full bg-monad-purple hover:bg-monad-purple/90 text-black font-bold mt-4"
+        >
+          Continue
+          <ArrowRight className="h-4 w-4 ml-2" />
+        </Button>
+      )}
     </div>
   );
 

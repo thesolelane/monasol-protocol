@@ -199,6 +199,11 @@ export default function Home() {
         onClose={() => setIsMoveInOpen(false)}
         onSuccess={(vault) => console.log('Moved in:', vault)}
         connectedWallet={solanaConnected ? "8xR...3kL" : null}
+        onMintKey={() => {
+          setIsMoveInOpen(false);
+          setIsRentModalOpen(true);
+        }}
+        onConnectWallet={() => setSolanaConnected(true)}
         availableNfts={solanaConnected ? [
           { mint: "7x2...9aB", name: "Vault Key #042", image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=100&h=100&fit=crop", tokenId: "1" },
           { mint: "3vP...m1K", name: "Alpha Access Pass", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop", tokenId: "2" }
