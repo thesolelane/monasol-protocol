@@ -5,8 +5,9 @@ import { LockerForm } from "@/components/LockerForm";
 import { VaultExplorer } from "@/components/VaultExplorer";
 import { StatsCard } from "@/components/StatsCard";
 import { CircuitBreaker } from "@/components/CircuitBreaker";
+import { RentVaultModal } from "@/components/RentVaultModal";
 import { DeployLockerModal } from "@/components/DeployLockerModal";
-import { Shield, Coins, Activity, Zap, Wallet, Server } from "lucide-react";
+import { Shield, Coins, Activity, Zap, Wallet, Key, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import background from "@assets/generated_images/abstract_dark_futuristic_blockchain_network_background_with_purple_and_green_neon_accents.png";
 
@@ -15,6 +16,7 @@ export default function Home() {
   const [solanaConnected, setSolanaConnected] = useState(false);
   const [selectedNft, setSelectedNft] = useState<string | null>(null);
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
+  const [isRentModalOpen, setIsRentModalOpen] = useState(false);
 
   const allConnected = evmConnected && solanaConnected;
 
@@ -54,6 +56,14 @@ export default function Home() {
             >
               <Server className="h-4 w-4 mr-2" />
               Deploy Locker
+            </Button>
+            <Button
+              onClick={() => setIsRentModalOpen(true)}
+              variant="outline"
+              className="h-10 bg-black/40 border-solana-green/30 text-solana-green hover:bg-solana-green/10 hover:text-solana-green shadow-[0_0_10px_rgba(20,241,149,0.1)]"
+            >
+              <Key className="h-4 w-4 mr-2" />
+              Rent a Vault
             </Button>
             <WalletConnect
               type="evm"
@@ -178,6 +188,11 @@ export default function Home() {
         </div>
       </div>
       
+      <RentVaultModal 
+        isOpen={isRentModalOpen}
+        onClose={() => setIsRentModalOpen(false)}
+        onSuccess={() => console.log('Vault Rented')}
+      />
       <DeployLockerModal 
         isOpen={isDeployModalOpen}
         onClose={() => setIsDeployModalOpen(false)}
