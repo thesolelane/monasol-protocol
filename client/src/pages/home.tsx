@@ -97,7 +97,7 @@ export default function Home() {
               </h1>
             </div>
             <p className="text-gray-400 max-w-md">
-              Secure cross-chain vault system. Lock Monad assets, control them with Solana NFTs.
+              Secure cross-chain vault system. Lock Monad and EVM tokens, control them with Solana NFTs.
             </p>
           </div>
 
