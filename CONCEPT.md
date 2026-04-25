@@ -73,3 +73,22 @@ To build a system with this level of compartmentalized security, cryptography, a
 2. **Monad Storage Layer (The Vaults): Vyper**
    * **Why:** While most EVM smart contracts are written in Solidity, **Vyper** is a Pythonic language for the EVM designed explicitly for security and auditability. 
    * **The Benefit:** Vyper intentionally removes features that make Solidity dangerous (like infinite loops, recursive calling, and complex inheritance). This makes the code incredibly easy to read, audit, and mathematically prove. You can determine exactly how much gas a Vyper contract will use and exactly what paths the execution can take, making it the ideal choice for holding high-value, compartmentalized assets.
+
+---
+
+## The Revenue Model (How NexusBridge Makes Money)
+
+The platform is designed to be highly profitable while keeping individual user costs incredibly low, leveraging scale and premium security tiers.
+
+1. **Locker Deployment Fees (The "Real Estate" Model):**
+   * **Public Pools:** Deploying a massive 20,000-Vault Locker is cheap or free for the deployer. The platform subsidizes this to onboard retail users.
+   * **VIP Isolation:** If a Whale, DAO, or Institution wants a highly exclusive, mathematically isolated 10-Vault Locker to eliminate all platform risk, NexusBridge charges a premium upfront deployment fee (e.g., $1,000 - $5,000 in MON or USDC). They are paying for absolute, dedicated security.
+
+2. **Cross-Chain Verification Fees (The Toll Booth):**
+   * Every time the Oracle is queried to verify NFT ownership and unlock a vault, the user pays the base Oracle gas cost *plus* a tiny protocol fee to NexusBridge (e.g., $0.50 to $1.00). Because these actions represent massive transfers of wealth, users will gladly pay a dollar for secure verification.
+
+3. **Passive Yield Skimming (The Bank Model):**
+   * This is the largest potential revenue driver. If users opt-in to have their locked Monad assets deployed into safe, battle-tested DeFi lending protocols (earning them 5-10% APY), NexusBridge takes a tiny performance fee (e.g., 5% of the *yield generated*, not the principal). The platform earns passive, recurring revenue simply by holding the TVL (Total Value Locked).
+
+4. **Premium Features (Sub-Vault Gating):**
+   * Basic lock/unlock features are free. However, if a corporate treasury wants to use the advanced "Rooms" model to issue restricted keys to employees or automate payroll from their vault, they pay a monthly SaaS subscription fee (paid in crypto) to keep the advanced smart contract logic active.
