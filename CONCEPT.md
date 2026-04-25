@@ -27,6 +27,8 @@ NexusBridge is designed from the ground up for maximum compartmentalization and 
 
 5. **Zero-Knowledge Privacy:** Vault contents are completely hidden on the EVM side. A buyer or observer can only verify the contents of a vault if the current owner generates and shares a cryptographic "Access Key" for the NexusBridge Private Explorer. Without that key, the public has zero knowledge of what is inside the vault.
 
+6. **AI-Driven Threat Monitoring (The Sentinel):** To protect the ecosystem proactively, NexusBridge employs an AI-driven monitoring system that analyzes cross-chain mempool data, oracle messages, and smart contract interactions in real-time. If the AI detects anomalous behavior (e.g., flash-loan attacks, massive unauthorized outflow attempts, or Oracle manipulation), it can automatically trigger the "Freeze" state on the affected Lockers before the malicious transaction achieves finality.
+
 ---
 
 ## Primary Use Cases
