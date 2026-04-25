@@ -6,8 +6,7 @@ import { VaultExplorer } from "@/components/VaultExplorer";
 import { StatsCard } from "@/components/StatsCard";
 import { CircuitBreaker } from "@/components/CircuitBreaker";
 import { RentVaultModal } from "@/components/RentVaultModal";
-import { DeployLockerModal } from "@/components/DeployLockerModal";
-import { Shield, Coins, Activity, Zap, Wallet, Key, Server } from "lucide-react";
+import { Shield, Coins, Activity, Zap, Wallet, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import background from "@assets/generated_images/abstract_dark_futuristic_blockchain_network_background_with_purple_and_green_neon_accents.png";
 
@@ -15,7 +14,6 @@ export default function Home() {
   const [evmConnected, setEvmConnected] = useState(false);
   const [solanaConnected, setSolanaConnected] = useState(false);
   const [selectedNft, setSelectedNft] = useState<string | null>(null);
-  const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
 
   const allConnected = evmConnected && solanaConnected;
@@ -49,14 +47,6 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-            <Button
-              onClick={() => setIsDeployModalOpen(true)}
-              variant="outline"
-              className="h-10 bg-black/40 border-monad-purple/30 text-monad-purple hover:bg-monad-purple/10 hover:text-monad-purple shadow-[0_0_10px_rgba(130,71,229,0.1)]"
-            >
-              <Server className="h-4 w-4 mr-2" />
-              Deploy Locker
-            </Button>
             <Button
               onClick={() => setIsRentModalOpen(true)}
               variant="outline"
@@ -169,9 +159,8 @@ export default function Home() {
                 <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-white/10" />
 
                 {[
-                  "Deploy a Vyper Locker on Monad",
                   "Connect Monad (Vault) & Solana (Key) wallets",
-                  "Mint or select a Solana NFT to act as the key",
+                  "Rent a Vault or mint a new Solana NFT key",
                   "Deposit tokens into the EVM Vault",
                   "Unlock anytime by proving NFT ownership",
                 ].map((step, i) => (
@@ -193,11 +182,13 @@ export default function Home() {
         onClose={() => setIsRentModalOpen(false)}
         onSuccess={() => console.log('Vault Rented')}
       />
-      <DeployLockerModal 
-        isOpen={isDeployModalOpen}
-        onClose={() => setIsDeployModalOpen(false)}
-        onSuccess={() => console.log('Locker Deployed')}
-      />
+
+      {/* Admin Link */}
+      <div className="absolute bottom-4 right-4 z-20">
+        <a href="/admin" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
+          Platform Admin
+        </a>
+      </div>
     </div>
   );
 }
