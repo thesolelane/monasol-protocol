@@ -106,7 +106,7 @@ export default function AdminDashboard() {
                 <div className="flex justify-between items-end mb-3">
                   <div>
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      Tier 2: Standard <Badge variant="outline" className="border-yellow-500/30 text-yellow-400 bg-yellow-500/10 text-[10px] ml-2">Near Capacity</Badge>
+                      Tier 2: Standard <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10 text-[10px] ml-2 animate-pulse">Critical Alert</Badge>
                     </h3>
                     <p className="text-xs text-gray-500">500 Vaults per Locker • 1 SOL Min Deposit</p>
                   </div>
@@ -116,16 +116,22 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {Array.from({ length: 34 }).map((_, i) => (
-                    <div 
-                      key={`t2-${i}`} 
-                      className={`h-6 w-6 rounded-sm border ${
-                        i < 31 ? 'bg-solana-green/80 border-solana-green' : 
-                        'bg-solana-green/40 border-solana-green/50'
-                      }`}
-                      title={`Locker LCK-T2-${i} ${i < 31 ? '(Full)' : '(Filling)'}`}
-                    />
-                  ))}
+                  {Array.from({ length: 34 }).map((_, i) => {
+                    // Make locker #12 and #18 distressed
+                    const isDistressed = i === 12 || i === 18;
+                    
+                    return (
+                      <div 
+                        key={`t2-${i}`} 
+                        className={`h-6 w-6 rounded-sm border ${
+                          isDistressed ? 'bg-red-500 border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse z-10 relative' :
+                          i < 31 ? 'bg-solana-green/80 border-solana-green' : 
+                          'bg-solana-green/40 border-solana-green/50'
+                        }`}
+                        title={`Locker LCK-T2-${i} ${isDistressed ? '(DISTRESSED)' : i < 31 ? '(Full)' : '(Filling)'}`}
+                      />
+                    )
+                  })}
                 </div>
               </div>
 
@@ -159,11 +165,12 @@ export default function AdminDashboard() {
               </div>
             </div>
             
-            <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center text-xs text-gray-500">
-              <div className="flex gap-4">
+            <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap justify-between items-center text-xs text-gray-500 gap-y-2">
+              <div className="flex flex-wrap gap-4">
                 <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-white/80" /> Full Capacity</span>
                 <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-white/40 border border-white/50" /> Accepting Deposits</span>
                 <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-white/5 border border-white/10" /> Empty / Ready</span>
+                <span className="flex items-center gap-2 text-red-400"><div className="w-3 h-3 rounded-sm bg-red-500 border border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" /> Distressed / Frozen</span>
               </div>
               <p>Landscape auto-updates every 12s</p>
             </div>
