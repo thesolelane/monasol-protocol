@@ -126,8 +126,7 @@ export default function SwapPage() {
     setCounterNft(decoded.nftMint);
   }, []);
 
-  const generatedToken = myNft ? generateSwapToken(MOCK_WALLET, myNft.mint) : "";
-  const swapLink = myNft ? `${window.location.origin}/swap?token=${generatedToken}` : "";
+  const swapLink = swapToken ? `${window.location.origin}/swap?token=${swapToken}` : "";
 
   function handleCopyLink() {
     navigator.clipboard.writeText(swapLink).catch(() => {});
@@ -137,13 +136,13 @@ export default function SwapPage() {
   }
 
   async function handleCreateSession() {
-    if (!myNft) return;
+    if (!myNft || !swapToken) return;
     try {
-      await fetch("/api/swaps", {
+      const res = await fetch("/api/swaps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          token: generatedToken,
+          token: swapToken,
           initiatorWallet: MOCK_WALLET,
           offeredNftMint: myNft.mint,
           counterpartyWallet: counterpartyAddress || null,
@@ -152,22 +151,24 @@ export default function SwapPage() {
           targetLocker: targetLocker || null,
         }),
       });
-      setSwapToken(generatedToken);
+      if (res.ok) {
+        const session = await res.json().catch(() => null);
+        if (session?.token) setSwapToken(session.token);
+      }
     } catch {
-      setSwapToken(generatedToken);
+      // swapToken already set from NFT selection — continue with it
     }
   }
 
   async function handleConfirmSwap() {
-    const token = swapToken || generatedToken;
-    if (!token) {
+    if (!swapToken) {
       setSwapError("No swap session found. Please start over.");
       return;
     }
     setSwapError(null);
     setLoading(true);
     setStep("pending");
-    confirmMutation.mutate(token);
+    confirmMutation.mutate(swapToken);
   }
 
   const swapTypeLabel = swapType === "sol-to-sol" ? "Solana → Solana" : "Solana → Monad Locker";
@@ -254,7 +255,7 @@ export default function SwapPage() {
                         <p className="text-sm font-medium text-white">{myNft.name}</p>
                         <p className="text-xs text-gray-500 font-mono">{myNft.vaultRef}</p>
                       </div>
-                      <button onClick={() => setMyNft(null)} className="text-gray-600 hover:text-white">
+                      <button onClick={() => { setMyNft(null); setSwapToken(""); }} className="text-gray-600 hover:text-white">
                         <X className="h-4 w-4" />
                       </button>
                     </div>
@@ -273,7 +274,7 @@ export default function SwapPage() {
                       const isLocked = (nft.transferLockDays ?? 0) > 0;
                       return (
                         <button key={nft.mint}
-                          onClick={() => { if (!isLocked) { setMyNft(nft); setShowNftPicker(false); } }}
+                          onClick={() => { if (!isLocked) { setMyNft(nft); setSwapToken(generateSwapToken(MOCK_WALLET, nft.mint)); setShowNftPicker(false); } }}
                           disabled={isLocked}
                           className={`w-full flex items-center gap-3 p-3 border-b border-white/5 last:border-0 transition-colors text-left ${isLocked ? "opacity-40 cursor-not-allowed" : "hover:bg-white/5"}`}>
                           <div className="h-8 w-8 rounded-lg bg-monad-purple/20 flex items-center justify-center shrink-0">
@@ -466,7 +467,7 @@ export default function SwapPage() {
                 <p className="font-mono text-sm text-monad-purple">{txSig}</p>
               </div>
             </div>
-            <Button onClick={() => { setStep("setup"); setMyNft(null); setAddr(""); setCounterNft(""); setTargetLocker(""); setLinkGenerated(false); }} variant="outline" className="w-full border-white/10 text-gray-400">
+            <Button onClick={() => { setStep("setup"); setMyNft(null); setAddr(""); setCounterNft(""); setTargetLocker(""); setLinkGenerated(false); setSwapToken(""); setSwapError(null); }} variant="outline" className="w-full border-white/10 text-gray-400">
               Start new swap
             </Button>
           </div>
