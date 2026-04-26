@@ -1,0 +1,321 @@
+import { useState } from "react";
+import { WalletConnect } from "@/components/WalletConnect";
+import { NftGrid } from "@/components/NftGrid";
+import { LockerForm } from "@/components/LockerForm";
+import { VaultExplorer } from "@/components/VaultExplorer";
+import { StatsCard } from "@/components/StatsCard";
+import { CircuitBreaker } from "@/components/CircuitBreaker";
+import { RentVaultModal } from "@/components/RentVaultModal";
+import { MoveInModal } from "@/components/MoveInModal";
+import { Shield, Coins, Activity, Zap, Wallet, Key, ArrowLeftRight, Ticket } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Footer } from "@/components/Footer";
+import background from "@assets/generated_images/abstract_dark_futuristic_blockchain_network_background_with_purple_and_green_neon_accents.png";
+
+export default function Home() {
+  const [evmConnected, setEvmConnected] = useState(false);
+  const [solanaConnected, setSolanaConnected] = useState(false);
+  const [selectedNft, setSelectedNft] = useState<string | null>(null);
+  const [isRentModalOpen, setIsRentModalOpen] = useState(false);
+  const [isMoveInOpen, setIsMoveInOpen] = useState(false);
+  const [activeVault, setActiveVault] = useState<{ id: string, lockerId: string, balance: string, nftName: string } | null>(null);
+
+  const allConnected = evmConnected && solanaConnected;
+
+  // Mock data for NFTs (Keys)
+  const availableNfts = [
+    { mint: "7x2...9aB", name: "Vault Key #042", image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=100&h=100&fit=crop", tokenId: "1", vaultRef: "VLT-042", lockerRef: "LCK-99A" },
+    { mint: "3vP...m1K", name: "Alpha Access Pass", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop", tokenId: "2", vaultRef: "VLT-881", lockerRef: "LCK-22B" },
+    { mint: "9qZ...4tY", name: "Genesis Locker Key", image: "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=100&h=100&fit=crop", tokenId: "3", vaultRef: "VLT-112", lockerRef: "LCK-45C" }
+  ];
+
+  // Auto-connect logic when Solana wallet connects
+  const handleSolanaConnect = () => {
+    const isConnecting = !solanaConnected;
+    setSolanaConnected(isConnecting);
+    
+    if (isConnecting) {
+      if (availableNfts.length === 0) {
+        // No NFTs -> Auto open Rent Vault
+        setIsRentModalOpen(true);
+      } else if (availableNfts.length === 1) {
+        // Exactly 1 NFT -> Auto select and connect to vault
+        setSelectedNft(availableNfts[0].mint);
+        setActiveVault({ id: availableNfts[0].vaultRef, lockerId: availableNfts[0].lockerRef, balance: "24.50 SOL", nftName: availableNfts[0].name });
+      } else {
+        // Multiple NFTs -> Wait for user to select from the grid
+        setSelectedNft(null);
+        setActiveVault(null);
+      }
+    } else {
+      // Disconnecting
+      setSelectedNft(null);
+      setActiveVault(null);
+    }
+  };
+
+  // Handle manual NFT selection from the grid
+  const handleNftSelect = (id: string) => {
+    setSelectedNft(id);
+    const nft = availableNfts.find(n => n.mint === id);
+    if (nft) {
+      // Different balances for different vaults to make it feel real
+      const balances: Record<string, string> = {
+        "1": "12.50 SOL",
+        "2": "145.00 SOL",
+        "3": "3.14 SOL"
+      };
+      setActiveVault({ 
+        id: nft.vaultRef, 
+        lockerId: nft.lockerRef,
+        balance: balances[nft.tokenId] || "0.00 SOL", 
+        nftName: nft.name 
+      });
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-full relative overflow-hidden">
+      {/* Background Image Layer */}
+      <div
+        className="fixed inset-0 z-0 opacity-40 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${background})` }}
+      />
+
+      {/* Overlay Gradient */}
+      <div className="fixed inset-0 z-0 bg-linear-to-b from-background/80 via-background/90 to-background pointer-events-none" />
+
+      <div className="relative z-10 container mx-auto px-4 py-8 sm:py-12 max-w-6xl">
+        {/* Header */}
+        <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-10 w-10 bg-linear-to-br from-monad-purple to-solana-green rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(130,71,229,0.5)]">
+                <Zap className="h-6 w-6 text-white fill-white" />
+              </div>
+              <h1 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                Monasol<span className="text-gray-500">Protocol</span>
+              </h1>
+            </div>
+            <p className="text-gray-400 max-w-md">
+              Secure cross-chain vault system. Lock Monad and EVM tokens, control them with Solana NFTs.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+            <Button
+              onClick={() => setIsMoveInOpen(true)}
+              className="h-10 bg-monad-purple hover:bg-monad-purple/90 text-black font-bold shadow-[0_0_15px_-3px_rgba(130,71,229,0.4)]"
+            >
+              Move In
+            </Button>
+            <Button
+              onClick={() => setIsRentModalOpen(true)}
+              variant="outline"
+              className="h-10 bg-black/40 border-solana-green/30 text-solana-green hover:bg-solana-green/10 hover:text-solana-green shadow-[0_0_10px_rgba(20,241,149,0.1)]"
+            >
+              <Key className="h-4 w-4 mr-2" />
+              Rent a Vault
+            </Button>
+            <WalletConnect
+              type="evm"
+              isConnected={evmConnected}
+              onConnect={() => setEvmConnected(!evmConnected)}
+            />
+            <WalletConnect
+              type="solana"
+              isConnected={solanaConnected}
+              onConnect={handleSolanaConnect}
+            />
+          </div>
+        </header>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+          <StatsCard
+            label="Protocol TVL"
+            value="$4.2M"
+            icon={Coins}
+            color="purple"
+            trend="+12% this week"
+          />
+          <StatsCard
+            label="Global Active Vaults"
+            value="1,284 / 1,500"
+            icon={Shield}
+            color="green"
+            trend="85% Minted"
+          />
+          <StatsCard
+            label="Platform Security"
+            value="Active"
+            icon={Activity}
+            color="blue"
+            trend="100% User-Controlled"
+          />
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid lg:grid-cols-12 gap-8">
+          {/* Left Column: NFT Selector */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="glass-panel rounded-2xl p-6 sm:p-8 min-h-[500px]">
+              {solanaConnected ? (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-6">
+                    <div>
+                      <h2 className="font-display text-xl font-bold text-white">Your Wallet</h2>
+                      {availableNfts.length > 1 && !selectedNft ? (
+                        <p className="text-sm text-solana-green animate-pulse">Select a key to access its vault</p>
+                      ) : (
+                        <p className="text-sm text-gray-400">Select an NFT to use as a key</p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500 uppercase">Address</p>
+                      <p className="font-mono text-sm text-solana-green">8xR...3kL</p>
+                    </div>
+                  </div>
+
+                  <NftGrid selectedId={selectedNft} onSelect={handleNftSelect} />
+
+                  {selectedNft && activeVault && (
+                    <div className="mt-8 p-6 rounded-xl bg-white/5 border border-white/10 animate-in fade-in slide-in-from-bottom-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-semibold text-white">Active Vault Connection</h4>
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-solana-green/20 border border-solana-green/30">
+                          <div className="h-2 w-2 rounded-full bg-solana-green animate-pulse" />
+                          <span className="text-xs font-bold text-solana-green">Connected</span>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="p-3 bg-black/40 rounded-lg border border-white/5">
+                          <p className="text-xs text-gray-500 mb-1">Vault Ref</p>
+                          <p className="font-mono text-sm text-white">{activeVault.id}</p>
+                        </div>
+                        <div className="p-3 bg-black/40 rounded-lg border border-white/5">
+                          <p className="text-xs text-gray-500 mb-1">Locker Ref</p>
+                          <p className="font-mono text-sm text-white">{activeVault.lockerId}</p>
+                        </div>
+                        <div className="p-3 bg-black/40 rounded-lg border border-white/5">
+                          <p className="text-xs text-gray-500 mb-1">Locked Bal</p>
+                          <p className="font-mono text-sm text-monad-purple">{activeVault.balance}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 text-xs text-gray-400">
+                        <li className="flex items-center gap-2">
+                          <Key className="h-3 w-3 text-solana-green" />
+                          Authenticated via {activeVault.nftName}
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Shield className="h-3 w-3 text-solana-green" />
+                          Full withdrawal rights active
+                        </li>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4 opacity-50">
+                  <div className="p-4 rounded-full bg-white/5">
+                    <Wallet className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Wallet Not Connected</h3>
+                  <p className="text-gray-400 max-w-xs">
+                    Connect your Solana wallet to view your NFTs and select a vault key.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Locker Controls & Explorer */}
+          <div className="lg:col-span-5">
+            <LockerForm isConnected={allConnected} hasNftKey={!!selectedNft} />
+            <CircuitBreaker />
+            <VaultExplorer />
+
+            <div className="mt-6 p-6 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-xs">
+              <h3 className="text-sm font-semibold text-white mb-3">How it works</h3>
+              <div className="space-y-4 relative">
+                <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-white/10" />
+
+                {[
+                  "Connect Monad (Vault) & Solana (Key) wallets",
+                  "Rent a Vault or mint a new Solana NFT key",
+                  "Deposit tokens into the EVM Vault",
+                  "Unlock anytime by proving NFT ownership",
+                ].map((step, i) => (
+                  <div key={i} className="relative flex items-start gap-4">
+                    <div className="h-5 w-5 rounded-full bg-black border border-white/20 flex items-center justify-center text-[10px] text-white font-bold relative z-10 shrink-0">
+                      {i + 1}
+                    </div>
+                    <p className="text-sm text-gray-400 leading-tight pt-0.5">{step}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <RentVaultModal 
+        isOpen={isRentModalOpen}
+        onClose={() => setIsRentModalOpen(false)}
+        onSuccess={() => {
+          setIsRentModalOpen(false);
+          setIsMoveInOpen(true);
+        }}
+      />
+
+      <MoveInModal
+        isOpen={isMoveInOpen}
+        onClose={() => setIsMoveInOpen(false)}
+        onSuccess={(vault) => console.log('Moved in:', vault)}
+        connectedWallet={solanaConnected ? "8xR...3kL" : null}
+        onMintKey={() => {
+          setIsMoveInOpen(false);
+          setIsRentModalOpen(true);
+        }}
+        onConnectWallet={() => setSolanaConnected(true)}
+        availableNfts={solanaConnected ? availableNfts : []}
+      />
+
+      {/* Bottom Right Actions */}
+      <div className="fixed bottom-4 right-4 flex items-center gap-2 z-50 bg-black/50 border border-white/10 p-2 rounded-full backdrop-blur-md">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.location.href = '/events'}
+          className="text-gray-500 hover:text-white"
+          title="Event Ticketing"
+        >
+          <Ticket className="h-4 w-4" />
+        </Button>
+        <div className="w-px h-4 bg-white/10 mx-1" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.location.href = '/swap'}
+          className="text-gray-500 hover:text-white"
+          title="Atomic Swap"
+        >
+          <ArrowLeftRight className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.location.href = '/admin'}
+          className="text-gray-500 hover:text-white"
+          title="Admin Controller"
+        >
+          <Shield className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Footer />
+    </div>
+  );
+}

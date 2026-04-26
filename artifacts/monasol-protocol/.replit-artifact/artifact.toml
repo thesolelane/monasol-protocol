@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Monasol Protocol"
+version = "1.0.0"
+id = "artifacts/monasol-protocol"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25169
+
+[services.development]
+run = "pnpm --filter @workspace/monasol-protocol run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/monasol-protocol", "run", "build" ]
+publicDir = "artifacts/monasol-protocol/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25169"
+BASE_PATH = "/"
