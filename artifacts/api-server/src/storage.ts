@@ -31,6 +31,9 @@ export interface IStorage {
   createSwapSession(data: InsertSwapSession): Promise<SwapSession>;
   getSwapSessionByToken(token: string): Promise<SwapSession | undefined>;
   updateSwapSessionStatus(token: string, status: string, txSig?: string): Promise<SwapSession | undefined>;
+
+  updateLockerMonadAddress(lockerId: string, monadAddress: string): Promise<Locker | undefined>;
+  updateVaultSessionState(mint: string, sessionOpen: boolean, sessionExpiresAt: Date | null, readOnly: boolean): Promise<NftKey | undefined>;
 }
 
 export class DrizzleStorage implements IStorage {
@@ -191,6 +194,31 @@ export class DrizzleStorage implements IStorage {
       .where(eq(swapSessions.token, token))
       .returning();
     return session;
+  }
+
+  async updateLockerMonadAddress(lockerId: string, monadAddress: string): Promise<Locker | undefined> {
+    await this.ensureSeeded();
+    const [locker] = await db
+      .update(lockers)
+      .set({ monadAddress })
+      .where(eq(lockers.id, lockerId))
+      .returning();
+    return locker;
+  }
+
+  async updateVaultSessionState(
+    mint: string,
+    sessionOpen: boolean,
+    sessionExpiresAt: Date | null,
+    readOnly: boolean,
+  ): Promise<NftKey | undefined> {
+    await this.ensureSeeded();
+    const [nft] = await db
+      .update(nftKeys)
+      .set({ sessionOpen, sessionExpiresAt, readOnly })
+      .where(eq(nftKeys.mint, mint))
+      .returning();
+    return nft;
   }
 }
 

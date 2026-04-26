@@ -42,6 +42,7 @@ export const lockers = pgTable("lockers", {
   usedSlots: integer("used_slots").notNull().default(0),
   status: text("status").notNull().default("healthy"),
   minDepositSol: numeric("min_deposit_sol", { precision: 18, scale: 4 }),
+  monadAddress: text("monad_address"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -61,6 +62,9 @@ export const nftKeys = pgTable("nft_keys", {
   transferLockDays: integer("transfer_lock_days").notNull().default(0),
   kycLevel: text("kyc_level").notNull().default("none"),
   eventName: text("event_name"),
+  sessionOpen: boolean("session_open").notNull().default(false),
+  sessionExpiresAt: timestamp("session_expires_at"),
+  readOnly: boolean("read_only").notNull().default(false),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
