@@ -122,6 +122,8 @@ export default function SwapPage() {
     const decoded = decodeSwapToken(token);
     if (!decoded) return;
     if (decoded.expired) { setLinkExpired(true); return; }
+    // Store the raw URL token so counterparty confirm uses the same token
+    setSwapToken(token);
     setAddr(decoded.wallet);
     setCounterNft(decoded.nftMint);
   }, []);
@@ -325,7 +327,7 @@ export default function SwapPage() {
                   </div>
                   <div className="flex gap-2">
                     <div className="flex-1 bg-black/50 border border-white/10 rounded-lg px-3 py-2 font-mono text-xs text-gray-500 truncate">
-                      {myNft ? `${window.location.origin}/swap?token=${generatedToken.slice(0, 16)}...` : "Select your NFT first"}
+                      {swapToken ? `${window.location.origin}/swap?token=${swapToken.slice(0, 16)}...` : "Select your NFT first"}
                     </div>
                     <Button onClick={handleCopyLink} disabled={!myNft} variant="outline" className="border-white/10 text-gray-400 hover:text-white shrink-0">
                       {linkCopied ? <CheckCircle className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
