@@ -9,6 +9,7 @@ import { RentVaultModal } from "@/components/RentVaultModal";
 import { MoveInModal } from "@/components/MoveInModal";
 import { Shield, Coins, Activity, Zap, Wallet, Key, ArrowLeftRight, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Footer } from "@/components/Footer";
 import background from "@assets/generated_images/abstract_dark_futuristic_blockchain_network_background_with_purple_and_green_neon_accents.png";
 
 export default function Home() {
@@ -93,7 +94,7 @@ export default function Home() {
                 <Zap className="h-6 w-6 text-white fill-white" />
               </div>
               <h1 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                Nexus<span className="text-gray-500">Bridge</span>
+                MonaSol<span className="text-gray-500">Bridge</span>
               </h1>
             </div>
             <p className="text-gray-400 max-w-md">
@@ -282,8 +283,8 @@ export default function Home() {
         availableNfts={solanaConnected ? availableNfts : []}
       />
 
-      {/* Discrete Admin Link */}
-      <div className="fixed bottom-4 right-4 z-50 flex gap-2 opacity-20 hover:opacity-100 transition-opacity">
+      {/* Bottom Right Actions */}
+      <div className="fixed bottom-4 right-4 flex items-center gap-2 z-50 bg-black/50 border border-white/10 p-2 rounded-full backdrop-blur-md">
         <Button
           variant="ghost"
           size="icon"
@@ -313,6 +314,8 @@ export default function Home() {
           <Shield className="h-4 w-4" />
         </Button>
       </div>
+
+      <Footer />
     </div>
   );
 }

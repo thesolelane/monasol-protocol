@@ -70,7 +70,7 @@ export function MoveInModal({ isOpen, onClose, onSuccess, connectedWallet, avail
             <Key className="h-5 w-5 text-gray-500" />
           </div>
           <p className="text-sm text-gray-500">No NFTs found in your wallet.</p>
-          <p className="text-xs text-gray-600 mb-4">Connect your Solana wallet or mint a NexusBridge key.</p>
+          <p className="text-xs text-gray-600 mb-4">Connect your Solana wallet or mint a MonaSol Protocol key.</p>
           <div className="flex flex-col gap-2 pt-2 max-w-[200px] mx-auto">
             {!connectedWallet && (
               <Button onClick={onConnectWallet} variant="outline" className="w-full bg-black/40 border-solana-green/30 text-solana-green hover:bg-solana-green/10 h-10">
@@ -342,7 +342,7 @@ export function MoveInModal({ isOpen, onClose, onSuccess, connectedWallet, avail
       });
       setStep(3);
     } catch (err) {
-      setError('Could not reach the NexusBridge server. Check your connection.');
+      setError('Could not reach the MonaSol Protocol server. Check your connection.');
     } finally {
       setLoading(false);
     }

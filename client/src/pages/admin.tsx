@@ -27,7 +27,7 @@ export default function AdminDashboard() {
             <div>
               <h1 className="text-3xl font-bold font-display flex items-center gap-3">
                 <Shield className="h-8 w-8 text-monad-purple" />
-                NexusBridge <span className="text-gray-500">Controller</span>
+                MonaSol Protocol <span className="text-gray-500">Controller</span>
               </h1>
               <p className="text-gray-400 mt-2">Zero-Trust Cross-Chain Protocol Management.</p>
             </div>
@@ -322,6 +322,8 @@ export default function AdminDashboard() {
         onClose={() => setZoomedLockerId(null)}
         lockerId={zoomedLockerId || ""}
       />
+
+      <Footer />
     </div>
   );
 }

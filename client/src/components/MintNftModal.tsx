@@ -15,7 +15,7 @@ interface MintNftModalProps {
 
 export function MintNftModal({ isOpen, onClose, onSuccess }: MintNftModalProps) {
   const [step, setStep] = useState<"form" | "minting" | "success">("form");
-  const [collectionName, setCollectionName] = useState("NexusBridge Secure Keys");
+  const [collectionName, setCollectionName] = useState("MonaSol Protocol Secure Keys");
   const [keyName, setKeyName] = useState("Vault Key #001");
   const [mintMethod, setMintMethod] = useState<"qr" | "image">("qr");
   const [logs, setLogs] = useState<string[]>([]);
