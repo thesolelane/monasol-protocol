@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { WalletConnect } from "@/components/WalletConnect";
 import { NftGrid } from "@/components/NftGrid";
 import { LockerForm } from "@/components/LockerForm";
@@ -12,6 +13,39 @@ import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 import background from "@assets/generated_images/abstract_dark_futuristic_blockchain_network_background_with_purple_and_green_neon_accents.png";
 
+interface ProtocolStats {
+  tvlUsd: string;
+  tvlTrend: string;
+  activeVaults: number;
+  maxVaults: number;
+  nftKeysMinted: number;
+  nftUtilizationPct: number;
+  syncLatencyMs: number;
+  circuitBreakerActive: boolean;
+}
+
+interface NftKey {
+  id: string;
+  mint: string;
+  name: string;
+  image: string | null;
+  vaultRef: string | null;
+  lockerRef: string | null;
+  isTicket: boolean;
+  transferLockDays: number;
+  kycLevel: string;
+  eventName: string | null;
+}
+
+const MOCK_WALLET = "8xR...3kL";
+
+function formatTvl(tvlUsd: string): string {
+  const n = parseFloat(tvlUsd);
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
+  return `$${n.toFixed(2)}`;
+}
+
 export default function Home() {
   const [evmConnected, setEvmConnected] = useState(false);
   const [solanaConnected, setSolanaConnected] = useState(false);
@@ -22,71 +56,71 @@ export default function Home() {
 
   const allConnected = evmConnected && solanaConnected;
 
-  // Mock data for NFTs (Keys)
-  const availableNfts = [
-    { mint: "7x2...9aB", name: "Vault Key #042", image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=100&h=100&fit=crop", tokenId: "1", vaultRef: "VLT-042", lockerRef: "LCK-99A" },
-    { mint: "3vP...m1K", name: "Alpha Access Pass", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop", tokenId: "2", vaultRef: "VLT-881", lockerRef: "LCK-22B" },
-    { mint: "9qZ...4tY", name: "Genesis Locker Key", image: "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=100&h=100&fit=crop", tokenId: "3", vaultRef: "VLT-112", lockerRef: "LCK-45C" }
-  ];
+  const { data: stats } = useQuery<ProtocolStats>({
+    queryKey: ["/api/stats"],
+    staleTime: 30_000,
+  });
 
-  // Auto-connect logic when Solana wallet connects
+  const { data: nfts = [] } = useQuery<NftKey[]>({
+    queryKey: ["/api/nfts", MOCK_WALLET],
+    queryFn: () => fetch(`/api/nfts?wallet=${encodeURIComponent(MOCK_WALLET)}`).then(r => r.json()),
+    enabled: solanaConnected,
+    staleTime: 60_000,
+  });
+
+  const vaultNfts = nfts.filter(n => !n.isTicket);
+
+  const availableNfts = vaultNfts.map(n => ({
+    mint: n.mint,
+    name: n.name,
+    image: n.image ?? `https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=100&h=100&fit=crop`,
+    tokenId: n.id,
+    vaultRef: n.vaultRef ?? "VLT-???",
+    lockerRef: n.lockerRef ?? "LCK-???",
+  }));
+
   const handleSolanaConnect = () => {
     const isConnecting = !solanaConnected;
     setSolanaConnected(isConnecting);
-    
-    if (isConnecting) {
-      if (availableNfts.length === 0) {
-        // No NFTs -> Auto open Rent Vault
-        setIsRentModalOpen(true);
-      } else if (availableNfts.length === 1) {
-        // Exactly 1 NFT -> Auto select and connect to vault
-        setSelectedNft(availableNfts[0].mint);
-        setActiveVault({ id: availableNfts[0].vaultRef, lockerId: availableNfts[0].lockerRef, balance: "24.50 SOL", nftName: availableNfts[0].name });
-      } else {
-        // Multiple NFTs -> Wait for user to select from the grid
-        setSelectedNft(null);
-        setActiveVault(null);
-      }
-    } else {
-      // Disconnecting
+
+    if (!isConnecting) {
       setSelectedNft(null);
       setActiveVault(null);
     }
   };
 
-  // Handle manual NFT selection from the grid
   const handleNftSelect = (id: string) => {
     setSelectedNft(id);
     const nft = availableNfts.find(n => n.mint === id);
     if (nft) {
-      // Different balances for different vaults to make it feel real
       const balances: Record<string, string> = {
         "1": "12.50 SOL",
         "2": "145.00 SOL",
-        "3": "3.14 SOL"
+        "3": "3.14 SOL",
       };
-      setActiveVault({ 
-        id: nft.vaultRef, 
+      setActiveVault({
+        id: nft.vaultRef,
         lockerId: nft.lockerRef,
-        balance: balances[nft.tokenId] || "0.00 SOL", 
-        nftName: nft.name 
+        balance: balances[nft.tokenId] || "0.00 SOL",
+        nftName: nft.name,
       });
     }
   };
 
+  const tvlDisplay = stats ? formatTvl(stats.tvlUsd) : "$4.2M";
+  const tvlTrend = stats?.tvlTrend ?? "+12% this week";
+  const activeVaultsDisplay = stats ? `${stats.activeVaults.toLocaleString()} / ${stats.maxVaults.toLocaleString()}` : "1,284 / 1,500";
+  const mintedPct = stats ? `${stats.nftUtilizationPct}% Minted` : "85% Minted";
+
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
-      {/* Background Image Layer */}
       <div
         className="fixed inset-0 z-0 opacity-40 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${background})` }}
       />
-
-      {/* Overlay Gradient */}
       <div className="fixed inset-0 z-0 bg-linear-to-b from-background/80 via-background/90 to-background pointer-events-none" />
 
       <div className="relative z-10 container mx-auto px-4 py-8 sm:py-12 max-w-6xl">
-        {/* Header */}
         <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -130,34 +164,31 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
           <StatsCard
             label="Protocol TVL"
-            value="$4.2M"
+            value={tvlDisplay}
             icon={Coins}
             color="purple"
-            trend="+12% this week"
+            trend={tvlTrend}
           />
           <StatsCard
             label="Global Active Vaults"
-            value="1,284 / 1,500"
+            value={activeVaultsDisplay}
             icon={Shield}
             color="green"
-            trend="85% Minted"
+            trend={mintedPct}
           />
           <StatsCard
             label="Platform Security"
-            value="Active"
+            value={stats?.circuitBreakerActive ? "Paused" : "Active"}
             icon={Activity}
             color="blue"
             trend="100% User-Controlled"
           />
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid lg:grid-cols-12 gap-8">
-          {/* Left Column: NFT Selector */}
           <div className="lg:col-span-7 space-y-6">
             <div className="glass-panel rounded-2xl p-6 sm:p-8 min-h-[500px]">
               {solanaConnected ? (
@@ -173,7 +204,7 @@ export default function Home() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-gray-500 uppercase">Address</p>
-                      <p className="font-mono text-sm text-solana-green">8xR...3kL</p>
+                      <p className="font-mono text-sm text-solana-green">{MOCK_WALLET}</p>
                     </div>
                   </div>
 
@@ -188,7 +219,7 @@ export default function Home() {
                           <span className="text-xs font-bold text-solana-green">Connected</span>
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-3 gap-4 mb-4">
                         <div className="p-3 bg-black/40 rounded-lg border border-white/5">
                           <p className="text-xs text-gray-500 mb-1">Vault Ref</p>
@@ -231,7 +262,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right Column: Locker Controls & Explorer */}
           <div className="lg:col-span-5">
             <LockerForm isConnected={allConnected} hasNftKey={!!selectedNft} />
             <CircuitBreaker />
@@ -241,7 +271,6 @@ export default function Home() {
               <h3 className="text-sm font-semibold text-white mb-3">How it works</h3>
               <div className="space-y-4 relative">
                 <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-white/10" />
-
                 {[
                   "Connect Monad (Vault) & Solana (Key) wallets",
                   "Rent a Vault or mint a new Solana NFT key",
@@ -260,8 +289,8 @@ export default function Home() {
           </div>
         </div>
       </div>
-      
-      <RentVaultModal 
+
+      <RentVaultModal
         isOpen={isRentModalOpen}
         onClose={() => setIsRentModalOpen(false)}
         onSuccess={() => {
@@ -273,8 +302,8 @@ export default function Home() {
       <MoveInModal
         isOpen={isMoveInOpen}
         onClose={() => setIsMoveInOpen(false)}
-        onSuccess={(vault) => console.log('Moved in:', vault)}
-        connectedWallet={solanaConnected ? "8xR...3kL" : null}
+        onSuccess={(vault) => console.log("Moved in:", vault)}
+        connectedWallet={solanaConnected ? MOCK_WALLET : null}
         onMintKey={() => {
           setIsMoveInOpen(false);
           setIsRentModalOpen(true);
@@ -283,12 +312,11 @@ export default function Home() {
         availableNfts={solanaConnected ? availableNfts : []}
       />
 
-      {/* Bottom Right Actions */}
       <div className="fixed bottom-4 right-4 flex items-center gap-2 z-50 bg-black/50 border border-white/10 p-2 rounded-full backdrop-blur-md">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => window.location.href = '/events'}
+          onClick={() => window.location.href = "/events"}
           className="text-gray-500 hover:text-white"
           title="Event Ticketing"
         >
@@ -298,7 +326,7 @@ export default function Home() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => window.location.href = '/swap'}
+          onClick={() => window.location.href = "/swap"}
           className="text-gray-500 hover:text-white"
           title="Atomic Swap"
         >
@@ -307,7 +335,7 @@ export default function Home() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => window.location.href = '/admin'}
+          onClick={() => window.location.href = "/admin"}
           className="text-gray-500 hover:text-white"
           title="Admin Controller"
         >
