@@ -397,7 +397,7 @@ export default function EventsPage() {
                     <div className="space-y-1.5 text-xs text-gray-500">
                       {["Cannot be transferred — permanently tied to your wallet",
                         "Required at venue door alongside your ticket NFT",
-                        "Valid for all future MonaSol Protocol events at this KYC level",
+                        "Valid for all future MonasolProtocol events at this KYC level",
                         "No personal data stored on-chain — verification level only"].map(s=>(
                         <div key={s} className="flex gap-2">
                           <div className="h-1 w-1 rounded-full bg-gray-600 shrink-0 mt-1.5"/><p>{s}</p>

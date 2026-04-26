@@ -94,7 +94,7 @@ export default function Home() {
                 <Zap className="h-6 w-6 text-white fill-white" />
               </div>
               <h1 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                MonaSol<span className="text-gray-500">Bridge</span>
+                Monasol<span className="text-gray-500">Protocol</span>
               </h1>
             </div>
             <p className="text-gray-400 max-w-md">

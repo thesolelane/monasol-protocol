@@ -66,10 +66,10 @@ function decodeSwapToken(token: string): { wallet: string; nftMint: string; expi
 // ── Mock data ────────────────────────────────────────────────
 const MOCK_MY_NFTS: NftKey[] = [
   // Standard vault key NFTs — no restrictions
-  { mint: "7xK2...9mN", name: "MonaSol Key #4821",
+  { mint: "7xK2...9mN", name: "Monasol Key #4821",
     vaultRef: "VLT-4729...881", lockerRef: "LCK-0000...001",
     isTicket: false, transferLock: 0, kycRequired: null },
-  { mint: "3bR8...1pQ", name: "MonaSol Key #0293",
+  { mint: "3bR8...1pQ", name: "Monasol Key #0293",
     vaultRef: "VLT-8821...443", lockerRef: "LCK-0000...001",
     isTicket: false, transferLock: 0, kycRequired: null },
   // Ticket NFT — transfer locked (18 days remaining)
@@ -91,7 +91,7 @@ const PRINCIPLES = [
   },
   {
     icon: Shield,
-    title: "MonaSol Protocol is never a counterparty",
+    title: "MonasolProtocol is never a counterparty",
     body: "We construct and execute the swap transaction. We never hold either NFT. We take no position on the exchange.",
   },
   {
@@ -102,18 +102,18 @@ const PRINCIPLES = [
   {
     icon: Info,
     title: "No price discovery",
-    body: "MonaSol Protocol does not display, suggest, or reference the value of any vault. Terms are agreed between the two parties off-platform before initiating a swap.",
+    body: "MonasolProtocol does not display, suggest, or reference the value of any vault. Terms are agreed between the two parties off-platform before initiating a swap.",
   },
 ];
 
 const DISCLAIMERS = [
-  "MonaSol Protocol is infrastructure. It is not a broker, dealer, exchange operator, or financial intermediary.",
+  "MonasolProtocol is infrastructure. It is not a broker, dealer, exchange operator, or financial intermediary.",
   "Vault contents are never displayed, referenced, or factored into any fee calculation on this platform.",
   "Both parties must consent independently. A swap link does not constitute an offer or solicitation.",
   "The protocol fee covers transaction construction and execution only. It is not compensation for facilitating an asset exchange.",
   "For Solana → Monad swaps, the receiving NFT is registered inside a Locker owned by the receiver. The receiver must own a Locker with available vault capacity.",
   "Event ticket NFTs carry contract-enforced transfer restrictions including transfer lock periods and KYC level requirements on the receiving wallet. Attempting to swap a locked ticket or swap to a wallet without the required soul-bound Identity Token will be rejected by the smart contract.",
-  "MonaSol Protocol does not provide tax, legal, or financial advice. Consult qualified professionals regarding obligations in your jurisdiction.",
+  "MonasolProtocol does not provide tax, legal, or financial advice. Consult qualified professionals regarding obligations in your jurisdiction.",
 ];
 
 // ── Main page ────────────────────────────────────────────────
@@ -517,7 +517,7 @@ export default function SwapPage() {
                   <p className="text-xs font-bold text-yellow-500">By confirming you acknowledge:</p>
                   <ul className="text-xs text-yellow-500/70 space-y-1">
                     <li>• Terms were agreed with the counterparty off-platform</li>
-                    <li>• MonaSol Protocol does not know or display vault contents</li>
+                    <li>• MonasolProtocol does not know or display vault contents</li>
                     <li>• This swap is atomic — it cannot be reversed once executed</li>
                     <li>• The protocol fee is flat and unrelated to any vault value</li>
                     {swapType === "sol-to-monad" && (

@@ -108,7 +108,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess }: RentVaultModalPro
             Rent a Vault
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            MonaSol Protocol controls the Locker contracts on Monad. You can rent a specific vault inside these Lockers based on your security needs.
+            MonasolProtocol controls the Locker contracts on Monad. You can rent a specific vault inside these Lockers based on your security needs.
           </DialogDescription>
         </DialogHeader>
 

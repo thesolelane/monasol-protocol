@@ -7,7 +7,7 @@ export function Footer() {
             {/* Logo placeholder */}
             <span className="text-[9px] font-bold text-white">CC</span>
           </div>
-          <span className="font-medium text-gray-400">MonaSol Protocol — Owned by Cooranth Consulting LLC</span>
+          <span className="font-medium text-gray-400">MonasolProtocol — Owned by Cooperanth Consulting LLC</span>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <a href="mailto:acooper@cooperanth.com" className="hover:text-white transition-colors">acooper@cooperanth.com</a>
