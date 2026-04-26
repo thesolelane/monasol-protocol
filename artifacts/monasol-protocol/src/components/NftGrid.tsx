@@ -10,7 +10,13 @@ interface Nft {
   rarity: string;
 }
 
-const INITIAL_NFTS: Nft[] = [
+interface NftGridProps {
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  nfts?: Nft[];
+}
+
+const FALLBACK_NFTS: Nft[] = [
   {
     id: "7x2...9aB",
     name: "Vault Key #042",
@@ -31,18 +37,16 @@ const INITIAL_NFTS: Nft[] = [
   },
 ];
 
-interface NftGridProps {
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-}
-
-export function NftGrid({ selectedId, onSelect }: NftGridProps) {
-  const [nfts, setNfts] = useState<Nft[]>(INITIAL_NFTS);
+export function NftGrid({ selectedId, onSelect, nfts: propNfts }: NftGridProps) {
+  const [mintedNfts, setMintedNfts] = useState<Nft[]>([]);
   const [isMintModalOpen, setIsMintModalOpen] = useState(false);
 
+  const sourceNfts = propNfts ?? FALLBACK_NFTS;
+  const displayNfts = [...mintedNfts, ...sourceNfts];
+
   const handleMintSuccess = (newNft: Nft) => {
-    setNfts([newNft, ...nfts]);
-    onSelect(newNft.id); // Automatically select the newly minted NFT
+    setMintedNfts(prev => [newNft, ...prev]);
+    onSelect(newNft.id);
   };
 
   return (
@@ -69,7 +73,7 @@ export function NftGrid({ selectedId, onSelect }: NftGridProps) {
           <p className="text-[10px] text-gray-400">Vault Key</p>
         </motion.div>
 
-        {nfts.map((nft) => {
+        {displayNfts.map((nft) => {
           const isSelected = selectedId === nft.id;
           return (
             <motion.div
@@ -102,9 +106,9 @@ export function NftGrid({ selectedId, onSelect }: NftGridProps) {
         })}
       </div>
 
-      <MintNftModal 
-        isOpen={isMintModalOpen} 
-        onClose={() => setIsMintModalOpen(false)} 
+      <MintNftModal
+        isOpen={isMintModalOpen}
+        onClose={() => setIsMintModalOpen(false)}
         onSuccess={handleMintSuccess}
       />
     </div>

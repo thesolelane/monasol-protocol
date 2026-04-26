@@ -208,7 +208,16 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <NftGrid selectedId={selectedNft} onSelect={handleNftSelect} />
+                  <NftGrid
+                    selectedId={selectedNft}
+                    onSelect={handleNftSelect}
+                    nfts={availableNfts.map(n => ({
+                      id: n.mint,
+                      name: n.name,
+                      image: n.image,
+                      rarity: "Vault Key",
+                    }))}
+                  />
 
                   {selectedNft && activeVault && (
                     <div className="mt-8 p-6 rounded-xl bg-white/5 border border-white/10 animate-in fade-in slide-in-from-bottom-4">

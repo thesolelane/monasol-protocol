@@ -1,5 +1,8 @@
 import { randomUUID } from "crypto";
+import { eq } from "drizzle-orm";
+import { db } from "@workspace/db";
 import {
+  users, protocolStats, lockers, nftKeys, events, ticketTiers, swapSessions,
   type User,
   type InsertUser,
   type ProtocolStats,
@@ -30,200 +33,80 @@ export interface IStorage {
   updateSwapSessionStatus(token: string, status: string, txSig?: string): Promise<SwapSession | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User> = new Map();
-  private stats: ProtocolStats;
-  private lockers: Map<string, Locker> = new Map();
-  private nftKeys: Map<string, NftKey[]> = new Map();
-  private events: Map<string, Event & { tiers: TicketTier[] }> = new Map();
-  private swaps: Map<string, SwapSession> = new Map();
+export class DrizzleStorage implements IStorage {
+  private seeded = false;
 
-  constructor() {
-    this.stats = {
-      id: "singleton",
-      tvlUsd: "4200000.00",
-      tvlTrend: "+12% this week",
-      activeVaults: 1284,
-      maxVaults: 1500,
-      nftKeysMinted: 4291,
-      nftUtilizationPct: 89,
-      syncLatencyMs: 400,
-      circuitBreakerActive: false,
-      updatedAt: new Date(),
-    };
+  async ensureSeeded(): Promise<void> {
+    if (this.seeded) return;
+    this.seeded = true;
 
-    this._seedLockers();
-    this._seedNftKeys();
-    this._seedEvents();
-  }
+    // Seed protocol stats if empty
+    const existingStats = await db.select().from(protocolStats).limit(1);
+    if (existingStats.length === 0) {
+      await db.insert(protocolStats).values({
+        id: "singleton",
+        tvlUsd: "4200000.00",
+        tvlTrend: "+12% this week",
+        activeVaults: 1284,
+        maxVaults: 1500,
+        nftKeysMinted: 4291,
+        nftUtilizationPct: 89,
+        syncLatencyMs: 400,
+        circuitBreakerActive: false,
+      });
+    }
 
-  private _seedLockers() {
-    const tiers = [
-      { tier: 1, count: 82, capacity: 100, minDepositSol: "10", statusFn: (i: number) => i < 62 ? "full" : i < 75 ? "filling" : "healthy" },
-      { tier: 2, count: 34, capacity: 500, minDepositSol: "1", statusFn: (i: number) => (i === 12 || i === 18) ? "distressed" : i < 31 ? "full" : "filling" },
-      { tier: 3, count: 12, capacity: 10, minDepositSol: "1000", statusFn: (i: number) => i < 5 ? "full" : i < 9 ? "filling" : "healthy" },
-    ];
+    // Seed lockers if empty
+    const existingLockers = await db.select().from(lockers).limit(1);
+    if (existingLockers.length === 0) {
+      await this._seedLockers();
+    }
 
-    for (const t of tiers) {
-      for (let i = 0; i < t.count; i++) {
-        const id = randomUUID();
-        const externalId = `LCK-T${t.tier}-${i}`;
-        const status = t.statusFn(i);
-        const usedSlots = status === "full" ? t.capacity :
-          status === "filling" ? Math.floor(t.capacity * 0.6) :
-          status === "distressed" ? t.capacity : 0;
-        this.lockers.set(id, {
-          id,
-          externalId,
-          tier: t.tier,
-          capacity: t.capacity,
-          usedSlots,
-          status,
-          minDepositSol: t.minDepositSol,
-          createdAt: new Date(),
-        });
-      }
+    // Seed NFT keys if empty
+    const existingNfts = await db.select().from(nftKeys).limit(1);
+    if (existingNfts.length === 0) {
+      await this._seedNftKeys();
+    }
+
+    // Seed events if empty
+    const existingEvents = await db.select().from(events).limit(1);
+    if (existingEvents.length === 0) {
+      await this._seedEvents();
     }
   }
 
-  private _seedNftKeys() {
+  private async _seedLockers(): Promise<void> {
+    const tiers = [
+      { tier: 1, count: 82, capacity: 100, minDepositSol: "10", statusFn: (i: number) => i < 62 ? "full" : i < 75 ? "filling" : "healthy" },
+      { tier: 2, count: 34, capacity: 500, minDepositSol: "1",  statusFn: (i: number) => (i === 12 || i === 18) ? "distressed" : i < 31 ? "full" : "filling" },
+      { tier: 3, count: 12, capacity: 10,  minDepositSol: "1000", statusFn: (i: number) => i < 5 ? "full" : i < 9 ? "filling" : "healthy" },
+    ];
+
+    for (const t of tiers) {
+      const batch = [];
+      for (let i = 0; i < t.count; i++) {
+        const status = t.statusFn(i);
+        const usedSlots = status === "full" ? t.capacity : status === "filling" ? Math.floor(t.capacity * 0.6) : status === "distressed" ? t.capacity : 0;
+        batch.push({ externalId: `LCK-T${t.tier}-${i}`, tier: t.tier, capacity: t.capacity, usedSlots, status, minDepositSol: t.minDepositSol });
+      }
+      await db.insert(lockers).values(batch);
+    }
+  }
+
+  private async _seedNftKeys(): Promise<void> {
     const demoWallet = "8xR...3kL";
-    this.nftKeys.set(demoWallet, [
-      {
-        id: randomUUID(),
-        mint: "7x2...9aB",
-        name: "Vault Key #042",
-        image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=100&h=100&fit=crop",
-        vaultRef: "VLT-042",
-        lockerRef: "LCK-99A",
-        walletAddress: demoWallet,
-        isTicket: false,
-        transferLockDays: 0,
-        kycLevel: "none",
-        eventName: null,
-        createdAt: new Date(),
-      },
-      {
-        id: randomUUID(),
-        mint: "3vP...m1K",
-        name: "Alpha Access Pass",
-        image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop",
-        vaultRef: "VLT-881",
-        lockerRef: "LCK-22B",
-        walletAddress: demoWallet,
-        isTicket: false,
-        transferLockDays: 0,
-        kycLevel: "none",
-        eventName: null,
-        createdAt: new Date(),
-      },
-      {
-        id: randomUUID(),
-        mint: "9qZ...4tY",
-        name: "Genesis Locker Key",
-        image: "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=100&h=100&fit=crop",
-        vaultRef: "VLT-112",
-        lockerRef: "LCK-45C",
-        walletAddress: demoWallet,
-        isTicket: false,
-        transferLockDays: 0,
-        kycLevel: "none",
-        eventName: null,
-        createdAt: new Date(),
-      },
-      {
-        id: randomUUID(),
-        mint: "9mK2...7pR",
-        name: "🎵 #021*025-15",
-        image: null,
-        vaultRef: null,
-        lockerRef: null,
-        walletAddress: demoWallet,
-        isTicket: true,
-        transferLockDays: 18,
-        kycLevel: "soft",
-        eventName: "The Midnight — MSG, June 14 2027",
-        createdAt: new Date(),
-      },
-      {
-        id: randomUUID(),
-        mint: "4bX8...2qL",
-        name: "🎵 #VIP-014",
-        image: null,
-        vaultRef: null,
-        lockerRef: null,
-        walletAddress: demoWallet,
-        isTicket: true,
-        transferLockDays: 0,
-        kycLevel: "hard",
-        eventName: "The Midnight — MSG, June 14 2027",
-        createdAt: new Date(),
-      },
+    await db.insert(nftKeys).values([
+      { mint: "7x2...9aB", name: "Vault Key #042",   image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=100&h=100&fit=crop", vaultRef: "VLT-042", lockerRef: "LCK-99A", walletAddress: demoWallet, isTicket: false, transferLockDays: 0, kycLevel: "none" },
+      { mint: "3vP...m1K", name: "Alpha Access Pass", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop", vaultRef: "VLT-881", lockerRef: "LCK-22B", walletAddress: demoWallet, isTicket: false, transferLockDays: 0, kycLevel: "none" },
+      { mint: "9qZ...4tY", name: "Genesis Locker Key", image: "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=100&h=100&fit=crop", vaultRef: "VLT-112", lockerRef: "LCK-45C", walletAddress: demoWallet, isTicket: false, transferLockDays: 0, kycLevel: "none" },
+      { mint: "9mK2...7pR", name: "🎵 #021*025-15", walletAddress: demoWallet, isTicket: true, transferLockDays: 18, kycLevel: "soft", eventName: "The Midnight — MSG, June 14 2027" },
+      { mint: "4bX8...2qL", name: "🎵 #VIP-014",    walletAddress: demoWallet, isTicket: true, transferLockDays: 0, kycLevel: "hard", eventName: "The Midnight — MSG, June 14 2027" },
     ]);
   }
 
-  private _seedEvents() {
+  private async _seedEvents(): Promise<void> {
     const eventId = randomUUID();
-    const tiers: TicketTier[] = [
-      {
-        id: randomUUID(),
-        eventId,
-        tierId: "general",
-        label: "General",
-        prefix: "#",
-        capacity: 8000,
-        maxSeats: 5,
-        basePriceUsd: 85,
-        releaseOffsetHours: 0,
-        transferLockDays: 30,
-        kycLevel: "soft",
-        discounts: JSON.stringify([{ qty: 2, amount: 5 }, { qty: 3, amount: 10 }, { qty: 5, amount: 15 }]),
-      },
-      {
-        id: randomUUID(),
-        eventId,
-        tierId: "premium",
-        label: "Premium",
-        prefix: "#PRE-",
-        capacity: 2000,
-        maxSeats: 3,
-        basePriceUsd: 175,
-        releaseOffsetHours: 0,
-        transferLockDays: 14,
-        kycLevel: "standard",
-        discounts: JSON.stringify([{ qty: 2, amount: 10 }, { qty: 3, amount: 20 }]),
-      },
-      {
-        id: randomUUID(),
-        eventId,
-        tierId: "vip",
-        label: "VIP",
-        prefix: "#VIP-",
-        capacity: 200,
-        maxSeats: 2,
-        basePriceUsd: 350,
-        releaseOffsetHours: 48,
-        transferLockDays: 0,
-        kycLevel: "hard",
-        discounts: JSON.stringify([]),
-      },
-      {
-        id: randomUUID(),
-        eventId,
-        tierId: "accessible",
-        label: "Accessible",
-        prefix: "#ACC-",
-        capacity: 100,
-        maxSeats: 2,
-        basePriceUsd: 85,
-        releaseOffsetHours: 0,
-        transferLockDays: 30,
-        kycLevel: "soft",
-        discounts: JSON.stringify([]),
-      },
-    ];
-
-    this.events.set(eventId, {
+    await db.insert(events).values({
       id: eventId,
       name: "The Midnight — Endless Summer Tour",
       venue: "Madison Square Garden, New York",
@@ -232,78 +115,83 @@ export class MemStorage implements IStorage {
       saleDate: "May 1, 2027 — 10:00 AM EDT",
       registrationDeadline: "April 29, 2027",
       isActive: true,
-      createdAt: new Date(),
-      tiers,
     });
+    await db.insert(ticketTiers).values([
+      { eventId, tierId: "general",    label: "General",    prefix: "#",      capacity: 8000, maxSeats: 5, basePriceUsd: 85,  releaseOffsetHours: 0,  transferLockDays: 30, kycLevel: "soft",     discounts: JSON.stringify([{qty:2,amount:5},{qty:3,amount:10},{qty:5,amount:15}]) },
+      { eventId, tierId: "premium",    label: "Premium",    prefix: "#PRE-",  capacity: 2000, maxSeats: 3, basePriceUsd: 175, releaseOffsetHours: 0,  transferLockDays: 14, kycLevel: "standard", discounts: JSON.stringify([{qty:2,amount:10},{qty:3,amount:20}]) },
+      { eventId, tierId: "vip",        label: "VIP",        prefix: "#VIP-",  capacity: 200,  maxSeats: 2, basePriceUsd: 350, releaseOffsetHours: 48, transferLockDays: 0,  kycLevel: "hard",     discounts: JSON.stringify([]) },
+      { eventId, tierId: "accessible", label: "Accessible", prefix: "#ACC-",  capacity: 100,  maxSeats: 2, basePriceUsd: 85,  releaseOffsetHours: 0,  transferLockDays: 30, kycLevel: "soft",     discounts: JSON.stringify([]) },
+    ]);
   }
 
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    await this.ensureSeeded();
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find((u) => u.username === username);
+    await this.ensureSeeded();
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    await this.ensureSeeded();
+    const [user] = await db.insert(users).values({ ...insertUser, id: randomUUID() }).returning();
     return user;
   }
 
   async getProtocolStats(): Promise<ProtocolStats> {
-    return this.stats;
+    await this.ensureSeeded();
+    const [stats] = await db.select().from(protocolStats).where(eq(protocolStats.id, "singleton"));
+    return stats;
   }
 
   async getLockers(): Promise<Locker[]> {
-    return Array.from(this.lockers.values());
+    await this.ensureSeeded();
+    return db.select().from(lockers);
   }
 
   async getLockersByTier(tier: number): Promise<Locker[]> {
-    return Array.from(this.lockers.values()).filter((l) => l.tier === tier);
+    await this.ensureSeeded();
+    return db.select().from(lockers).where(eq(lockers.tier, tier));
   }
 
   async getNftsByWallet(wallet: string): Promise<NftKey[]> {
-    return this.nftKeys.get(wallet) ?? [];
+    await this.ensureSeeded();
+    return db.select().from(nftKeys).where(eq(nftKeys.walletAddress, wallet));
   }
 
   async getCurrentEvent(): Promise<(Event & { tiers: TicketTier[] }) | undefined> {
-    const activeEvents = Array.from(this.events.values()).filter((e) => e.isActive);
-    return activeEvents[0];
+    await this.ensureSeeded();
+    const [event] = await db.select().from(events).where(eq(events.isActive, true));
+    if (!event) return undefined;
+    const tiers = await db.select().from(ticketTiers).where(eq(ticketTiers.eventId, event.id));
+    return { ...event, tiers };
   }
 
   async createSwapSession(data: InsertSwapSession): Promise<SwapSession> {
-    const id = randomUUID();
-    const session: SwapSession = {
-      id,
-      token: data.token,
-      initiatorWallet: data.initiatorWallet,
-      offeredNftMint: data.offeredNftMint,
-      counterpartyWallet: data.counterpartyWallet ?? null,
-      requestedNftMint: data.requestedNftMint ?? null,
-      swapType: data.swapType ?? "sol-to-sol",
-      targetLocker: data.targetLocker ?? null,
-      status: data.status ?? "pending",
-      txSignature: data.txSignature ?? null,
-      createdAt: new Date(),
-      expiresAt: data.expiresAt,
-    };
-    this.swaps.set(data.token, session);
+    await this.ensureSeeded();
+    const [session] = await db.insert(swapSessions).values({ ...data, id: randomUUID() }).returning();
     return session;
   }
 
   async getSwapSessionByToken(token: string): Promise<SwapSession | undefined> {
-    return this.swaps.get(token);
+    await this.ensureSeeded();
+    const [session] = await db.select().from(swapSessions).where(eq(swapSessions.token, token));
+    return session;
   }
 
   async updateSwapSessionStatus(token: string, status: string, txSig?: string): Promise<SwapSession | undefined> {
-    const session = this.swaps.get(token);
-    if (!session) return undefined;
-    const updated = { ...session, status, txSignature: txSig ?? session.txSignature };
-    this.swaps.set(token, updated);
-    return updated;
+    await this.ensureSeeded();
+    const [session] = await db
+      .update(swapSessions)
+      .set({ status, txSignature: txSig })
+      .where(eq(swapSessions.token, token))
+      .returning();
+    return session;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DrizzleStorage();

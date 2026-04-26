@@ -91,20 +91,26 @@ export default function SwapPage() {
     staleTime: 60_000,
   });
 
+  const [swapError, setSwapError] = useState<string | null>(null);
+
   const confirmMutation = useMutation({
     mutationFn: async (token: string) => {
       const res = await fetch(`/api/swaps/${token}/confirm`, { method: "PATCH" });
-      if (!res.ok) throw new Error("Confirm failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Server error ${res.status}`);
+      }
       return res.json();
     },
     onSuccess: (data) => {
-      setTxSig(data.txSignature ?? "5xKm...9pR2");
+      setTxSig(data.txSignature ?? "");
+      setSwapError(null);
       setStep("complete");
       setLoading(false);
     },
-    onError: () => {
-      setTxSig("5xKm...9pR2");
-      setStep("complete");
+    onError: (err: Error) => {
+      setSwapError(err.message);
+      setStep("review");
       setLoading(false);
     },
   });
@@ -153,17 +159,15 @@ export default function SwapPage() {
   }
 
   async function handleConfirmSwap() {
+    const token = swapToken || generatedToken;
+    if (!token) {
+      setSwapError("No swap session found. Please start over.");
+      return;
+    }
+    setSwapError(null);
     setLoading(true);
     setStep("pending");
-    const token = swapToken || generatedToken;
-    if (token) {
-      confirmMutation.mutate(token);
-    } else {
-      await new Promise(r => setTimeout(r, 2200));
-      setTxSig("5xKm...9pR2");
-      setStep("complete");
-      setLoading(false);
-    }
+    confirmMutation.mutate(token);
   }
 
   const swapTypeLabel = swapType === "sol-to-sol" ? "Solana → Solana" : "Solana → Monad Locker";
@@ -391,9 +395,16 @@ export default function SwapPage() {
                 <p className="text-xs text-gray-400">By confirming, you authorise MonasolProtocol to construct and broadcast this atomic swap transaction on your behalf. This action cannot be undone.</p>
               </div>
 
+              {swapError && (
+                <div className="p-3 rounded-lg border border-red-500/20 bg-red-500/5 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />
+                  <p className="text-xs text-red-400">{swapError}</p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" onClick={() => setStep("setup")} className="border-white/10 text-gray-400">Go back</Button>
-                <Button onClick={handleConfirmSwap} className="bg-monad-purple hover:bg-monad-purple/90 text-black font-bold">
+                <Button onClick={handleConfirmSwap} disabled={loading} className="bg-monad-purple hover:bg-monad-purple/90 text-black font-bold">
                   <Send className="h-4 w-4 mr-2" />Confirm swap
                 </Button>
               </div>
