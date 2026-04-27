@@ -85,7 +85,7 @@ export function MoveInModal({ isOpen, onClose, onSuccess, connectedWallet, avail
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-1">
+        <div className="grid grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
           {availableNfts.map((nft) => (
             <button
               key={nft.mint}
@@ -117,14 +117,23 @@ export function MoveInModal({ isOpen, onClose, onSuccess, connectedWallet, avail
       )}
 
       {availableNfts.length > 0 && (
-        <Button
-          onClick={() => setStep(1)}
-          disabled={!selectedNft}
-          className="w-full bg-monad-purple hover:bg-monad-purple/90 text-black font-bold mt-4"
-        >
-          Continue
-          <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
+        <div className="space-y-2 mt-4">
+          <Button
+            onClick={() => setStep(1)}
+            disabled={!selectedNft}
+            className="w-full bg-monad-purple hover:bg-monad-purple/90 text-black font-bold"
+          >
+            Continue
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+          <button
+            onClick={onMintKey}
+            className="w-full text-xs text-gray-500 hover:text-solana-green transition-colors py-1 flex items-center justify-center gap-1.5"
+          >
+            <Key className="h-3 w-3" />
+            Mint a fresh key for this vault instead
+          </button>
+        </div>
       )}
     </div>
   );
