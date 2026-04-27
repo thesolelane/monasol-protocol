@@ -244,13 +244,10 @@ export function MoveInModal({
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
                 <p className="text-xs text-gray-500 uppercase tracking-wider">Move-in summary</p>
+
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">NFT key</span>
                   <span className="text-white font-medium">{selectedNft?.name}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Initial deposit</span>
-                  <span className="text-white font-mono">{parseFloat(depositSol) || 0} SOL</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Security mode</span>
@@ -262,28 +259,28 @@ export function MoveInModal({
                     {securityMode ?? 'unset'}
                   </Badge>
                 </div>
-                <div className="border-t border-white/10 pt-3 space-y-2">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Fees (flat — one time)</p>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Lifetime lease</span>
-                    <span className="text-white font-mono">{LEASE_FEE} SOL</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Vault lease</span>
+                  <span className="text-green-400 text-xs font-medium">✓ Paid during setup</span>
+                </div>
+
+                <div className="border-t border-white/10 pt-3">
+                  <div className="flex justify-between text-sm font-bold">
+                    <span className="text-white">Initial deposit</span>
+                    <span className="text-monad-purple font-mono">
+                      {parseFloat(depositSol) > 0 ? `${parseFloat(depositSol).toFixed(4)} SOL` : 'None'}
+                    </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Move-in fee</span>
-                    <span className="text-white font-mono">{MOVE_IN_FEE} SOL</span>
-                  </div>
-                  <div className="flex justify-between text-sm font-bold border-t border-white/10 pt-2">
-                    <span className="text-white">Total due today</span>
-                    <span className="text-monad-purple font-mono">{(TOTAL_FEE + (parseFloat(depositSol) || 0)).toFixed(4)} SOL</span>
-                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    You can deposit more SOL into your vault at any time after move-in.
+                  </p>
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20 flex gap-2">
-                <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
-                <p className="text-xs text-yellow-500/80">
-                  This is a lifetime lease. You pay once and the vault is yours permanently.
-                  Fees do not reference or depend on what you deposit — they are flat infrastructure pricing.
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10 flex gap-2">
+                <CheckCircle className="h-4 w-4 text-solana-green shrink-0 mt-0.5" />
+                <p className="text-xs text-gray-400">
+                  No additional fees at this step. Your lifetime lease was already collected when you set up your vault.
                 </p>
               </div>
 
