@@ -1,16 +1,24 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Unlock, Check, AlertCircle } from "lucide-react";
+import { Lock, Unlock, Check, AlertCircle, Key } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
+
+interface ActiveVault {
+  id: string;
+  lockerId: string;
+  balance: string;
+  nftName: string;
+}
 
 interface LockerFormProps {
   isConnected: boolean;
   hasNftKey: boolean;
+  activeVault?: ActiveVault | null;
 }
 
-export function LockerForm({ isConnected, hasNftKey }: LockerFormProps) {
+export function LockerForm({ isConnected, hasNftKey, activeVault }: LockerFormProps) {
   const [amount, setAmount] = useState("");
   const [token, setToken] = useState("");
   const [isLocked, setIsLocked] = useState(false);
@@ -36,20 +44,29 @@ export function LockerForm({ isConnected, hasNftKey }: LockerFormProps) {
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-monad-purple/5 blur-[80px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2" />
 
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-5">
         <div
           className={`p-3 rounded-xl ${isLocked ? "bg-red-500/20 text-red-400" : "bg-monad-purple/20 text-monad-purple"}`}
         >
           {isLocked ? <Lock className="h-6 w-6" /> : <Unlock className="h-6 w-6" />}
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h2 className="font-display text-2xl font-bold text-white">Vault Controls</h2>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-white/60 border border-white/5">
-              ID #0442
-            </span>
+            {activeVault && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-white/60 border border-white/5 font-mono truncate max-w-[100px]" title={activeVault.id}>
+                {activeVault.id.slice(0, 10)}
+              </span>
+            )}
           </div>
-          <p className="text-sm text-gray-400">Manage your EVM assets via Solana Key</p>
+          {activeVault ? (
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <Key className="h-3 w-3 text-solana-green" />
+              <p className="text-xs text-solana-green truncate">{activeVault.nftName}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">Manage your EVM assets via Solana Key</p>
+          )}
         </div>
       </div>
 

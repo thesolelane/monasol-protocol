@@ -6,7 +6,6 @@ import { LockerForm } from "@/components/LockerForm";
 import { VaultExplorer } from "@/components/VaultExplorer";
 import { StatsCard } from "@/components/StatsCard";
 import { CircuitBreaker } from "@/components/CircuitBreaker";
-import { RentVaultModal } from "@/components/RentVaultModal";
 import { MoveInModal } from "@/components/MoveInModal";
 import { MintNftModal } from "@/components/MintNftModal";
 import { Shield, Coins, Activity, Zap, Wallet, Key, ArrowLeftRight, Ticket } from "lucide-react";
@@ -52,7 +51,6 @@ export default function Home() {
   const [evmConnected, setEvmConnected] = useState(false);
   const [solanaConnected, setSolanaConnected] = useState(false);
   const [selectedNft, setSelectedNft] = useState<string | null>(null);
-  const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isMoveInOpen, setIsMoveInOpen] = useState(false);
   const [isMintNftOpen, setIsMintNftOpen] = useState(false);
   const [mintedNft, setMintedNft] = useState<{ mint: string; name: string; image: string; tokenId: string } | null>(null);
@@ -98,14 +96,14 @@ export default function Home() {
     const nft = availableNfts.find(n => n.mint === id);
     if (nft) {
       const balances: Record<string, string> = {
-        "1": "12.50 SOL",
-        "2": "145.00 SOL",
-        "3": "3.14 SOL",
+        "1": "12.50 MON",
+        "2": "145.00 MON",
+        "3": "3.14 MON",
       };
       setActiveVault({
         id: nft.vaultRef,
         lockerId: nft.lockerRef,
-        balance: balances[nft.tokenId] || "0.00 SOL",
+        balance: balances[nft.tokenId] || "0.00 MON",
         nftName: nft.name,
       });
     }
@@ -146,14 +144,6 @@ export default function Home() {
               className="h-10 bg-monad-purple hover:bg-monad-purple/90 text-black font-bold shadow-[0_0_15px_-3px_rgba(130,71,229,0.4)]"
             >
               Move In
-            </Button>
-            <Button
-              onClick={() => setIsRentModalOpen(true)}
-              variant="outline"
-              className="h-10 bg-black/40 border-solana-green/30 text-solana-green hover:bg-solana-green/10 hover:text-solana-green shadow-[0_0_10px_rgba(20,241,149,0.1)]"
-            >
-              <Key className="h-4 w-4 mr-2" />
-              Rent a Vault
             </Button>
             <WalletConnect
               type="evm"
@@ -276,19 +266,35 @@ export default function Home() {
           </div>
 
           <div className="lg:col-span-5">
-            <LockerForm isConnected={allConnected} hasNftKey={!!selectedNft} />
-            <CircuitBreaker />
-            <VaultExplorer />
+            {!selectedNft ? (
+              <div className="glass-panel rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-6 min-h-[260px]">
+                <div className="h-14 w-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                  <Key className="h-7 w-7 text-gray-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white mb-2">Present your NFT key to begin</p>
+                  <p className="text-xs text-gray-500 max-w-[260px] mx-auto leading-relaxed">
+                    Connect your Solana wallet and select an NFT key on the left. Vault controls, circuit breaker, and private explorer unlock once your key is active.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <LockerForm isConnected={allConnected} hasNftKey={!!selectedNft} activeVault={activeVault} />
+                <CircuitBreaker />
+                <VaultExplorer />
+              </>
+            )}
 
             <div className="mt-6 p-6 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-xs">
               <h3 className="text-sm font-semibold text-white mb-3">How it works</h3>
               <div className="space-y-4 relative">
                 <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-white/10" />
                 {[
-                  "Connect Monad (Vault) & Solana (Key) wallets",
-                  "Rent a Vault or mint a new Solana NFT key",
-                  "Deposit tokens into the EVM Vault",
-                  "Unlock anytime by proving NFT ownership",
+                  "Connect your Monad (vault) and Solana (key) wallets",
+                  "Move in — mint a Solana NFT key and create your vault",
+                  "Select your NFT key to unlock vault controls",
+                  "Deposit MON, set security rules, or share a proof with Private Explorer",
                 ].map((step, i) => (
                   <div key={i} className="relative flex items-start gap-4">
                     <div className="h-5 w-5 rounded-full bg-black border border-white/20 flex items-center justify-center text-[10px] text-white font-bold relative z-10 shrink-0">
@@ -303,17 +309,6 @@ export default function Home() {
         </div>
       </div>
 
-      <RentVaultModal
-        isOpen={isRentModalOpen}
-        onClose={() => setIsRentModalOpen(false)}
-        connectedWallet={solanaConnected ? MOCK_WALLET : null}
-        onConnectWallet={() => setSolanaConnected(true)}
-        onSuccess={() => {
-          setIsRentModalOpen(false);
-          queryClient.invalidateQueries({ queryKey: ["/api/nfts", MOCK_WALLET] });
-          setIsMoveInOpen(true);
-        }}
-      />
 
       <MoveInModal
         isOpen={isMoveInOpen}
