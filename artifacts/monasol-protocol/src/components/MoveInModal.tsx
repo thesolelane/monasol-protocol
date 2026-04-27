@@ -37,7 +37,7 @@ export function MoveInModal({
 }: MoveInModalProps) {
   const [step, setStep]               = useState(0);
   const [selectedNft, setSelectedNft] = useState<Nft | null>(null);
-  const [depositSol, setDepositSol]   = useState('');
+  const [depositMon, setDepositMon]   = useState('');
   const [securityMode, setMode]       = useState<'system' | 'self' | null>(null);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState<string | null>(null);
@@ -174,22 +174,22 @@ export function MoveInModal({
                 </div>
               </div>
 
-              {/* SOL deposit */}
+              {/* MON deposit */}
               <div>
-                <label className="text-xs text-gray-500 mb-2 block">Initial SOL deposit (optional)</label>
+                <label className="text-xs text-gray-500 mb-2 block">Initial MON deposit (optional)</label>
                 <div className="relative">
                   <input
                     type="number"
-                    value={depositSol}
-                    onChange={(e) => setDepositSol(e.target.value)}
+                    value={depositMon}
+                    onChange={(e) => setDepositMon(e.target.value)}
                     placeholder="0.00"
                     min="0"
                     step="0.01"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 pr-14 text-white placeholder-gray-600 focus:outline-none focus:border-monad-purple/50 font-mono"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 pr-16 text-white placeholder-gray-600 focus:outline-none focus:border-monad-purple/50 font-mono"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">SOL</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">MON</span>
                 </div>
-                <p className="text-xs text-gray-600 mt-1">You can deposit more anytime after move-in.</p>
+                <p className="text-xs text-gray-600 mt-1">Vault holds Monad (EVM) assets. You can deposit more MON or EVM tokens anytime after move-in.</p>
               </div>
 
               {/* Security mode */}
@@ -266,13 +266,13 @@ export function MoveInModal({
 
                 <div className="border-t border-white/10 pt-3">
                   <div className="flex justify-between text-sm font-bold">
-                    <span className="text-white">Initial deposit</span>
+                    <span className="text-white">Initial MON deposit</span>
                     <span className="text-monad-purple font-mono">
-                      {parseFloat(depositSol) > 0 ? `${parseFloat(depositSol).toFixed(4)} SOL` : 'None'}
+                      {parseFloat(depositMon) > 0 ? `${parseFloat(depositMon).toFixed(4)} MON` : 'None'}
                     </span>
                   </div>
                   <p className="text-xs text-gray-600 mt-1">
-                    You can deposit more SOL into your vault at any time after move-in.
+                    Vault holds Monad EVM assets. Deposit more MON or EVM tokens anytime after move-in.
                   </p>
                 </div>
               </div>
