@@ -95,7 +95,7 @@ export function LockerForm({ isConnected, hasNftKey }: LockerFormProps) {
                 : "bg-monad-purple hover:bg-monad-purple/90 text-black shadow-[0_0_20px_-5px_rgba(130,71,229,0.5)]"
             }`}
           >
-            {isLocked ? "UNLOCK VAULT" : "DEPOSIT & LOCK ASSETS (NO SIGN-IN REQUIRED)"}
+            {isLocked ? "UNLOCK VAULT" : "DEPOSIT & LOCK ASSETS"}
           </Button>
         </div>
 

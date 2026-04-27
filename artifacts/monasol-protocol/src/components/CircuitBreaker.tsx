@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ShieldAlert, AlertTriangle, Lock, Clock, Settings2 } from "lucide-react";
+import { ShieldAlert, AlertTriangle, Lock, Clock, Settings2, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function CircuitBreaker() {
