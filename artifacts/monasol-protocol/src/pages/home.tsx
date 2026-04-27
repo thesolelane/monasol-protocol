@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { WalletConnect } from "@/components/WalletConnect";
 import { NftGrid } from "@/components/NftGrid";
 import { LockerForm } from "@/components/LockerForm";
@@ -8,6 +8,7 @@ import { StatsCard } from "@/components/StatsCard";
 import { CircuitBreaker } from "@/components/CircuitBreaker";
 import { RentVaultModal } from "@/components/RentVaultModal";
 import { MoveInModal } from "@/components/MoveInModal";
+import { MintNftModal } from "@/components/MintNftModal";
 import { Shield, Coins, Activity, Zap, Wallet, Key, ArrowLeftRight, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
@@ -47,11 +48,13 @@ function formatTvl(tvlUsd: string): string {
 }
 
 export default function Home() {
+  const queryClient = useQueryClient();
   const [evmConnected, setEvmConnected] = useState(false);
   const [solanaConnected, setSolanaConnected] = useState(false);
   const [selectedNft, setSelectedNft] = useState<string | null>(null);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isMoveInOpen, setIsMoveInOpen] = useState(false);
+  const [isMintNftOpen, setIsMintNftOpen] = useState(false);
   const [activeVault, setActiveVault] = useState<{ id: string, lockerId: string, balance: string, nftName: string } | null>(null);
 
   const allConnected = evmConnected && solanaConnected;
@@ -306,6 +309,7 @@ export default function Home() {
         onConnectWallet={() => setSolanaConnected(true)}
         onSuccess={() => {
           setIsRentModalOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["/api/nfts", MOCK_WALLET] });
           setIsMoveInOpen(true);
         }}
       />
@@ -317,10 +321,20 @@ export default function Home() {
         connectedWallet={solanaConnected ? MOCK_WALLET : null}
         onMintKey={() => {
           setIsMoveInOpen(false);
-          setIsRentModalOpen(true);
+          setIsMintNftOpen(true);
         }}
         onConnectWallet={() => setSolanaConnected(true)}
         availableNfts={solanaConnected ? availableNfts : []}
+      />
+
+      <MintNftModal
+        isOpen={isMintNftOpen}
+        onClose={() => setIsMintNftOpen(false)}
+        onSuccess={() => {
+          setIsMintNftOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["/api/nfts", MOCK_WALLET] });
+          setIsMoveInOpen(true);
+        }}
       />
 
       <div className="fixed bottom-4 right-4 flex items-center gap-2 z-50 bg-black/50 border border-white/10 p-2 rounded-full backdrop-blur-md">
