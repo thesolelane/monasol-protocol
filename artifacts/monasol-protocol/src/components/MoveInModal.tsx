@@ -1,5 +1,5 @@
 import { useState, useLayoutEffect } from "react";
-import { Key, Wallet, ArrowRight, CheckCircle, Loader2, X, Home, AlertTriangle } from "lucide-react";
+import { Key, Wallet, ArrowRight, CheckCircle, Loader2, X, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -26,10 +26,7 @@ interface VaultResult {
   fees: { lifetime_lease: number; move_in_fee: number; total_due: number };
 }
 
-const LEASE_FEE   = 0.05;
-const MOVE_IN_FEE = 0.001;
-const TOTAL_FEE   = LEASE_FEE + MOVE_IN_FEE;
-const STEPS       = ['Get key', 'Set deposit', 'Review', 'Done'];
+const STEPS = ['Get key', 'Set deposit', 'Review'];
 
 export function MoveInModal({
   isOpen, onClose, onSuccess, connectedWallet,
@@ -52,7 +49,7 @@ export function MoveInModal({
         setSelectedNft(null);
         setStep(0);
       }
-      setDepositSol('');
+      setDepositMon('');
       setMode(null);
       setError(null);
       setResult(null);
@@ -72,7 +69,7 @@ export function MoveInModal({
       await new Promise(resolve => setTimeout(resolve, 2000));
       const vaultRef  = `VLT-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}...${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
       const lockerRef = `LCK-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}...${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
-      setResult({ vault_ref: vaultRef, locker_ref: lockerRef, fees: { lifetime_lease: LEASE_FEE, move_in_fee: MOVE_IN_FEE, total_due: TOTAL_FEE } });
+      setResult({ vault_ref: vaultRef, locker_ref: lockerRef, fees: { lifetime_lease: 0, move_in_fee: 0, total_due: 0 } });
       setStep(3);
     } catch {
       setError('Could not reach the MonasolProtocol server. Check your connection.');

@@ -166,7 +166,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                         </div>
                         <div>
                           <p className="text-[10px] text-gray-500 uppercase">Min deposit</p>
-                          <p className="text-xs text-white">{tier.minDepositSol} SOL</p>
+                          <p className="text-xs text-white">{tier.minDepositSol} MON</p>
                         </div>
                         <div>
                           <p className="text-[10px] text-gray-500 uppercase">Security</p>
@@ -207,7 +207,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                       {(selected.oneTimeFeeSOL + selected.moveInFeeSOL).toFixed(4)} SOL
                     </span>
                   </div>
-                  <p className="text-gray-600 pt-1">Minimum deposit of {selected.minDepositSol} SOL required at move-in. Not charged now.</p>
+                  <p className="text-gray-600 pt-1">Minimum deposit of {selected.minDepositSol} MON required at move-in. Not charged now.</p>
                 </div>
               )}
 
