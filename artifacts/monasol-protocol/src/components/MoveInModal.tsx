@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Shield, Key, Wallet, ArrowRight, CheckCircle, Loader2, X, Home, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ interface MoveInModalProps {
   onClose: () => void;
   onSuccess: (vault: VaultResult) => void;
   connectedWallet: string | null;
-  availableNfts: Nft[];
+  preSelectedNft?: Nft | null;
   onMintKey?: () => void;
   onConnectWallet?: () => void;
 }
@@ -34,16 +34,28 @@ const MOVE_IN_FEE   = 0.001;
 const TOTAL_FEE     = LEASE_FEE + MOVE_IN_FEE;
 
 // ── Step definitions ─────────────────────────────────────────
-const STEPS = ['Select key', 'Set deposit', 'Review', 'Done'];
+const STEPS = ['Get key', 'Set deposit', 'Review', 'Done'];
 
-export function MoveInModal({ isOpen, onClose, onSuccess, connectedWallet, availableNfts, onMintKey, onConnectWallet }: MoveInModalProps) {
-  const [step, setStep]               = useState(0);
-  const [selectedNft, setSelectedNft] = useState<Nft | null>(null);
+export function MoveInModal({ isOpen, onClose, onSuccess, connectedWallet, preSelectedNft, onMintKey, onConnectWallet }: MoveInModalProps) {
+  const [step, setStep]               = useState(preSelectedNft ? 1 : 0);
+  const [selectedNft, setSelectedNft] = useState<Nft | null>(preSelectedNft ?? null);
   const [depositSol, setDepositSol]   = useState('');
   const [securityMode, setMode]       = useState<'system' | 'self' | null>(null);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState<string | null>(null);
   const [result, setResult]           = useState<VaultResult | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (preSelectedNft) {
+        setSelectedNft(preSelectedNft);
+        setStep(1);
+      } else {
+        setSelectedNft(null);
+        setStep(0);
+      }
+    }
+  }, [isOpen, preSelectedNft]);
 
   if (!isOpen) return null;
 
@@ -54,87 +66,35 @@ export function MoveInModal({ isOpen, onClose, onSuccess, connectedWallet, avail
 
   const handleClose = () => { reset(); onClose(); };
 
-  // ── Step 0: Select NFT key ───────────────────────────────
+  // ── Step 0: Mint required gate ───────────────────────────
   const StepSelectKey = () => (
     <div className="space-y-4">
-      <div className="text-center pb-2 border-b border-white/10">
-        <p className="text-sm text-gray-400">
-          Select an NFT from your wallet to register as your vault key.
-          You keep the NFT — it never leaves your wallet.
-        </p>
-      </div>
-
-      {availableNfts.length === 0 ? (
-        <div className="py-10 text-center space-y-3">
-          <div className="h-12 w-12 rounded-full bg-white/5 flex items-center justify-center mx-auto">
-            <Key className="h-5 w-5 text-gray-500" />
-          </div>
-          <p className="text-sm text-gray-500">No NFTs found in your wallet.</p>
-          <p className="text-xs text-gray-600 mb-4">Connect your Solana wallet or mint a MonasolProtocol key.</p>
-          <div className="flex flex-col gap-2 pt-2 max-w-[200px] mx-auto">
-            {!connectedWallet && (
-              <Button onClick={onConnectWallet} variant="outline" className="w-full bg-black/40 border-solana-green/30 text-solana-green hover:bg-solana-green/10 h-10">
-                <Wallet className="h-4 w-4 mr-2" />
-                Connect Wallet
-              </Button>
-            )}
-            <Button onClick={onMintKey} className="w-full bg-solana-green hover:bg-solana-green/90 text-black font-bold h-10 shadow-[0_0_15px_-3px_rgba(20,241,149,0.4)]">
-              <Key className="h-4 w-4 mr-2" />
-              Mint NFT Key
+      <div className="py-8 text-center space-y-4">
+        <div className="h-16 w-16 rounded-full bg-solana-green/10 border border-solana-green/20 flex items-center justify-center mx-auto">
+          <Key className="h-7 w-7 text-solana-green" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-white mb-1">A fresh vault key is required</p>
+          <p className="text-xs text-gray-500 max-w-[260px] mx-auto leading-relaxed">
+            Each vault needs its own dedicated NFT key. Existing NFTs in your wallet may already be bound to other vaults and cannot be reused.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 max-w-[220px] mx-auto pt-2">
+          {!connectedWallet && (
+            <Button onClick={onConnectWallet} variant="outline" className="w-full bg-black/40 border-solana-green/30 text-solana-green hover:bg-solana-green/10 h-10">
+              <Wallet className="h-4 w-4 mr-2" />
+              Connect Wallet First
             </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
-          {availableNfts.map((nft) => (
-            <button
-              key={nft.mint}
-              onClick={() => setSelectedNft(nft)}
-              className={`relative p-3 rounded-xl border text-left transition-all ${
-                selectedNft?.mint === nft.mint
-                  ? 'border-monad-purple bg-monad-purple/10'
-                  : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'
-              }`}
-            >
-              {selectedNft?.mint === nft.mint && (
-                <div className="absolute top-2 right-2">
-                  <CheckCircle className="h-4 w-4 text-monad-purple" />
-                </div>
-              )}
-              <div className="h-16 w-full rounded-lg bg-white/5 mb-2 overflow-hidden">
-                {nft.image
-                  ? <img src={nft.image} alt={nft.name} className="h-full w-full object-cover" />
-                  : <div className="h-full w-full flex items-center justify-center">
-                      <Key className="h-6 w-6 text-gray-600" />
-                    </div>
-                }
-              </div>
-              <p className="text-xs font-medium text-white truncate">{nft.name}</p>
-              <p className="text-xs text-gray-600 font-mono truncate">{nft.mint.slice(0,8)}...</p>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {availableNfts.length > 0 && (
-        <div className="space-y-2 mt-4">
+          )}
           <Button
-            onClick={() => setStep(1)}
-            disabled={!selectedNft}
-            className="w-full bg-monad-purple hover:bg-monad-purple/90 text-black font-bold"
-          >
-            Continue
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
-          <button
             onClick={onMintKey}
-            className="w-full text-xs text-gray-500 hover:text-solana-green transition-colors py-1 flex items-center justify-center gap-1.5"
+            className="w-full bg-solana-green hover:bg-solana-green/90 text-black font-bold h-11 shadow-[0_0_15px_-3px_rgba(20,241,149,0.4)]"
           >
-            <Key className="h-3 w-3" />
-            Mint a fresh key for this vault instead
-          </button>
+            <Key className="h-4 w-4 mr-2" />
+            Mint My Vault Key
+          </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 

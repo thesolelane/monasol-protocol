@@ -55,6 +55,7 @@ export default function Home() {
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isMoveInOpen, setIsMoveInOpen] = useState(false);
   const [isMintNftOpen, setIsMintNftOpen] = useState(false);
+  const [mintedNft, setMintedNft] = useState<{ mint: string; name: string; image: string; tokenId: string } | null>(null);
   const [activeVault, setActiveVault] = useState<{ id: string, lockerId: string, balance: string, nftName: string } | null>(null);
 
   const allConnected = evmConnected && solanaConnected;
@@ -316,23 +317,23 @@ export default function Home() {
 
       <MoveInModal
         isOpen={isMoveInOpen}
-        onClose={() => setIsMoveInOpen(false)}
+        onClose={() => { setIsMoveInOpen(false); setMintedNft(null); }}
         onSuccess={(vault) => console.log("Moved in:", vault)}
         connectedWallet={solanaConnected ? MOCK_WALLET : null}
+        preSelectedNft={mintedNft}
         onMintKey={() => {
           setIsMoveInOpen(false);
           setIsMintNftOpen(true);
         }}
         onConnectWallet={() => setSolanaConnected(true)}
-        availableNfts={solanaConnected ? availableNfts : []}
       />
 
       <MintNftModal
         isOpen={isMintNftOpen}
         onClose={() => setIsMintNftOpen(false)}
-        onSuccess={() => {
+        onSuccess={(nft) => {
           setIsMintNftOpen(false);
-          queryClient.invalidateQueries({ queryKey: ["/api/nfts", MOCK_WALLET] });
+          setMintedNft({ mint: nft.id, name: nft.name, image: nft.image, tokenId: nft.id });
           setIsMoveInOpen(true);
         }}
       />
