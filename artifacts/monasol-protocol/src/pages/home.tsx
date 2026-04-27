@@ -138,7 +138,7 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
             <Button
-              onClick={() => setIsMoveInOpen(true)}
+              onClick={() => solanaConnected ? setIsMoveInOpen(true) : setSolanaConnected(true)}
               className="h-10 bg-monad-purple hover:bg-monad-purple/90 text-black font-bold shadow-[0_0_15px_-3px_rgba(130,71,229,0.4)]"
             >
               Move In
@@ -302,6 +302,8 @@ export default function Home() {
       <RentVaultModal
         isOpen={isRentModalOpen}
         onClose={() => setIsRentModalOpen(false)}
+        connectedWallet={solanaConnected ? MOCK_WALLET : null}
+        onConnectWallet={() => setSolanaConnected(true)}
         onSuccess={() => {
           setIsRentModalOpen(false);
           setIsMoveInOpen(true);
