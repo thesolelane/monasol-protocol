@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useLayoutEffect } from "react";
 import { Shield, Key, Wallet, ArrowRight, CheckCircle, Loader2, X, Home, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +45,7 @@ export function MoveInModal({ isOpen, onClose, onSuccess, connectedWallet, preSe
   const [error, setError]             = useState<string | null>(null);
   const [result, setResult]           = useState<VaultResult | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isOpen) {
       if (preSelectedNft) {
         setSelectedNft(preSelectedNft);

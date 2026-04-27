@@ -333,6 +333,19 @@ export default function Home() {
         onClose={() => setIsMintNftOpen(false)}
         onSuccess={(nft) => {
           setIsMintNftOpen(false);
+          const newNftKey: NftKey = {
+            id: nft.id,
+            mint: nft.id,
+            name: nft.name,
+            image: nft.image,
+            vaultRef: null,
+            lockerRef: null,
+            isTicket: false,
+            transferLockDays: 0,
+            kycLevel: "none",
+            eventName: null,
+          };
+          queryClient.setQueryData(["/api/nfts", MOCK_WALLET], (old: NftKey[] = []) => [newNftKey, ...old]);
           setMintedNft({ mint: nft.id, name: nft.name, image: nft.image, tokenId: nft.id });
           setIsMoveInOpen(true);
         }}
