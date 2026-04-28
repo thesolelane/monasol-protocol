@@ -1,0 +1,47 @@
+{
+  "network": "monad_testnet",
+  "chainId": 10143,
+  "deployedAt": "2026-04-28T23:03:01.343Z",
+  "deployer": "0x9D5f3691c56859EF30555572943Fe5eaCC26364F",
+  "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+  "lockers": [
+    {
+      "id": 0,
+      "address": "0xdA483b1A0512401D3AC5644eBD5258d82F76A125",
+      "capacity": 20000,
+      "tier": "public"
+    },
+    {
+      "id": 1,
+      "address": "0x41A7725623c6340bd0bd885aC54957Cfd0c827c5",
+      "capacity": 20000,
+      "tier": "public"
+    },
+    {
+      "id": 2,
+      "address": "0x2D47dE2b8DAE59eEAE982153cF7846D24F361DF7",
+      "capacity": 1000,
+      "tier": "standard"
+    },
+    {
+      "id": 3,
+      "address": "0x1972cA686116991D674c183D55D02561c390f51F",
+      "capacity": 100,
+      "tier": "vip"
+    },
+    {
+      "id": 4,
+      "address": "0x0cF28cE9dC4572320E1A9D109BeA2B0b087Cd802",
+      "capacity": 50,
+      "tier": "vip"
+    }
+  ],
+  "oracleVerifier": "0xf3bBaD99729835Cd51907726D37689556f7B496c",
+  "vaultFactory": "0x6337C908CDa601E64b3f68FBf5eC6784f5978daC",
+  "treasurySplitter": "0x05CB1E79abeD1aBfB639AE884Edbee2D84c55FB4",
+  "lockerTreasurySplitter": "0x1D0b8d3a2b46FA010bA12f5b8F910df4ae9FEbf8",
+  "lockerBlueprint": "0x529f3A80c51268f5Ba1198136529cE891683494f",
+  "lockerBlueprintIsERC5202": true,
+  "blueprintNote": "Blueprint requires ERC-5202 preamble for create_from_blueprint — verify on testnet",
+  "lockerFactory": "0xaB79c384940ecb645E834dAF5fd53e6e6B7381a9"
+}
