@@ -60,7 +60,7 @@ contract ZKVerifier is IVaultVerifier, Ownable {
         bytes calldata,
         uint256
     ) external override returns (bool) {
-        revert("ZKVerifier: not yet implemented — use OracleVerifier");
+        revert("ZKVerifier: not yet implemented - use OracleVerifier");
     }
 
     /// @inheritdoc IVaultVerifier
