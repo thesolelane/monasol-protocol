@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 /// @dev The oracle produces an off-chain ECDSA signature over:
 ///      keccak256(abi.encodePacked(nftMint, owner, expiry, block.chainid))
 ///
-///      The Locker contract calls verifyOwnership() before allowing any
+///      Vault._validateSignature calls verifyAccess() before allowing any
 ///      vault action that requires confirmed NFT custody.
 ///
 ///      This contract is intentionally simple — it will be replaced by
@@ -27,7 +27,7 @@ contract OracleVerifier is IVaultVerifier, Ownable, Pausable {
     mapping(address => bool) public approvedSigners;
 
     /// @notice Most recent verified owner per NFT mint.
-    mapping(bytes32 => bytes32) private _lastOwner;
+    mapping(bytes32 => address) private _lastOwner;
 
     /// @notice Timestamp of the most recent successful verification per mint.
     mapping(bytes32 => uint256) private _lastVerifiedAt;
@@ -47,9 +47,9 @@ contract OracleVerifier is IVaultVerifier, Ownable, Pausable {
     /// @inheritdoc IVaultVerifier
     function verifyAccess(
         bytes32 nftMint,
-        bytes32 owner,
-        bytes calldata proof,
-        uint256 expiry
+        address owner,
+        uint256 expiry,
+        bytes calldata proof
     ) external override whenNotPaused returns (bool valid) {
         require(block.timestamp <= expiry, "OracleVerifier: proof expired");
         require(
@@ -65,7 +65,7 @@ contract OracleVerifier is IVaultVerifier, Ownable, Pausable {
             abi.encodePacked(nftMint, owner, expiry, block.chainid)
         ).toEthSignedMessageHash();
 
-        // Replay guard — each (digest) can only be used once.
+        // Replay guard — each digest can only be used once.
         require(!_usedProofs[digest], "OracleVerifier: proof already used");
 
         address recovered = digest.recover(proof);
@@ -83,7 +83,7 @@ contract OracleVerifier is IVaultVerifier, Ownable, Pausable {
     }
 
     /// @inheritdoc IVaultVerifier
-    function lastVerifiedOwner(bytes32 nftMint) external view override returns (bytes32) {
+    function lastVerifiedOwner(bytes32 nftMint) external view override returns (address) {
         return _lastOwner[nftMint];
     }
 

@@ -1,0 +1,164 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
+import "./Vault.sol";
+
+/**
+ * @title VaultFactory
+ * @notice Deploys Vault clones deterministically using CREATE2.
+ *
+ * Address is deterministic from: locker + slotIndex + nftMint + signingWallet
+ * This means the vault address is known before deployment — initCode in UserOp
+ * can reference it before the vault exists on-chain.
+ *
+ * Called by the backend after Solana multisig confirms move-in.
+ * Called by the Locker contract's move_in function.
+ */
+contract VaultFactory {
+
+    // ── State ─────────────────────────────────────────────
+
+    address public immutable vaultImplementation;
+    IEntryPoint public immutable entryPoint;
+    address public owner;
+
+    mapping(address => bool) public authorizedCallers;
+
+    // ── Events ────────────────────────────────────────────
+
+    event VaultDeployed(
+        address indexed vault,
+        address indexed locker,
+        uint256 slotIndex,
+        bytes32 nftMint
+    );
+    event CallerAuthorized(address indexed caller);
+    event CallerRevoked(address indexed caller);
+
+    // ── Constructor ───────────────────────────────────────
+
+    constructor(IEntryPoint _entryPoint, address _owner) {
+        entryPoint           = _entryPoint;
+        owner                = _owner;
+
+        // Deploy the implementation once — all clones delegate to it
+        Vault impl           = new Vault(_entryPoint);
+        vaultImplementation  = address(impl);
+
+        authorizedCallers[_owner] = true;
+    }
+
+    // ── Deploy ────────────────────────────────────────────
+
+    /**
+     * @notice Deploy a new Vault clone for a slot.
+     *         Deterministic address — same inputs always produce same address.
+     *         If vault already exists at predicted address, returns it (idempotent).
+     *
+     * @param locker         The Locker contract address
+     * @param slotIndex      Slot number within the locker
+     * @param nftMint        Solana NFT mint (bytes32)
+     * @param signingWallet  Monad signing wallet
+     * @param securityMode   SYSTEM_MODE (1) or SELF_MODE (2)
+     * @param verifier       OracleVerifier or ZKVerifier address
+     */
+    function deployVault(
+        address locker,
+        uint256 slotIndex,
+        bytes32 nftMint,
+        address signingWallet,
+        uint8   securityMode,
+        address verifier
+    ) external returns (address vault) {
+        require(authorizedCallers[msg.sender], "Not authorized");
+
+        bytes32 salt = _salt(locker, slotIndex, nftMint, signingWallet);
+
+        // Idempotent — return existing vault if already deployed
+        address predicted = Clones.predictDeterministicAddress(
+            vaultImplementation,
+            salt,
+            address(this)
+        );
+
+        if (predicted.code.length > 0) {
+            return predicted;
+        }
+
+        // Deploy clone
+        vault = Clones.cloneDeterministic(vaultImplementation, salt);
+
+        // Initialize
+        Vault(payable(vault)).initialize(
+            locker,
+            slotIndex,
+            nftMint,
+            signingWallet,
+            securityMode,
+            verifier
+        );
+
+        // Fund EntryPoint deposit — vault needs MON for gas
+        // Backend tops this up separately; 0 initial deposit is fine for testnet
+        // entryPoint.depositTo{value: msg.value}(vault);
+
+        emit VaultDeployed(vault, locker, slotIndex, nftMint);
+    }
+
+    /**
+     * @notice Predict vault address without deploying.
+     *         Used to populate initCode in UserOperations.
+     */
+    function predictVaultAddress(
+        address locker,
+        uint256 slotIndex,
+        bytes32 nftMint,
+        address signingWallet
+    ) external view returns (address) {
+        return Clones.predictDeterministicAddress(
+            vaultImplementation,
+            _salt(locker, slotIndex, nftMint, signingWallet),
+            address(this)
+        );
+    }
+
+    // ── Authorization ─────────────────────────────────────
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");
+        _;
+    }
+
+    function authorizeCaller(address caller) external onlyOwner {
+        authorizedCallers[caller] = true;
+        emit CallerAuthorized(caller);
+    }
+
+    function revokeCaller(address caller) external onlyOwner {
+        authorizedCallers[caller] = false;
+        emit CallerRevoked(caller);
+    }
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "Invalid");
+        owner = newOwner;
+    }
+
+    // ── Internal ──────────────────────────────────────────
+
+    function _salt(
+        address locker,
+        uint256 slotIndex,
+        bytes32 nftMint,
+        address signingWallet
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(
+            locker,
+            slotIndex,
+            nftMint,
+            signingWallet
+        ));
+    }
+}
