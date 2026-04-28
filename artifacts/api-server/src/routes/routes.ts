@@ -166,7 +166,9 @@ router.patch("/swaps/:token/confirm", async (req, res) => {
 
 router.get("/sessions/:vaultId", async (req, res) => {
   try {
-    const session = await storage.getActiveVaultSession(req.params.vaultId);
+    const nftMint = req.query.nftMint as string;
+    if (!nftMint) return res.status(400).json({ error: "nftMint query param is required" });
+    const session = await storage.getActiveVaultSession(req.params.vaultId, nftMint);
     if (!session) return res.status(404).json({ error: "No active session" });
     res.json({
       id: session.id,
@@ -221,7 +223,9 @@ router.post("/sessions", async (req, res) => {
 
 router.delete("/sessions/:vaultId", async (req, res) => {
   try {
-    const session = await storage.closeVaultSession(req.params.vaultId);
+    const nftMint = req.query.nftMint as string;
+    if (!nftMint) return res.status(400).json({ error: "nftMint query param is required" });
+    const session = await storage.closeVaultSession(req.params.vaultId, nftMint);
     if (!session) return res.status(404).json({ error: "No active session to close" });
     res.json({ status: "closed", sessionId: session.sessionId });
   } catch (err) {

@@ -37,9 +37,9 @@ export interface IStorage {
   updateLockerMonadAddress(lockerId: string, monadAddress: string): Promise<Locker | undefined>;
   updateVaultSessionState(mint: string, sessionOpen: boolean, sessionExpiresAt: Date | null, readOnly: boolean): Promise<NftKey | undefined>;
 
-  getActiveVaultSession(vaultId: string): Promise<VaultSession | undefined>;
+  getActiveVaultSession(vaultId: string, nftMint: string): Promise<VaultSession | undefined>;
   createVaultSession(data: InsertVaultSession): Promise<VaultSession>;
-  closeVaultSession(vaultId: string): Promise<VaultSession | undefined>;
+  closeVaultSession(vaultId: string, nftMint: string): Promise<VaultSession | undefined>;
 }
 
 export class DrizzleStorage implements IStorage {
@@ -227,38 +227,47 @@ export class DrizzleStorage implements IStorage {
     return nft;
   }
 
-  async getActiveVaultSession(vaultId: string): Promise<VaultSession | undefined> {
+  async getActiveVaultSession(vaultId: string, nftMint: string): Promise<VaultSession | undefined> {
     await this.ensureSeeded();
     const now = new Date();
-    const rows = await db.select().from(vaultSessions).where(eq(vaultSessions.vaultId, vaultId));
-    const active = rows
-      .filter(r => r.status === "open")
-      .sort((a, b) => b.openedAt.getTime() - a.openedAt.getTime())[0];
-    if (!active) return undefined;
-    if (active.expiresAt < now) {
-      await db.update(vaultSessions).set({ status: "expired" }).where(eq(vaultSessions.id, active.id));
-      return { ...active, status: "expired" };
+    const rows = await db.select().from(vaultSessions)
+      .where(eq(vaultSessions.vaultId, vaultId));
+    // Only rows for this exact NFT key, not yet closed
+    const candidates = rows
+      .filter(r => r.nftMint === nftMint && (r.status === "open" || r.status === "expired"))
+      .sort((a, b) => b.openedAt.getTime() - a.openedAt.getTime());
+    const latest = candidates[0];
+    if (!latest) return undefined;
+    // Transition open → expired if time has passed
+    if (latest.status === "open" && latest.expiresAt < now) {
+      await db.update(vaultSessions).set({ status: "expired" }).where(eq(vaultSessions.id, latest.id));
+      return { ...latest, status: "expired" };
     }
-    return active;
+    return latest;
   }
 
   async createVaultSession(data: InsertVaultSession): Promise<VaultSession> {
     await this.ensureSeeded();
-    // Close any existing open session for this vault first
-    await db.update(vaultSessions)
-      .set({ status: "closed", closedAt: new Date() })
+    // Close any existing open/expired session for this (vault, nft) pair
+    const existing = await db.select().from(vaultSessions)
       .where(eq(vaultSessions.vaultId, data.vaultId));
-
+    const toClose = existing.filter(r => r.nftMint === data.nftMint && (r.status === "open" || r.status === "expired"));
+    for (const row of toClose) {
+      await db.update(vaultSessions)
+        .set({ status: "closed", closedAt: new Date() })
+        .where(eq(vaultSessions.id, row.id));
+    }
     const [session] = await db.insert(vaultSessions)
       .values({ ...data, id: randomUUID() })
       .returning();
     return session;
   }
 
-  async closeVaultSession(vaultId: string): Promise<VaultSession | undefined> {
+  async closeVaultSession(vaultId: string, nftMint: string): Promise<VaultSession | undefined> {
     await this.ensureSeeded();
     const rows = await db.select().from(vaultSessions).where(eq(vaultSessions.vaultId, vaultId));
-    const active = rows.filter(r => r.status === "open" || r.status === "expired")
+    const active = rows
+      .filter(r => r.nftMint === nftMint && (r.status === "open" || r.status === "expired"))
       .sort((a, b) => b.openedAt.getTime() - a.openedAt.getTime())[0];
     if (!active) return undefined;
     const [updated] = await db.update(vaultSessions)

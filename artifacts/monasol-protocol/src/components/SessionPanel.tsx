@@ -74,7 +74,7 @@ export function SessionPanel({ vaultId, nftMint, nftName }: SessionPanelProps) {
     setDurationIdx(0);
     setLoadingInitial(true);
 
-    fetch(`/api/sessions/${encodeURIComponent(vaultId)}`)
+    fetch(`/api/sessions/${encodeURIComponent(vaultId)}?nftMint=${encodeURIComponent(nftMint)}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data && (data.status === "open" || data.status === "expired")) {
@@ -121,7 +121,7 @@ export function SessionPanel({ vaultId, nftMint, nftName }: SessionPanelProps) {
     setLoading("close");
     setSuccess(null);
     try {
-      const res = await fetch(`/api/sessions/${encodeURIComponent(vaultId)}`, { method: "DELETE" });
+      const res = await fetch(`/api/sessions/${encodeURIComponent(vaultId)}?nftMint=${encodeURIComponent(nftMint)}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to close session");
       setSession(null);
       setAuthAddress("");
