@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { WalletConnect } from "@/components/WalletConnect";
 import { NftGrid } from "@/components/NftGrid";
@@ -13,6 +13,7 @@ import { SessionPanel } from "@/components/SessionPanel";
 import { Shield, Coins, Activity, Zap, Wallet, Key, ArrowLeftRight, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
+import { getFeatureFlags } from "@/lib/featureFlags";
 import background from "@assets/generated_images/abstract_dark_futuristic_blockchain_network_background_with_purple_and_green_neon_accents.png";
 
 interface ProtocolStats {
@@ -58,16 +59,21 @@ function formatTvl(tvlUsd: string): string {
 
 export default function Home() {
   const queryClient = useQueryClient();
+  const [monadEnabled, setMonadEnabled] = useState(() => getFeatureFlags().monadWalletEnabled);
   const [evmConnected, setEvmConnected] = useState(false);
   const [solanaConnected, setSolanaConnected] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setMonadEnabled(getFeatureFlags().monadWalletEnabled);
+    window.addEventListener("featureFlagsChanged", handler);
+    return () => window.removeEventListener("featureFlagsChanged", handler);
+  }, []);
   const [selectedNft, setSelectedNft] = useState<string | null>(null);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [isMintNftOpen, setIsMintNftOpen] = useState(false);
   const [preSelectedNft, setPreSelectedNft] = useState<RentedNft | null>(null);
   const [activeVault, setActiveVault] = useState<{ id: string, lockerId: string, balance: string, nftName: string } | null>(null);
-
-  const allConnected = evmConnected && solanaConnected;
 
   const { data: stats } = useQuery<ProtocolStats>({
     queryKey: ["/api/stats"],
@@ -171,11 +177,13 @@ export default function Home() {
               <Key className="h-4 w-4 mr-2" />
               Rent a Vault
             </Button>
-            <WalletConnect
-              type="evm"
-              isConnected={evmConnected}
-              onConnect={() => setEvmConnected(!evmConnected)}
-            />
+            {monadEnabled && (
+              <WalletConnect
+                type="evm"
+                isConnected={evmConnected}
+                onConnect={() => setEvmConnected(!evmConnected)}
+              />
+            )}
             <WalletConnect
               type="solana"
               isConnected={solanaConnected}
@@ -306,7 +314,7 @@ export default function Home() {
               </div>
             ) : (
               <>
-                <LockerForm isConnected={allConnected} hasNftKey={!!selectedNft} activeVault={activeVault} />
+                <LockerForm isConnected={monadEnabled ? solanaConnected && evmConnected : solanaConnected} hasNftKey={!!selectedNft} activeVault={activeVault} />
                 <SessionPanel vaultId={activeVault?.id ?? ""} nftMint={selectedNft ?? ""} nftName={activeVault?.nftName ?? ""} ownerWallet={MOCK_WALLET} />
                 <CircuitBreaker />
                 <VaultExplorer />

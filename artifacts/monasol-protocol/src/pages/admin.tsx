@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DeployLockerModal } from "@/components/DeployLockerModal";
 import { LockerZoomModal } from "@/components/LockerZoomModal";
-import { Shield, Server, Activity, Users, Settings, ArrowLeft, ShieldAlert, KeyRound, Link as LinkIcon, EyeOff, FileCode2 } from "lucide-react";
+import { Shield, Server, Activity, Users, Settings, ArrowLeft, ShieldAlert, KeyRound, Link as LinkIcon, EyeOff, FileCode2, FlaskConical } from "lucide-react";
+import { getFeatureFlags, setFeatureFlag } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,13 @@ function formatTvl(tvlUsd: string): string {
 export default function AdminDashboard() {
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   const [zoomedLockerId, setZoomedLockerId] = useState<string | null>(null);
+  const [monadWalletEnabled, setMonadWalletEnabled] = useState(() => getFeatureFlags().monadWalletEnabled);
+
+  function toggleMonadWallet() {
+    const next = !monadWalletEnabled;
+    setFeatureFlag("monadWalletEnabled", next);
+    setMonadWalletEnabled(next);
+  }
 
   const { data: stats } = useQuery<ProtocolStats>({
     queryKey: ["/api/stats"],
@@ -363,6 +371,39 @@ export default function AdminDashboard() {
               <Button variant="secondary" className="w-full bg-white/5 hover:bg-white/10 text-white">
                 Rotate Stealth Relayers
               </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-lg font-bold flex items-center gap-2 text-white mb-4">
+            <FlaskConical className="h-5 w-5 text-gray-400" />
+            Feature Flags
+          </h2>
+          <div className="bg-black/40 border border-white/5 rounded-xl p-6 backdrop-blur-sm">
+            <p className="text-xs text-gray-500 mb-5">
+              Enable features that are in development. Changes take effect immediately — no page reload needed.
+            </p>
+            <div className="flex items-center justify-between py-4 border-b border-white/5">
+              <div>
+                <p className="text-sm font-semibold text-white">Monad Wallet Connection</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Shows the "Connect Monad" button on the main app. Off until Monad integration is live.
+                </p>
+              </div>
+              <button
+                data-testid="toggle-monad-wallet"
+                onClick={toggleMonadWallet}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                  monadWalletEnabled ? "bg-monad-purple" : "bg-white/10"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                    monadWalletEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
             </div>
           </div>
         </div>
