@@ -245,6 +245,8 @@ async function main() {
   await lockerBlueprint.waitForDeployment();
   addresses.lockerBlueprint         = await lockerBlueprint.getAddress();
   addresses.lockerBlueprintIsERC5202 = true;  // ERC-5202 initcode used — deploy_locker() is safe to call
+  (addresses as any).blueprintNote =
+    "Blueprint requires ERC-5202 preamble for create_from_blueprint — verify on testnet";
   log(`Locker blueprint deployed at: ${addresses.lockerBlueprint}`);
 
   // Deploy LockerFactory — takes blueprint address
