@@ -9,6 +9,7 @@ import { CircuitBreaker } from "@/components/CircuitBreaker";
 import { RentVaultModal } from "@/components/RentVaultModal";
 import { ClaimVaultModal } from "@/components/ClaimVaultModal";
 import { MintNftModal } from "@/components/MintNftModal";
+import { SessionPanel } from "@/components/SessionPanel";
 import { Shield, Coins, Activity, Zap, Wallet, Key, ArrowLeftRight, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
@@ -306,6 +307,7 @@ export default function Home() {
             ) : (
               <>
                 <LockerForm isConnected={allConnected} hasNftKey={!!selectedNft} activeVault={activeVault} />
+                <SessionPanel vaultId={activeVault?.id ?? ""} nftName={activeVault?.nftName ?? ""} />
                 <CircuitBreaker />
                 <VaultExplorer />
               </>
