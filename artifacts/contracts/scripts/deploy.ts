@@ -40,6 +40,7 @@ interface DeployedAddresses {
   treasurySplitter:        string;
   lockerTreasurySplitter:  string;
   lockerBlueprint:         string;
+  lockerBlueprintIsERC5202: boolean;  // true → deploy_locker() will succeed; false → revert
   lockerFactory:           string;
   lockers:                 LockerRecord[];
 }
@@ -242,7 +243,8 @@ async function main() {
   // No constructor args — blueprint deploy takes no args
   const lockerBlueprint = await LockerImplFactory.deploy();
   await lockerBlueprint.waitForDeployment();
-  addresses.lockerBlueprint = await lockerBlueprint.getAddress();
+  addresses.lockerBlueprint         = await lockerBlueprint.getAddress();
+  addresses.lockerBlueprintIsERC5202 = true;  // ERC-5202 initcode used — deploy_locker() is safe to call
   log(`Locker blueprint deployed at: ${addresses.lockerBlueprint}`);
 
   // Deploy LockerFactory — takes blueprint address
