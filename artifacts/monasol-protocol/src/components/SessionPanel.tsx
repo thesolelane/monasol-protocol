@@ -83,7 +83,7 @@ export function SessionPanel({ vaultId, nftMint, nftName }: SessionPanelProps) {
       })
       .catch(() => {})
       .finally(() => setLoadingInitial(false));
-  }, [vaultId]);
+  }, [vaultId, nftMint]);
 
   const timeLeft = session ? session.expiresAt - now : 0;
   const totalDuration = session ? session.expiresAt - session.openedAt : 1;
