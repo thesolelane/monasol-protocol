@@ -9,30 +9,30 @@ describe("OracleVerifier", function () {
   let owner: SignerWithAddress;
   let oracle: SignerWithAddress;
   let stranger: SignerWithAddress;
+  let vaultOwner: SignerWithAddress;
 
-  // Dummy Solana addresses encoded as bytes32
+  // Solana NFT mint encoded as bytes32
   const NFT_MINT = ethers.encodeBytes32String("SolanaNFTMint111111111");
-  const NFT_OWNER = ethers.encodeBytes32String("SolanaOwnerWallet11111");
 
+  // Builds an oracle proof: ECDSA over keccak256(nftMint, owner, expiry, chainId)
   async function buildProof(
     nftMint: string,
-    nftOwner: string,
+    ownerAddr: string,
     expiry: number,
     signer: SignerWithAddress
   ): Promise<string> {
     const chainId = (await ethers.provider.getNetwork()).chainId;
     const digest = ethers.keccak256(
       ethers.solidityPacked(
-        ["bytes32", "bytes32", "uint256", "uint256"],
-        [nftMint, nftOwner, expiry, chainId]
+        ["bytes32", "address", "uint256", "uint256"],
+        [nftMint, ownerAddr, expiry, chainId]
       )
     );
-    // Sign with Ethereum prefix (matches toEthSignedMessageHash in contract)
     return signer.signMessage(ethers.getBytes(digest));
   }
 
   beforeEach(async function () {
-    [owner, oracle, stranger] = await ethers.getSigners();
+    [owner, oracle, stranger, vaultOwner] = await ethers.getSigners();
 
     const Factory = await ethers.getContractFactory("OracleVerifier");
     verifier = (await Factory.deploy(
@@ -58,58 +58,58 @@ describe("OracleVerifier", function () {
     });
   });
 
-  // ─── verifyOwnership ───────────────────────────────────────────────────────
+  // ─── verifyAccess ──────────────────────────────────────────────────────────
 
-  describe("verifyOwnership", function () {
+  describe("verifyAccess", function () {
     it("accepts a valid oracle signature", async function () {
       const expiry = (await time.latest()) + 120;
-      const proof = await buildProof(NFT_MINT, NFT_OWNER, expiry, oracle);
+      const proof = await buildProof(NFT_MINT, vaultOwner.address, expiry, oracle);
 
       await expect(
-        verifier.verifyAccess(NFT_MINT, NFT_OWNER, proof, expiry)
+        verifier.verifyAccess(NFT_MINT, vaultOwner.address, expiry, proof)
       )
         .to.emit(verifier, "OwnershipVerified")
-        .withArgs(NFT_MINT, NFT_OWNER, expiry);
+        .withArgs(NFT_MINT, vaultOwner.address, expiry);
 
-      expect(await verifier.lastVerifiedOwner(NFT_MINT)).to.equal(NFT_OWNER);
+      expect(await verifier.lastVerifiedOwner(NFT_MINT)).to.equal(vaultOwner.address);
     });
 
     it("rejects an expired proof", async function () {
       const expiry = (await time.latest()) - 1;
-      const proof = await buildProof(NFT_MINT, NFT_OWNER, expiry, oracle);
+      const proof = await buildProof(NFT_MINT, vaultOwner.address, expiry, oracle);
 
       await expect(
-        verifier.verifyAccess(NFT_MINT, NFT_OWNER, proof, expiry)
+        verifier.verifyAccess(NFT_MINT, vaultOwner.address, expiry, proof)
       ).to.be.revertedWith("OracleVerifier: proof expired");
     });
 
     it("rejects a proof signed by an unapproved signer", async function () {
       const expiry = (await time.latest()) + 120;
-      const proof = await buildProof(NFT_MINT, NFT_OWNER, expiry, stranger);
+      const proof = await buildProof(NFT_MINT, vaultOwner.address, expiry, stranger);
 
       await expect(
-        verifier.verifyAccess(NFT_MINT, NFT_OWNER, proof, expiry)
+        verifier.verifyAccess(NFT_MINT, vaultOwner.address, expiry, proof)
       ).to.be.revertedWith("OracleVerifier: signer not approved");
     });
 
     it("rejects proof replay", async function () {
       const expiry = (await time.latest()) + 120;
-      const proof = await buildProof(NFT_MINT, NFT_OWNER, expiry, oracle);
+      const proof = await buildProof(NFT_MINT, vaultOwner.address, expiry, oracle);
 
-      await verifier.verifyAccess(NFT_MINT, NFT_OWNER, proof, expiry);
+      await verifier.verifyAccess(NFT_MINT, vaultOwner.address, expiry, proof);
 
       await expect(
-        verifier.verifyAccess(NFT_MINT, NFT_OWNER, proof, expiry)
+        verifier.verifyAccess(NFT_MINT, vaultOwner.address, expiry, proof)
       ).to.be.revertedWith("OracleVerifier: proof already used");
     });
 
     it("rejects when paused", async function () {
       await verifier.connect(owner).pause();
       const expiry = (await time.latest()) + 120;
-      const proof = await buildProof(NFT_MINT, NFT_OWNER, expiry, oracle);
+      const proof = await buildProof(NFT_MINT, vaultOwner.address, expiry, oracle);
 
       await expect(
-        verifier.verifyAccess(NFT_MINT, NFT_OWNER, proof, expiry)
+        verifier.verifyAccess(NFT_MINT, vaultOwner.address, expiry, proof)
       ).to.be.revertedWithCustomError(verifier, "EnforcedPause");
     });
   });
