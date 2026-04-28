@@ -142,3 +142,21 @@ export const swapSessions = pgTable("swap_sessions", {
 export const insertSwapSessionSchema = createInsertSchema(swapSessions).omit({ id: true, createdAt: true });
 export type InsertSwapSession = z.infer<typeof insertSwapSessionSchema>;
 export type SwapSession = typeof swapSessions.$inferSelect;
+
+export const sessionHistory = pgTable("session_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vaultId: text("vault_id").notNull(),
+  ownerWallet: text("owner_wallet").notNull(),
+  sessionId: text("session_id").notNull(),
+  label: text("label").notNull().default("General session"),
+  authorizedAddress: text("authorized_address").notNull().default("Any holder"),
+  openedAt: timestamp("opened_at").notNull(),
+  closedAt: timestamp("closed_at").notNull(),
+  durationMs: integer("duration_ms").notNull(),
+  shareWithProtocol: boolean("share_with_protocol").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertSessionHistorySchema = createInsertSchema(sessionHistory).omit({ id: true, createdAt: true });
+export type InsertSessionHistory = z.infer<typeof insertSessionHistorySchema>;
+export type SessionHistoryEntry = typeof sessionHistory.$inferSelect;

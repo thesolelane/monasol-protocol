@@ -233,4 +233,95 @@ router.delete("/sessions/:vaultId", async (req, res) => {
   }
 });
 
+// ── Session History (owner-gated) ────────────────────────────────────────────
+
+router.get("/sessions/:vaultId/history", async (req, res) => {
+  try {
+    const { vaultId } = req.params;
+    const wallet = req.query.wallet as string | undefined;
+    if (!wallet) {
+      return res.status(400).json({ error: "wallet query parameter is required" });
+    }
+    const entries = await storage.getSessionHistory(vaultId, wallet);
+    if (entries === null) {
+      return res.status(403).json({ error: "Access denied: wallet does not own this vault" });
+    }
+    res.json(entries.map(e => ({
+      id: e.id,
+      sessionId: e.sessionId,
+      label: e.label,
+      authorizedAddress: e.authorizedAddress,
+      openedAt: e.openedAt,
+      closedAt: e.closedAt,
+      durationMs: e.durationMs,
+      shareWithProtocol: e.shareWithProtocol,
+    })));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch session history" });
+  }
+});
+
+router.post("/sessions/:vaultId/history", async (req, res) => {
+  try {
+    const { vaultId } = req.params;
+    const { wallet, sessionId, label, authorizedAddress, openedAt, closedAt, durationMs } = req.body;
+    if (!wallet || !sessionId || !openedAt || !closedAt || !durationMs) {
+      return res.status(400).json({ error: "wallet, sessionId, openedAt, closedAt, and durationMs are required" });
+    }
+    const ownerCheck = await storage.getSessionHistory(vaultId, wallet);
+    if (ownerCheck === null) {
+      return res.status(403).json({ error: "Access denied: wallet does not own this vault" });
+    }
+    const entry = await storage.createSessionHistoryEntry({
+      vaultId,
+      ownerWallet: wallet,
+      sessionId,
+      label: label ?? "General session",
+      authorizedAddress: authorizedAddress ?? "Any holder",
+      openedAt: new Date(openedAt),
+      closedAt: new Date(closedAt),
+      durationMs,
+      shareWithProtocol: false,
+    });
+    res.status(201).json({ id: entry.id });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to record session history" });
+  }
+});
+
+router.patch("/sessions/:vaultId/sharing", async (req, res) => {
+  try {
+    const { vaultId } = req.params;
+    const { wallet, share } = req.body;
+    if (!wallet || typeof share !== "boolean") {
+      return res.status(400).json({ error: "wallet and share (boolean) are required" });
+    }
+    const updated = await storage.setVaultHistorySharing(vaultId, wallet, share);
+    if (!updated) {
+      return res.status(403).json({ error: "Access denied: wallet does not own this vault" });
+    }
+    res.json({ ok: true, shareWithProtocol: share });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update sharing preference" });
+  }
+});
+
+router.get("/sessions/:vaultId/system-aggregate", async (req, res) => {
+  try {
+    const { vaultId } = req.params;
+    const aggregate = await storage.getSystemSessionAggregate(vaultId);
+    if (aggregate === null) {
+      return res.json({ shared: false });
+    }
+    res.json({
+      shared: true,
+      totalSessions: aggregate.totalSessions,
+      totalDurationMs: aggregate.totalDurationMs,
+      lastActivityAt: aggregate.lastActivityAt,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch system aggregate" });
+  }
+});
+
 export default router;

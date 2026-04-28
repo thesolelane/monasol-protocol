@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
-  users, protocolStats, lockers, nftKeys, events, ticketTiers, swapSessions, vaultSessions,
+  users, protocolStats, lockers, nftKeys, events, ticketTiers, swapSessions, vaultSessions, sessionHistory,
   type User,
   type InsertUser,
   type ProtocolStats,
@@ -14,6 +14,8 @@ import {
   type InsertSwapSession,
   type VaultSession,
   type InsertVaultSession,
+  type SessionHistoryEntry,
+  type InsertSessionHistory,
 } from "@workspace/db";
 
 export interface IStorage {
@@ -40,6 +42,11 @@ export interface IStorage {
   getActiveVaultSession(vaultId: string, nftMint: string): Promise<VaultSession | undefined>;
   createVaultSession(data: InsertVaultSession): Promise<VaultSession>;
   closeVaultSession(vaultId: string, nftMint: string): Promise<VaultSession | undefined>;
+
+  getSessionHistory(vaultId: string, ownerWallet: string): Promise<SessionHistoryEntry[] | null>;
+  createSessionHistoryEntry(data: InsertSessionHistory): Promise<SessionHistoryEntry>;
+  setVaultHistorySharing(vaultId: string, ownerWallet: string, share: boolean): Promise<boolean>;
+  getSystemSessionAggregate(vaultId: string): Promise<{ totalSessions: number; totalDurationMs: number; lastActivityAt: Date | null } | null>;
 }
 
 export class DrizzleStorage implements IStorage {
@@ -82,6 +89,12 @@ export class DrizzleStorage implements IStorage {
     if (existingEvents.length === 0) {
       await this._seedEvents();
     }
+
+    // Seed session history if empty
+    const existingHistory = await db.select().from(sessionHistory).limit(1);
+    if (existingHistory.length === 0) {
+      await this._seedSessionHistory();
+    }
   }
 
   private async _seedLockers(): Promise<void> {
@@ -111,6 +124,21 @@ export class DrizzleStorage implements IStorage {
       { mint: "9mK2...7pR", name: "🎵 #021*025-15", walletAddress: demoWallet, isTicket: true, transferLockDays: 18, kycLevel: "soft", eventName: "The Midnight — MSG, June 14 2027" },
       { mint: "4bX8...2qL", name: "🎵 #VIP-014",    walletAddress: demoWallet, isTicket: true, transferLockDays: 0, kycLevel: "hard", eventName: "The Midnight — MSG, June 14 2027" },
     ]);
+  }
+
+  private async _seedSessionHistory(): Promise<void> {
+    const demoWallet = "8xR...3kL";
+    const now = Date.now();
+    const hour = 3_600_000;
+    const entries = [
+      { vaultId: "VLT-042", ownerWallet: demoWallet, sessionId: "SES-A1B2C3", label: "DeFi bridge access",  authorizedAddress: "0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE", openedAt: new Date(now - 10 * 24 * hour), closedAt: new Date(now - 10 * 24 * hour + 8 * hour),   durationMs: 8 * hour, shareWithProtocol: false },
+      { vaultId: "VLT-042", ownerWallet: demoWallet, sessionId: "SES-D4E5F6", label: "Collateral proof",     authorizedAddress: "Any holder",                                                    openedAt: new Date(now - 7 * 24 * hour),  closedAt: new Date(now - 7 * 24 * hour + hour),      durationMs: hour,     shareWithProtocol: false },
+      { vaultId: "VLT-042", ownerWallet: demoWallet, sessionId: "SES-G7H8I9", label: "Governance vote",      authorizedAddress: "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B", openedAt: new Date(now - 3 * 24 * hour),  closedAt: new Date(now - 3 * 24 * hour + 24 * hour), durationMs: 24 * hour, shareWithProtocol: false },
+      { vaultId: "VLT-881", ownerWallet: demoWallet, sessionId: "SES-J1K2L3", label: "General session",      authorizedAddress: "Any holder",                                                    openedAt: new Date(now - 14 * 24 * hour), closedAt: new Date(now - 14 * 24 * hour + hour),     durationMs: hour,     shareWithProtocol: false },
+      { vaultId: "VLT-881", ownerWallet: demoWallet, sessionId: "SES-M4N5O6", label: "Alpha access check",   authorizedAddress: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", openedAt: new Date(now - 5 * 24 * hour),  closedAt: new Date(now - 5 * 24 * hour + 8 * hour),  durationMs: 8 * hour, shareWithProtocol: false },
+      { vaultId: "VLT-112", ownerWallet: demoWallet, sessionId: "SES-P7Q8R9", label: "Genesis vault unlock", authorizedAddress: "Any holder",                                                    openedAt: new Date(now - 20 * 24 * hour), closedAt: new Date(now - 20 * 24 * hour + 8 * hour), durationMs: 8 * hour, shareWithProtocol: false },
+    ];
+    await db.insert(sessionHistory).values(entries);
   }
 
   private async _seedEvents(): Promise<void> {
@@ -232,13 +260,11 @@ export class DrizzleStorage implements IStorage {
     const now = new Date();
     const rows = await db.select().from(vaultSessions)
       .where(eq(vaultSessions.vaultId, vaultId));
-    // Only rows for this exact NFT key, not yet closed
     const candidates = rows
       .filter(r => r.nftMint === nftMint && (r.status === "open" || r.status === "expired"))
       .sort((a, b) => b.openedAt.getTime() - a.openedAt.getTime());
     const latest = candidates[0];
     if (!latest) return undefined;
-    // Transition open → expired if time has passed
     if (latest.status === "open" && latest.expiresAt < now) {
       await db.update(vaultSessions).set({ status: "expired" }).where(eq(vaultSessions.id, latest.id));
       return { ...latest, status: "expired" };
@@ -248,7 +274,6 @@ export class DrizzleStorage implements IStorage {
 
   async createVaultSession(data: InsertVaultSession): Promise<VaultSession> {
     await this.ensureSeeded();
-    // Close any existing open/expired session for this (vault, nft) pair
     const existing = await db.select().from(vaultSessions)
       .where(eq(vaultSessions.vaultId, data.vaultId));
     const toClose = existing.filter(r => r.nftMint === data.nftMint && (r.status === "open" || r.status === "expired"));
@@ -275,6 +300,60 @@ export class DrizzleStorage implements IStorage {
       .where(eq(vaultSessions.id, active.id))
       .returning();
     return updated;
+  }
+
+  async getSessionHistory(vaultId: string, ownerWallet: string): Promise<SessionHistoryEntry[] | null> {
+    await this.ensureSeeded();
+    const ownerNft = await db
+      .select()
+      .from(nftKeys)
+      .where(eq(nftKeys.walletAddress, ownerWallet))
+      .then(rows => rows.find(n => n.vaultRef === vaultId));
+    if (!ownerNft) return null;
+    return db
+      .select()
+      .from(sessionHistory)
+      .where(eq(sessionHistory.vaultId, vaultId))
+      .orderBy(desc(sessionHistory.openedAt));
+  }
+
+  async createSessionHistoryEntry(data: InsertSessionHistory): Promise<SessionHistoryEntry> {
+    await this.ensureSeeded();
+    const [entry] = await db
+      .insert(sessionHistory)
+      .values({ ...data, id: randomUUID() })
+      .returning();
+    return entry;
+  }
+
+  async setVaultHistorySharing(vaultId: string, ownerWallet: string, share: boolean): Promise<boolean> {
+    await this.ensureSeeded();
+    const ownerNft = await db
+      .select()
+      .from(nftKeys)
+      .where(eq(nftKeys.walletAddress, ownerWallet))
+      .then(rows => rows.find(n => n.vaultRef === vaultId));
+    if (!ownerNft) return false;
+    await db
+      .update(sessionHistory)
+      .set({ shareWithProtocol: share })
+      .where(eq(sessionHistory.vaultId, vaultId));
+    return true;
+  }
+
+  async getSystemSessionAggregate(vaultId: string): Promise<{ totalSessions: number; totalDurationMs: number; lastActivityAt: Date | null } | null> {
+    await this.ensureSeeded();
+    const entries = await db
+      .select()
+      .from(sessionHistory)
+      .where(eq(sessionHistory.vaultId, vaultId))
+      .then(rows => rows.filter(r => r.shareWithProtocol));
+    if (entries.length === 0) return null;
+    const totalDurationMs = entries.reduce((sum, e) => sum + e.durationMs, 0);
+    const lastActivityAt = entries.reduce<Date | null>((latest, e) => {
+      return !latest || e.closedAt > latest ? e.closedAt : latest;
+    }, null);
+    return { totalSessions: entries.length, totalDurationMs, lastActivityAt };
   }
 }
 
