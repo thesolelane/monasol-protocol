@@ -1,5 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "@nomiclabs/hardhat-vyper";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -23,6 +24,11 @@ const config: HardhatUserConfig = {
       viaIR: false,
       evmVersion: "cancun",
     },
+  },
+  // Vyper — Locker.vy and LockerFactory.vy
+  // Update the version string to match the pragma in your .vy files.
+  vyper: {
+    version: "0.3.10",
   },
   networks: {
     // Local Hardhat node — used for all tests
