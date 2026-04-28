@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
   Info,
   ToggleLeft,
   ToggleRight,
+  AlertCircle,
 } from "lucide-react";
 
 interface ApiSession {
@@ -91,6 +92,19 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [loading, setLoading] = useState<"open" | "close" | null>(null);
   const [success, setSuccess] = useState<"opened" | "closed" | null>(null);
+  const [openError, setOpenError] = useState<string | null>(null);
+  const [closeError, setCloseError] = useState<string | null>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+      if (openErrorTimerRef.current) clearTimeout(openErrorTimerRef.current);
+      if (closeErrorTimerRef.current) clearTimeout(closeErrorTimerRef.current);
+    };
+  }, []);
 
   const [durationIdx, setDurationIdx] = useState(0);
   const [authAddress, setAuthAddress] = useState("");
@@ -117,6 +131,8 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
     if (!vaultId) return;
     setSession(null);
     setSuccess(null);
+    setOpenError(null);
+    setCloseError(null);
     setAuthAddress("");
     setSessionLabel("");
     setDurationIdx(0);
@@ -173,6 +189,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
   async function handleOpen() {
     setLoading("open");
     setSuccess(null);
+    setOpenError(null);
     try {
       const res = await fetch("/api/sessions", {
         method: "POST",
@@ -189,9 +206,13 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
       const data: ApiSession = await res.json();
       setSession(data);
       setSuccess("opened");
-      setTimeout(() => setSuccess(null), 3_000);
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+      successTimerRef.current = setTimeout(() => setSuccess(null), 3_000);
     } catch {
-      // silently fail — UI stays on form
+      const msg = "Could not open session — please try again.";
+      setOpenError(msg);
+      if (openErrorTimerRef.current) clearTimeout(openErrorTimerRef.current);
+      openErrorTimerRef.current = setTimeout(() => setOpenError(null), 5_000);
     } finally {
       setLoading(null);
     }
@@ -202,6 +223,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
     const closedAt = Date.now();
     setLoading("close");
     setSuccess(null);
+    setCloseError(null);
     try {
       const res = await fetch(
         `/api/sessions/${encodeURIComponent(vaultId)}?nftMint=${encodeURIComponent(nftMint)}`,
@@ -231,9 +253,13 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
       setSessionLabel("");
       setSuccess("closed");
       if (historyOpen) setHistoryOpen(false);
-      setTimeout(() => setSuccess(null), 3_000);
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+      successTimerRef.current = setTimeout(() => setSuccess(null), 3_000);
     } catch {
-      // silently fail — keep session visible
+      const msg = "Could not close session — please try again.";
+      setCloseError(msg);
+      if (closeErrorTimerRef.current) clearTimeout(closeErrorTimerRef.current);
+      closeErrorTimerRef.current = setTimeout(() => setCloseError(null), 5_000);
     } finally {
       setLoading(null);
     }
@@ -337,6 +363,15 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                     ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Closing session...</>
                     : <><Square className="h-4 w-4 mr-2 fill-red-400" /> Close Session</>}
                 </Button>
+
+                <AnimatePresence>
+                  {closeError && (
+                    <motion.div data-testid="banner-close-error" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-red-500/30 bg-red-500/10 text-xs text-red-400">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {closeError}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
 
@@ -353,6 +388,15 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                     ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Closing...</>
                     : <><Square className="h-4 w-4 mr-2 fill-red-400" /> Close Expired Session</>}
                 </Button>
+
+                <AnimatePresence>
+                  {closeError && (
+                    <motion.div data-testid="banner-close-expired-error" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-red-500/30 bg-red-500/10 text-xs text-red-400">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {closeError}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
 
@@ -398,7 +442,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                     <Input data-testid="input-session-auth-address"
                       placeholder="0x... or any Solana address"
                       value={authAddress}
-                      onChange={e => setAuthAddress(e.target.value)}
+                      onChange={e => { setAuthAddress(e.target.value); setOpenError(null); }}
                       className="bg-black/20 border-white/10 h-11 pl-10 font-mono text-sm focus-visible:ring-monad-purple" />
                   </div>
                 </div>
@@ -411,7 +455,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                   <Input data-testid="input-session-label"
                     placeholder="e.g. DeFi bridge, collateral proof…"
                     value={sessionLabel}
-                    onChange={e => setSessionLabel(e.target.value)}
+                    onChange={e => { setSessionLabel(e.target.value); setOpenError(null); }}
                     className="bg-black/20 border-white/10 h-11 text-sm focus-visible:ring-monad-purple" />
                 </div>
 
@@ -429,6 +473,15 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                     ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Opening session...</>
                     : <><Play className="h-4 w-4 mr-2 fill-black" /> Open Session</>}
                 </Button>
+
+                <AnimatePresence>
+                  {openError && (
+                    <motion.div data-testid="banner-open-error" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-red-500/30 bg-red-500/10 text-xs text-red-400">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {openError}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <p className="text-[11px] text-gray-600 text-center leading-relaxed">
                   Calls <span className="font-mono text-gray-500">open_session</span> on the Monad Locker contract.
