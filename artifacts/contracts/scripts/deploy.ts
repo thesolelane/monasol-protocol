@@ -1,7 +1,9 @@
-import hre, { ethers, network } from "hardhat";
+import hre from "hardhat";
 import type { ContractTransactionResponse, ContractTransactionReceipt } from "ethers";
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
+
+const { ethers, network } = hre;
 
 // ── Constants ─────────────────────────────────────────────
 
@@ -47,6 +49,37 @@ interface LockerRecord {
   address:  string;
   capacity: number;
   tier:     string;
+}
+
+// ── Blueprint helpers ─────────────────────────────────────
+
+/**
+ * Wraps regular Vyper bytecode with the ERC-5202 blueprint preamble.
+ *
+ * Transaction data layout (initcode executed by EVM):
+ *   [ 10-byte preamble ][ 0xFE7100 ][ original bytecode ]
+ *    └─ PUSH2/CODECOPY/RETURN ──┘  └─ stored on-chain ──────────┘
+ *
+ * Preamble opcodes (10 bytes total, offset 0x0a into tx data):
+ *   61 XX XX  — PUSH2  payloadLen  (= 3 + bytecode bytes)
+ *   3d        — RETURNDATASIZE     (= 0, cheap zero)
+ *   81        — DUP2               (duplicate payloadLen)
+ *   60 0a     — PUSH1  0x0a        (preamble length — copy starts here)
+ *   3d        — RETURNDATASIZE     (= 0, memory dest)
+ *   39        — CODECOPY           (mem[0..payloadLen] ← txdata[10..])
+ *   f3        — RETURN             (return mem[0..payloadLen])
+ *
+ * The EVM stores exactly `0xFE7100 + original_bytecode`, which is what
+ * LockerFactory's `create_from_blueprint(code_offset=3)` expects.
+ *
+ * Reference: https://eips.ethereum.org/EIPS/eip-5202
+ */
+function _buildBlueprintBytecode(bytecode: string): string {
+  const stripped    = bytecode.startsWith("0x") ? bytecode.slice(2) : bytecode;
+  const payloadLen  = 3 + stripped.length / 2;                  // 0xFE7100 (3) + bytecode bytes
+  const lenHex      = payloadLen.toString(16).padStart(4, "0"); // 2-byte big-endian for PUSH2
+  const preamble    = `61${lenHex}3d81600a3d39f3`;              // 10 bytes
+  return `0x${preamble}fe7100${stripped}`;
 }
 
 // ── Helpers ───────────────────────────────────────────────
@@ -198,29 +231,18 @@ async function main() {
   addresses.lockerTreasurySplitter = lockerTSAddress;
   log(`LockerTreasurySplitter deployed at: ${lockerTSAddress}`);
 
-  // Deploy Locker blueprint — this is the implementation contract
-  // LockerFactory clones it for each new locker via create_from_blueprint
+  // Deploy Locker as ERC-5202 blueprint
+  // Regular Vyper bytecode must be wrapped with the blueprint preamble
+  // before deployment so create_from_blueprint can clone it correctly
   const LockerImplFactory = new ethers.ContractFactory(
-    LockerArtifact.abi,
-    LockerArtifact.bytecode,
+    [],                                                    // no ABI needed — blueprint is not called directly
+    _buildBlueprintBytecode(LockerArtifact.bytecode),
     deployer
   );
-
-  // Blueprint deployment: Vyper blueprints use ERC-5202 prefix
-  // The blueprint is deployed with a special initcode that marks it
-  // as a blueprint — LockerFactory's create_from_blueprint reads from it
-  // We deploy the raw contract; Vyper's create_from_blueprint handles
-  // the blueprint prefix internally when called from LockerFactory
-  const lockerImpl = await LockerImplFactory.deploy(
-    0,                  // locker_id placeholder — overridden by blueprint clone
-    1,                  // capacity placeholder — overridden by blueprint clone
-    "blueprint",        // tier placeholder
-    deployer.address,   // protocol placeholder
-    lockerTSAddress,    // treasury_splitter
-    MOVE_IN_FEE         // move_in_fee placeholder
-  );
-  await lockerImpl.waitForDeployment();
-  addresses.lockerBlueprint = await lockerImpl.getAddress();
+  // No constructor args — blueprint deploy takes no args
+  const lockerBlueprint = await LockerImplFactory.deploy();
+  await lockerBlueprint.waitForDeployment();
+  addresses.lockerBlueprint = await lockerBlueprint.getAddress();
   log(`Locker blueprint deployed at: ${addresses.lockerBlueprint}`);
 
   // Deploy LockerFactory — takes blueprint address
