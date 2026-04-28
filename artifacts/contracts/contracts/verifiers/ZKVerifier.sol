@@ -19,14 +19,14 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 ///        2. Accept Merkle proofs of NFT account state from those headers.
 ///        3. Verify NFT ownership without any trusted intermediary.
 ///
-///      Implementation timeline: 6–12 months of specialist engineering.
+///      Implementation timeline: 6-12 months of specialist engineering.
 ///      Formal specification and independent security audit required
 ///      before any mainnet deployment.
 ///
 ///      Until then, MonaSol Protocol uses OracleVerifier for Phase 1.
 contract ZKVerifier is IVaultVerifier, Ownable {
 
-    // ─── Light Client State (populated once implementation is ready) ──────────
+    // ── Light Client State (populated once implementation is ready) ───────────
 
     /// @notice The most recently accepted Solana slot number.
     uint64 public latestSlot;
@@ -34,13 +34,13 @@ contract ZKVerifier is IVaultVerifier, Ownable {
     /// @notice Merkle root of the Solana account state at `latestSlot`.
     bytes32 public latestStateRoot;
 
-    /// @notice Mapping from accepted slot → state root (historical window).
+    /// @notice Mapping from accepted slot to state root (historical window).
     mapping(uint64 => bytes32) public slotRoots;
 
-    // ─── Verification Records ─────────────────────────────────────────────────
+    // ── Verification Records ──────────────────────────────────────────────────
 
-    mapping(bytes32 => bytes32) private _lastOwner;
-    mapping(bytes32 => uint256) private _lastVerifiedAt;
+    mapping(bytes32 => address)  private _lastOwner;
+    mapping(bytes32 => uint256)  private _lastVerifiedAt;
 
     bool private _active;
 
@@ -48,7 +48,7 @@ contract ZKVerifier is IVaultVerifier, Ownable {
         _active = false;
     }
 
-    // ─── IVaultVerifier ───────────────────────────────────────────────────────
+    // ── IVaultVerifier ────────────────────────────────────────────────────────
 
     /// @inheritdoc IVaultVerifier
     /// @dev STUB: always reverts until the light client is implemented.
@@ -56,15 +56,15 @@ contract ZKVerifier is IVaultVerifier, Ownable {
     ///      against `latestStateRoot` once real implementation lands.
     function verifyAccess(
         bytes32,
-        bytes32,
-        bytes calldata,
-        uint256
+        address,
+        uint256,
+        bytes calldata
     ) external pure override returns (bool) {
         revert("ZKVerifier: not yet implemented - use OracleVerifier");
     }
 
     /// @inheritdoc IVaultVerifier
-    function lastVerifiedOwner(bytes32 nftMint) external view override returns (bytes32) {
+    function lastVerifiedOwner(bytes32 nftMint) external view override returns (address) {
         return _lastOwner[nftMint];
     }
 
@@ -78,7 +78,7 @@ contract ZKVerifier is IVaultVerifier, Ownable {
         return _active;
     }
 
-    // ─── Admin (light client header relay — placeholder) ─────────────────────
+    // ── Admin (light client header relay — placeholder) ───────────────────────
 
     /// @notice Submit a new Solana slot header.
     /// @dev    In production this will require a validity proof (SNARK/STARK)

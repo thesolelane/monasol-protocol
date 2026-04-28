@@ -14,9 +14,9 @@
         },
         {
           "indexed": true,
-          "internalType": "bytes32",
+          "internalType": "address",
           "name": "owner",
-          "type": "bytes32"
+          "type": "address"
         },
         {
           "indexed": false,
@@ -90,9 +90,9 @@
       "name": "lastVerifiedOwner",
       "outputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "address",
           "name": "owner",
-          "type": "bytes32"
+          "type": "address"
         }
       ],
       "stateMutability": "view",
@@ -106,19 +106,19 @@
           "type": "bytes32"
         },
         {
-          "internalType": "bytes32",
+          "internalType": "address",
           "name": "owner",
-          "type": "bytes32"
-        },
-        {
-          "internalType": "bytes",
-          "name": "proof",
-          "type": "bytes"
+          "type": "address"
         },
         {
           "internalType": "uint256",
           "name": "expiry",
           "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "proof",
+          "type": "bytes"
         }
       ],
       "name": "verifyAccess",
