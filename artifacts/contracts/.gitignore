@@ -5,3 +5,5 @@ typechain-types/
 dist/
 coverage/
 coverage.json
+deployed/
+.env
