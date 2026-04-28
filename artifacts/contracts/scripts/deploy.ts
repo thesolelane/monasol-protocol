@@ -1,10 +1,10 @@
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 
 // ── Constants ─────────────────────────────────────────────
 
-const ENTRYPOINT_V07 = "0x0000000071727De22E5E9d8BAF0edAc6f37da032";
+const ENTRYPOINT_V07 = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
 
 const MONAD_CHAIN_ID = 10143;
 
@@ -71,7 +71,11 @@ async function waitConfirmed(
 
 // ── Validation ────────────────────────────────────────────
 
-function validateEnv() {
+function validateEnv(networkName: string) {
+  // Local Hardhat network provides its own funded accounts — no key needed
+  const isLocal = networkName === "hardhat" || networkName === "localhost";
+  if (isLocal) return;
+
   const missing: string[] = [];
   if (!process.env.DEPLOYER_PRIVATE_KEY) missing.push("DEPLOYER_PRIVATE_KEY");
   if (missing.length > 0) {
@@ -84,10 +88,10 @@ function validateEnv() {
 // ── Main ──────────────────────────────────────────────────
 
 async function main() {
-  validateEnv();
+  validateEnv(network.name);
 
   const [deployer] = await ethers.getSigners();
-  const network    = await ethers.provider.getNetwork();
+  const chainInfo  = await ethers.provider.getNetwork();
   const balance    = await ethers.provider.getBalance(deployer.address);
 
   console.log("\n╔═══════════════════════════════════════════════════╗");
@@ -95,9 +99,9 @@ async function main() {
   console.log("╚═══════════════════════════════════════════════════╝");
   console.log(`  Deployer : ${deployer.address}`);
   console.log(`  Balance  : ${ethers.formatEther(balance)} MON`);
-  console.log(`  Network  : ${network.name} (chainId: ${network.chainId})`);
+  console.log(`  Network  : ${network.name} (chainId: ${chainInfo.chainId})`);
 
-  if (network.chainId === BigInt(MONAD_CHAIN_ID) && balance < ethers.parseEther("0.1")) {
+  if (chainInfo.chainId === BigInt(MONAD_CHAIN_ID) && balance < ethers.parseEther("0.1")) {
     console.error("\n  Balance too low. Fund deployer with testnet MON first.");
     process.exit(1);
   }
@@ -114,7 +118,7 @@ async function main() {
 
   const addresses: Partial<DeployedAddresses> = {
     network:    network.name,
-    chainId:    Number(network.chainId),
+    chainId:    Number(chainInfo.chainId),
     deployedAt: new Date().toISOString(),
     deployer:   deployer.address,
     entryPoint: ENTRYPOINT_V07,

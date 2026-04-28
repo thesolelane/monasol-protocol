@@ -55,11 +55,12 @@ describe("Vault", () => {
     [owner, guardian1, guardian2, signingWallet, attacker, locker] =
       await ethers.getSigners();
 
-    // Deploy OracleVerifier — guardian1 is the approved oracle signer
+    // Deploy OracleVerifier — guardian1 is the approved oracle signer, threshold 1
     const OracleVerifierFactory = await ethers.getContractFactory("OracleVerifier");
     oracle = await OracleVerifierFactory.deploy(
       owner.address,
-      guardian1.address
+      [guardian1.address],
+      1
     );
     await oracle.waitForDeployment();
 

@@ -5,7 +5,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 // EntryPoint v0.7 — confirmed live on Monad testnet
-export const ENTRYPOINT_V07 = "0x0000000071727De22E5E9d8BAF0edAc6f37da032";
+export const ENTRYPOINT_V07 = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
 
 // Monad testnet chain ID
 const MONAD_CHAIN_ID = 10143;
