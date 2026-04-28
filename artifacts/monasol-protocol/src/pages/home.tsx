@@ -302,7 +302,7 @@ export default function Home() {
                 <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-white/10" />
                 {[
                   "Connect your Monad (vault) and Solana (key) wallets",
-                  "Move in — mint a Solana NFT key and create your vault",
+                  "Claim Vault — present your NFT key to register ownership on-chain",
                   "Select your NFT key to unlock vault controls",
                   "Deposit MON, set security rules, or share a proof with Private Explorer",
                 ].map((step, i) => (

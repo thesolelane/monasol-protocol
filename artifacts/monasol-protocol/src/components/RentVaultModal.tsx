@@ -198,7 +198,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                     <span className="font-mono text-white">{selected.oneTimeFeeSOL} SOL</span>
                   </div>
                   <div className="flex justify-between text-gray-400">
-                    <span>Move-in fee</span>
+                    <span>Claim registration fee</span>
                     <span className="font-mono text-white">{selected.moveInFeeSOL} SOL</span>
                   </div>
                   <div className="flex justify-between font-bold border-t border-white/10 pt-1 mt-1">
@@ -207,7 +207,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                       {(selected.oneTimeFeeSOL + selected.moveInFeeSOL).toFixed(4)} SOL
                     </span>
                   </div>
-                  <p className="text-gray-600 pt-1">Minimum deposit of {selected.minDepositSol} MON required at move-in. Not charged now.</p>
+                  <p className="text-gray-600 pt-1">Minimum deposit of {selected.minDepositSol} MON required at claim time. Not charged now.</p>
                 </div>
               )}
 
@@ -263,7 +263,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                 onClick={handleFinish}
                 className="w-full h-11 mt-2 bg-monad-purple hover:bg-monad-purple/90 text-black font-bold"
               >
-                Move In Now
+                Claim Vault
               </Button>
             </motion.div>
           )}
