@@ -7,7 +7,7 @@ import { VaultExplorer } from "@/components/VaultExplorer";
 import { StatsCard } from "@/components/StatsCard";
 import { CircuitBreaker } from "@/components/CircuitBreaker";
 import { RentVaultModal } from "@/components/RentVaultModal";
-import { MoveInModal } from "@/components/MoveInModal";
+import { ClaimVaultModal } from "@/components/ClaimVaultModal";
 import { MintNftModal } from "@/components/MintNftModal";
 import { Shield, Coins, Activity, Zap, Wallet, Key, ArrowLeftRight, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,14 @@ interface NftKey {
   eventName: string | null;
 }
 
+interface RentedNft {
+  mint: string;
+  name: string;
+  tokenId: string;
+  lockerRef: string;
+  slotNumber: number;
+}
+
 const MOCK_WALLET = "8xR...3kL";
 
 function formatTvl(tvlUsd: string): string {
@@ -53,9 +61,9 @@ export default function Home() {
   const [solanaConnected, setSolanaConnected] = useState(false);
   const [selectedNft, setSelectedNft] = useState<string | null>(null);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
-  const [isMoveInOpen, setIsMoveInOpen] = useState(false);
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [isMintNftOpen, setIsMintNftOpen] = useState(false);
-  const [mintedNft, setMintedNft] = useState<{ mint: string; name: string; image: string; tokenId: string } | null>(null);
+  const [preSelectedNft, setPreSelectedNft] = useState<RentedNft | null>(null);
   const [activeVault, setActiveVault] = useState<{ id: string, lockerId: string, balance: string, nftName: string } | null>(null);
 
   const allConnected = evmConnected && solanaConnected;
@@ -111,6 +119,11 @@ export default function Home() {
     }
   };
 
+  const openClaimModal = (nft?: RentedNft) => {
+    setPreSelectedNft(nft ?? null);
+    setIsClaimModalOpen(true);
+  };
+
   const tvlDisplay = stats ? formatTvl(stats.tvlUsd) : "$4.2M";
   const tvlTrend = stats?.tvlTrend ?? "+12% this week";
   const activeVaultsDisplay = stats ? `${stats.activeVaults.toLocaleString()} / ${stats.maxVaults.toLocaleString()}` : "1,284 / 1,500";
@@ -142,12 +155,14 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
             <Button
-              onClick={() => solanaConnected ? setIsMoveInOpen(true) : setSolanaConnected(true)}
-              className="h-10 bg-monad-purple hover:bg-monad-purple/90 text-black font-bold shadow-[0_0_15px_-3px_rgba(130,71,229,0.4)]"
+              data-testid="button-claim-vault-header"
+              onClick={() => openClaimModal()}
+              className="h-10 bg-monad-purple hover:bg-monad-purple/90 text-white font-bold shadow-[0_0_15px_-3px_rgba(130,71,229,0.4)]"
             >
               Claim Vault
             </Button>
             <Button
+              data-testid="button-rent-vault-header"
               onClick={() => setIsRentModalOpen(true)}
               variant="outline"
               className="h-10 bg-black/40 border-solana-green/30 text-solana-green hover:bg-solana-green/10 hover:text-solana-green shadow-[0_0_10px_rgba(20,241,149,0.1)]"
@@ -301,8 +316,8 @@ export default function Home() {
               <div className="space-y-4 relative">
                 <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-white/10" />
                 {[
-                  "Connect your Monad (vault) and Solana (key) wallets",
-                  "Claim Vault — present your NFT key to register ownership on-chain",
+                  "Rent a Vault on Solana — pay a one-time fee and receive your NFT key",
+                  "Claim Vault on Monad — use your NFT key to register ownership via transfer_lease",
                   "Select your NFT key to unlock vault controls",
                   "Deposit MON, set security rules, or share a proof with Private Explorer",
                 ].map((step, i) => (
@@ -320,28 +335,26 @@ export default function Home() {
       </div>
 
 
+      {/* Rent a Vault — Solana-side: picks locker tier, pays SOL, gets NFT key */}
       <RentVaultModal
         isOpen={isRentModalOpen}
         onClose={() => setIsRentModalOpen(false)}
         connectedWallet={solanaConnected ? MOCK_WALLET : null}
         onConnectWallet={() => setSolanaConnected(true)}
-        onSuccess={() => {
+        onSuccess={(mintedNft) => {
           setIsRentModalOpen(false);
           queryClient.invalidateQueries({ queryKey: ["/api/nfts", MOCK_WALLET] });
-          setIsMoveInOpen(true);
+          openClaimModal(mintedNft);
         }}
       />
 
-      <MoveInModal
-        isOpen={isMoveInOpen}
-        onClose={() => { setIsMoveInOpen(false); setMintedNft(null); }}
-        onSuccess={(vault) => console.log("Moved in:", vault)}
+      {/* Claim Vault — Monad-side: transfer_lease with 5/5 multisig */}
+      <ClaimVaultModal
+        isOpen={isClaimModalOpen}
+        onClose={() => { setIsClaimModalOpen(false); setPreSelectedNft(null); }}
+        onSuccess={() => { setIsClaimModalOpen(false); setPreSelectedNft(null); }}
         connectedWallet={solanaConnected ? MOCK_WALLET : null}
-        preSelectedNft={mintedNft}
-        onMintKey={() => {
-          setIsMoveInOpen(false);
-          setIsMintNftOpen(true);
-        }}
+        preSelectedNft={preSelectedNft}
         onConnectWallet={() => setSolanaConnected(true)}
       />
 
@@ -363,8 +376,13 @@ export default function Home() {
             eventName: null,
           };
           queryClient.setQueryData(["/api/nfts", MOCK_WALLET], (old: NftKey[] = []) => [newNftKey, ...old]);
-          setMintedNft({ mint: nft.id, name: nft.name, image: nft.image, tokenId: nft.id });
-          setIsMoveInOpen(true);
+          openClaimModal({
+            mint: nft.id,
+            name: nft.name,
+            tokenId: nft.id,
+            lockerRef: "LCK-????",
+            slotNumber: 0,
+          });
         }}
       />
 

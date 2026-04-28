@@ -2,12 +2,20 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Key, Check, Shield, Zap, Wallet, X, AlertTriangle } from "lucide-react";
+import { Key, Check, Shield, Zap, Wallet } from "lucide-react";
+
+interface MintedNft {
+  mint: string;
+  name: string;
+  tokenId: string;
+  lockerRef: string;
+  slotNumber: number;
+}
 
 interface RentVaultModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (mintedNft: MintedNft) => void;
   connectedWallet: string | null;
   onConnectWallet?: () => void;
 }
@@ -20,9 +28,7 @@ const TIERS = [
     description: "100-slot shared locker. Ideal for individual vault holders.",
     slotsTotal: 100,
     slotsAvailable: 38,
-    minDepositSol: 10,
     oneTimeFeeSOL: 0.05,
-    moveInFeeSOL: 0.001,
     securityLevel: "High Isolation",
     features: ["Shared among 100 members", "Auto-lock on threat", "NFT key minted on signup"],
   },
@@ -33,9 +39,7 @@ const TIERS = [
     description: "500-slot pool locker. Lower minimum deposit, higher throughput.",
     slotsTotal: 500,
     slotsAvailable: 469,
-    minDepositSol: 1,
     oneTimeFeeSOL: 0.05,
-    moveInFeeSOL: 0.001,
     securityLevel: "Standard Isolation",
     features: ["Shared among 500 members", "Batched oracle proofs", "Instant provisioning"],
   },
@@ -46,9 +50,7 @@ const TIERS = [
     description: "10-slot private locker. Maximum isolation for large depositors.",
     slotsTotal: 10,
     slotsAvailable: 3,
-    minDepositSol: 1000,
     oneTimeFeeSOL: 2,
-    moveInFeeSOL: 0.001,
     securityLevel: "Absolute Isolation",
     features: ["Near-private contract", "Independent pause authority", "White-glove setup"],
   },
@@ -57,23 +59,39 @@ const TIERS = [
 export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, onConnectWallet }: RentVaultModalProps) {
   const [step, setStep] = useState<"list" | "renting" | "success">("list");
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [mintedNft, setMintedNft] = useState<MintedNft | null>(null);
 
   const selected = TIERS.find(t => t.id === selectedTier);
 
   const handleRent = () => {
-    if (!selectedTier || !connectedWallet) return;
+    if (!selectedTier || !connectedWallet || !selected) return;
     setStep("renting");
-    setTimeout(() => setStep("success"), 2200);
+    setTimeout(() => {
+      const slotNum = Math.floor(Math.random() * selected.slotsTotal) + 1;
+      const lockerRef = `LCK-${selected.tier}${Math.floor(Math.random() * 9000 + 1000)}`;
+      const nft: MintedNft = {
+        mint: `So1${Math.random().toString(36).slice(2, 10).toUpperCase()}...${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+        name: `${selected.name} Key #${slotNum}`,
+        tokenId: `${selected.tier}-${slotNum}`,
+        lockerRef,
+        slotNumber: slotNum,
+      };
+      setMintedNft(nft);
+      setStep("success");
+    }, 2200);
   };
 
   const handleClose = () => {
     setStep("list");
     setSelectedTier(null);
+    setMintedNft(null);
     onClose();
   };
 
-  const handleFinish = () => {
-    onSuccess();
+  const handleClaimNow = () => {
+    if (mintedNft) {
+      onSuccess(mintedNft);
+    }
     handleClose();
   };
 
@@ -89,7 +107,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
             Rent a Vault
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            Choose a locker tier. You pay a flat one-time fee — no subscriptions, no monthly charges.
+            Choose a locker tier and pay the one-time lifetime lease in SOL. Your NFT key is minted on Solana — no Monad interaction at this step.
           </DialogDescription>
         </DialogHeader>
 
@@ -109,7 +127,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
               </div>
               <div>
                 <p className="text-sm font-semibold text-white mb-1">Connect your Solana wallet first</p>
-                <p className="text-xs text-gray-500">A connected wallet is required to receive your NFT key when you rent a vault.</p>
+                <p className="text-xs text-gray-500">A connected wallet is required to receive your NFT key.</p>
               </div>
               <Button
                 onClick={onConnectWallet}
@@ -137,6 +155,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                   return (
                     <div
                       key={tier.id}
+                      data-testid={`tier-card-${tier.id}`}
                       onClick={() => !isFull && setSelectedTier(tier.id)}
                       className={`p-4 rounded-xl border-2 transition-all ${
                         isFull
@@ -165,10 +184,6 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-gray-500 uppercase">Min deposit</p>
-                          <p className="text-xs text-white">{tier.minDepositSol} MON</p>
-                        </div>
-                        <div>
                           <p className="text-[10px] text-gray-500 uppercase">Security</p>
                           <p className="text-xs text-white flex items-center gap-1">
                             <Shield className="h-3 w-3 text-blue-400" />
@@ -190,38 +205,31 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                 })}
               </div>
 
-              {/* Fee summary + CTA */}
+              {/* Fee summary — lifetime lease only */}
               {selected && (
-                <div className="mt-3 p-3 rounded-lg bg-white/5 border border-white/10 text-xs space-y-1">
-                  <div className="flex justify-between text-gray-400">
-                    <span>Lifetime lease</span>
-                    <span className="font-mono text-white">{selected.oneTimeFeeSOL} SOL</span>
+                <div className="mt-3 p-3 rounded-lg bg-solana-green/5 border border-solana-green/20 text-xs space-y-1">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-white">Lifetime lease (one-time)</span>
+                    <span className="font-mono text-solana-green">{selected.oneTimeFeeSOL} SOL</span>
                   </div>
-                  <div className="flex justify-between text-gray-400">
-                    <span>Claim registration fee</span>
-                    <span className="font-mono text-white">{selected.moveInFeeSOL} SOL</span>
-                  </div>
-                  <div className="flex justify-between font-bold border-t border-white/10 pt-1 mt-1">
-                    <span className="text-white">Total due today</span>
-                    <span className="font-mono text-solana-green">
-                      {(selected.oneTimeFeeSOL + selected.moveInFeeSOL).toFixed(4)} SOL
-                    </span>
-                  </div>
-                  <p className="text-gray-600 pt-1">Minimum deposit of {selected.minDepositSol} MON required at claim time. Not charged now.</p>
+                  <p className="text-gray-500 pt-1">
+                    This is the only fee charged now. Vault claim is a separate Monad-side action done after you hold the NFT key.
+                  </p>
                 </div>
               )}
 
               <Button
+                data-testid="button-rent-vault"
                 onClick={handleRent}
                 disabled={!selectedTier}
                 className="w-full mt-3 h-11 bg-solana-green hover:bg-solana-green/90 text-black font-bold shadow-[0_0_15px_-3px_rgba(20,241,149,0.4)]"
               >
-                Mint NFT Key & Rent Vault
+                Pay {selected ? `${selected.oneTimeFeeSOL} SOL` : ""} & Mint NFT Key
               </Button>
             </motion.div>
           )}
 
-          {/* ── Provisioning ── */}
+          {/* ── Minting on Solana ── */}
           {step === "renting" && (
             <motion.div
               key="renting"
@@ -235,15 +243,15 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                 <Zap className="h-16 w-16 text-solana-green animate-pulse relative z-10" />
               </div>
               <div className="text-center space-y-2">
-                <h3 className="font-display text-xl font-bold text-white">Provisioning Vault...</h3>
-                <p className="text-sm text-gray-400">Connecting to Monad Locker contract</p>
-                <p className="text-sm text-gray-400">Minting your Solana NFT key</p>
+                <h3 className="font-display text-xl font-bold text-white">Minting NFT Key...</h3>
+                <p className="text-sm text-gray-400">Broadcasting to Solana</p>
+                <p className="text-sm text-gray-400">Issuing NFT key to your wallet</p>
               </div>
             </motion.div>
           )}
 
           {/* ── Success ── */}
-          {step === "success" && (
+          {step === "success" && mintedNft && (
             <motion.div
               key="success"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -254,17 +262,52 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                 <Key className="h-10 w-10 text-solana-green" />
               </div>
               <div>
-                <h3 className="font-display text-xl font-bold text-white mb-1">Vault Rented</h3>
-                <p className="text-sm text-gray-400">
-                  Your NFT key has been minted to your wallet. Use it to move assets into your vault.
+                <h3 className="font-display text-xl font-bold text-white mb-1">NFT Key Minted</h3>
+                <p className="text-sm text-gray-400 max-w-xs mx-auto">
+                  Your key has been minted to your Solana wallet. To take ownership of the vault, you now need to complete the Claim flow on Monad.
                 </p>
               </div>
-              <Button
-                onClick={handleFinish}
-                className="w-full h-11 mt-2 bg-monad-purple hover:bg-monad-purple/90 text-black font-bold"
-              >
-                Claim Vault
-              </Button>
+
+              <div className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-left text-xs space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">NFT key</span>
+                  <span className="text-white font-medium">{mintedNft.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Mint</span>
+                  <span className="text-solana-green font-mono">{mintedNft.mint}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Locker</span>
+                  <span className="text-white font-mono">{mintedNft.lockerRef}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Slot</span>
+                  <span className="text-white font-mono">#{mintedNft.slotNumber}</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500">
+                The NFT key alone does not give you vault control. Claim the vault on Monad to register ownership.
+              </p>
+
+              <div className="flex gap-2 w-full">
+                <Button
+                  data-testid="button-dismiss-rent"
+                  onClick={handleClose}
+                  variant="outline"
+                  className="flex-1 border-white/10 text-gray-400 hover:text-white"
+                >
+                  Do it later
+                </Button>
+                <Button
+                  data-testid="button-claim-vault-from-rent"
+                  onClick={handleClaimNow}
+                  className="flex-1 h-11 bg-monad-purple hover:bg-monad-purple/90 text-white font-bold shadow-[0_0_15px_-3px_rgba(130,71,229,0.4)]"
+                >
+                  Claim Vault now →
+                </Button>
+              </div>
             </motion.div>
           )}
 
