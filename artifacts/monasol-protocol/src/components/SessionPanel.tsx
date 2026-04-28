@@ -58,6 +58,16 @@ export function SessionPanel({ vaultId, nftName }: SessionPanelProps) {
   const [sessionLabel, setSessionLabel] = useState("");
   const [durationOpen, setDurationOpen] = useState(false);
 
+  // Reset all state when the vault switches
+  useEffect(() => {
+    setSession(null);
+    setLoading(null);
+    setSuccess(null);
+    setAuthAddress("");
+    setSessionLabel("");
+    setDurationIdx(0);
+  }, [vaultId]);
+
   // Live countdown
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
