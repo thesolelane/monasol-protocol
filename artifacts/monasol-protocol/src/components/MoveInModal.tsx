@@ -1,5 +1,5 @@
 import { useState, useLayoutEffect } from "react";
-import { Key, Wallet, ArrowRight, CheckCircle, Loader2, X, Home } from "lucide-react";
+import { Key, Wallet, ArrowRight, CheckCircle, Loader2, X, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -26,7 +26,7 @@ interface VaultResult {
   fees: { lifetime_lease: number; move_in_fee: number; total_due: number };
 }
 
-const STEPS = ['Get key', 'Set deposit', 'Review'];
+const STEPS = ['Present key', 'Set preferences', 'Confirm claim'];
 
 export function MoveInModal({
   isOpen, onClose, onSuccess, connectedWallet,
@@ -88,11 +88,11 @@ export function MoveInModal({
         <div className="flex items-center justify-between p-5 border-b border-white/10">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-monad-purple/20 flex items-center justify-center">
-              <Home className="h-4 w-4 text-monad-purple" />
+              <ShieldCheck className="h-4 w-4 text-monad-purple" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">Move In</h2>
-              <p className="text-xs text-gray-500">Create your vault — lifetime lease</p>
+              <h2 className="text-sm font-bold text-white">Claim Vault Ownership</h2>
+              <p className="text-xs text-gray-500">Register your NFT key — rotate shards to your wallet</p>
             </div>
           </div>
           <button onClick={handleClose} className="text-gray-600 hover:text-white transition-colors">
@@ -133,9 +133,9 @@ export function MoveInModal({
                 <Key className="h-7 w-7 text-solana-green" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white mb-1">A fresh vault key is required</p>
-                <p className="text-xs text-gray-500 max-w-[260px] mx-auto leading-relaxed">
-                  Each vault needs its own dedicated NFT key. Existing NFTs may already be bound to other vaults.
+                <p className="text-sm font-semibold text-white mb-1">NFT key required in your wallet</p>
+                <p className="text-xs text-gray-500 max-w-[280px] mx-auto leading-relaxed">
+                  To claim ownership, you need the vault's NFT key in your Solana wallet. You can mint a new one, or use a key you already hold.
                 </p>
               </div>
               <div className="flex flex-col gap-2 max-w-[220px] mx-auto pt-2">
@@ -147,7 +147,7 @@ export function MoveInModal({
                 )}
                 <Button onClick={onMintKey} className="w-full bg-solana-green hover:bg-solana-green/90 text-black font-bold h-11 shadow-[0_0_15px_-3px_rgba(20,241,149,0.4)]">
                   <Key className="h-4 w-4 mr-2" />
-                  Mint My Vault Key
+                  Mint a New Vault Key
                 </Button>
               </div>
             </div>
@@ -186,7 +186,7 @@ export function MoveInModal({
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">MON</span>
                 </div>
-                <p className="text-xs text-gray-600 mt-1">Vault holds Monad (EVM) assets. You can deposit more MON or EVM tokens anytime after move-in.</p>
+                <p className="text-xs text-gray-600 mt-1">The vault and its contents transfer with the NFT. Any existing balance carries over — this deposit is additive.</p>
               </div>
 
               {/* Security mode */}
@@ -240,11 +240,15 @@ export function MoveInModal({
           {step === 2 && (
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Move-in summary</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wider">Ownership claim summary</p>
 
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">NFT key</span>
                   <span className="text-white font-medium">{selectedNft?.name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Shard rotation</span>
+                  <span className="text-solana-green text-xs font-medium">→ Your wallet</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Security mode</span>
@@ -257,19 +261,19 @@ export function MoveInModal({
                   </Badge>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Vault lease</span>
-                  <span className="text-green-400 text-xs font-medium">✓ Paid during setup</span>
+                  <span className="text-gray-400">Prior wallet ties</span>
+                  <span className="text-red-400 text-xs font-medium">✗ Severed on confirm</span>
                 </div>
 
                 <div className="border-t border-white/10 pt-3">
                   <div className="flex justify-between text-sm font-bold">
-                    <span className="text-white">Initial MON deposit</span>
+                    <span className="text-white">Additional MON deposit</span>
                     <span className="text-monad-purple font-mono">
                       {parseFloat(depositMon) > 0 ? `${parseFloat(depositMon).toFixed(4)} MON` : 'None'}
                     </span>
                   </div>
                   <p className="text-xs text-gray-600 mt-1">
-                    Vault holds Monad EVM assets. Deposit more MON or EVM tokens anytime after move-in.
+                    Existing vault balance transfers with the NFT. This deposit is additive.
                   </p>
                 </div>
               </div>
@@ -277,7 +281,7 @@ export function MoveInModal({
               <div className="p-3 rounded-lg bg-white/5 border border-white/10 flex gap-2">
                 <CheckCircle className="h-4 w-4 text-solana-green shrink-0 mt-0.5" />
                 <p className="text-xs text-gray-400">
-                  No additional fees at this step. Your lifetime lease was already collected when you set up your vault.
+                  Confirming registers your wallet as the sole authorized owner. The multi-sig rotates all shards to you.
                 </p>
               </div>
 
@@ -293,8 +297,8 @@ export function MoveInModal({
                 </Button>
                 <Button onClick={handleMoveIn} disabled={loading} className="flex-1 bg-monad-purple hover:bg-monad-purple/90 text-black font-bold">
                   {loading
-                    ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Moving in...</>
-                    : <><Home className="h-4 w-4 mr-2" /> Confirm move-in</>
+                    ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Registering ownership...</>
+                    : <><ShieldCheck className="h-4 w-4 mr-2" /> Claim ownership</>
                   }
                 </Button>
               </div>
@@ -308,8 +312,8 @@ export function MoveInModal({
                 <CheckCircle className="h-8 w-8 text-monad-purple" />
               </div>
               <div>
-                <p className="text-lg font-bold text-white mb-1">Welcome home.</p>
-                <p className="text-sm text-gray-400">Your vault is live. Your NFT is your key.</p>
+                <p className="text-lg font-bold text-white mb-1">Ownership confirmed.</p>
+                <p className="text-sm text-gray-400">All shards are now registered to your wallet. Prior ties have been severed.</p>
               </div>
               {result && (
                 <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-left space-y-2">
@@ -322,8 +326,8 @@ export function MoveInModal({
                     <span className="text-monad-purple font-mono font-bold">{result.vault_ref}</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">Lease</span>
-                    <span className="text-green-400">Paid — lifetime</span>
+                    <span className="text-gray-500">Shard status</span>
+                    <span className="text-solana-green">Rotated to your wallet</span>
                   </div>
                 </div>
               )}
@@ -331,7 +335,7 @@ export function MoveInModal({
                 onClick={() => { if (result) onSuccess(result); handleClose(); }}
                 className="w-full bg-monad-purple hover:bg-monad-purple/90 text-black font-bold"
               >
-                View my vault
+                Open vault controls
               </Button>
             </div>
           )}

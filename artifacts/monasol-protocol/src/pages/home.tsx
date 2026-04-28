@@ -145,7 +145,7 @@ export default function Home() {
               onClick={() => solanaConnected ? setIsMoveInOpen(true) : setSolanaConnected(true)}
               className="h-10 bg-monad-purple hover:bg-monad-purple/90 text-black font-bold shadow-[0_0_15px_-3px_rgba(130,71,229,0.4)]"
             >
-              Move In
+              Claim Vault
             </Button>
             <Button
               onClick={() => setIsRentModalOpen(true)}
