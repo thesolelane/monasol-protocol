@@ -1,4 +1,4 @@
-import { ethers, network } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 import type { ContractTransactionResponse, ContractTransactionReceipt } from "ethers";
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -28,17 +28,18 @@ const LAUNCH_LOCKERS: [number, string, bigint][] = [
 // ── Types ─────────────────────────────────────────────────
 
 interface DeployedAddresses {
-  network:          string;
-  chainId:          number;
-  deployedAt:       string;
-  deployer:         string;
-  entryPoint:       string;
-  oracleVerifier:   string;
-  vaultFactory:     string;
-  treasurySplitter: string;
-  lockerBlueprint:  string;
-  lockerFactory:    string;
-  lockers:          LockerRecord[];
+  network:                 string;
+  chainId:                 number;
+  deployedAt:              string;
+  deployer:                string;
+  entryPoint:              string;
+  oracleVerifier:          string;
+  vaultFactory:            string;
+  treasurySplitter:        string;
+  lockerTreasurySplitter:  string;
+  lockerBlueprint:         string;
+  lockerFactory:           string;
+  lockers:                 LockerRecord[];
 }
 
 interface LockerRecord {
@@ -55,7 +56,8 @@ function log(msg: string) {
 }
 
 function section(title: string) {
-  console.log(`\n── ${title} ${"─".repeat(48 - title.length)}`);
+  const pad = Math.max(0, 48 - title.length);
+  console.log(`\n── ${title} ${"─".repeat(pad)}`);
 }
 
 async function waitConfirmed(
@@ -169,23 +171,100 @@ async function main() {
   addresses.treasurySplitter = await treasurySplitter.getAddress();
   log(`TreasurySplitter deployed at: ${addresses.treasurySplitter}`);
 
-  // ── Step 4: Locker blueprint ────────────────────────────
-  section("Step 4 — Locker blueprint (Vyper)");
+  // ── Step 4: Locker blueprint + LockerFactory (Vyper) ────
+  section("Step 4 — Locker blueprint + LockerFactory (Vyper)");
 
-  // NOTE: Locker.vy and LockerFactory.vy are Vyper contracts.
-  // They are compiled separately via `vyper` CLI and their bytecode
-  // is loaded here for deployment. For testnet, the Solidity
-  // LockerFactory handles the Solidity side while the Vyper contracts
-  // are deployed via the Python script in /monasol/scripts/deploy.py.
-  //
-  // TODO Phase 2: Integrate Vyper compilation into this TS script
-  // using the vyper npm package or pre-compiled artifacts.
-  //
-  // For now we record a placeholder and note for the team.
-  addresses.lockerBlueprint = "PENDING — deploy Locker.vy via scripts/deploy.py";
-  addresses.lockerFactory   = "PENDING — deploy LockerFactory.vy via scripts/deploy.py";
-  log("Vyper contracts: run scripts/deploy.py separately");
-  log("See: /monasol/contracts/Locker.vy + LockerFactory.vy");
+  // Load Vyper artifacts — no TypeChain types for Vyper,
+  // use raw ABI + bytecode from Hardhat artifact store
+  const LockerArtifact        = await hre.artifacts.readArtifact("Locker");
+  const LockerFactoryArtifact = await hre.artifacts.readArtifact("LockerFactory");
+  const LockerTSArtifact      = await hre.artifacts.readArtifact("LockerTreasurySplitter");
+
+  // Deploy LockerTreasurySplitter (Vyper) — used by Locker contracts
+  // Distinct from TreasurySplitter.sol which handles Vault-side fees
+  const LockerTSFactory = new ethers.ContractFactory(
+    LockerTSArtifact.abi,
+    LockerTSArtifact.bytecode,
+    deployer
+  );
+  const lockerTS = await LockerTSFactory.deploy(
+    deployer.address,   // protocol owner
+    treasuryAddress,    // treasury wallet
+    poolAddress,        // liquidity pool
+    TREASURY_BPS        // 70% to treasury
+  );
+  await lockerTS.waitForDeployment();
+  const lockerTSAddress           = await lockerTS.getAddress();
+  addresses.lockerTreasurySplitter = lockerTSAddress;
+  log(`LockerTreasurySplitter deployed at: ${lockerTSAddress}`);
+
+  // Deploy Locker blueprint — this is the implementation contract
+  // LockerFactory clones it for each new locker via create_from_blueprint
+  const LockerImplFactory = new ethers.ContractFactory(
+    LockerArtifact.abi,
+    LockerArtifact.bytecode,
+    deployer
+  );
+
+  // Blueprint deployment: Vyper blueprints use ERC-5202 prefix
+  // The blueprint is deployed with a special initcode that marks it
+  // as a blueprint — LockerFactory's create_from_blueprint reads from it
+  // We deploy the raw contract; Vyper's create_from_blueprint handles
+  // the blueprint prefix internally when called from LockerFactory
+  const lockerImpl = await LockerImplFactory.deploy(
+    0,                  // locker_id placeholder — overridden by blueprint clone
+    1,                  // capacity placeholder — overridden by blueprint clone
+    "blueprint",        // tier placeholder
+    deployer.address,   // protocol placeholder
+    lockerTSAddress,    // treasury_splitter
+    MOVE_IN_FEE         // move_in_fee placeholder
+  );
+  await lockerImpl.waitForDeployment();
+  addresses.lockerBlueprint = await lockerImpl.getAddress();
+  log(`Locker blueprint deployed at: ${addresses.lockerBlueprint}`);
+
+  // Deploy LockerFactory — takes blueprint address
+  const LockerFactoryContractFactory = new ethers.ContractFactory(
+    LockerFactoryArtifact.abi,
+    LockerFactoryArtifact.bytecode,
+    deployer
+  );
+  const lockerFactory = await LockerFactoryContractFactory.deploy(
+    deployer.address,           // protocol
+    lockerTSAddress,            // treasury_splitter
+    addresses.lockerBlueprint   // locker_blueprint
+  );
+  await lockerFactory.waitForDeployment();
+  addresses.lockerFactory = await lockerFactory.getAddress();
+  log(`LockerFactory deployed at: ${addresses.lockerFactory}`);
+
+  // Deploy launch lockers via LockerFactory
+  log("Deploying launch lockers...");
+  const deployLockerFn = lockerFactory.getFunction("deploy_locker");
+
+  for (const [capacity, tier, fee] of LAUNCH_LOCKERS) {
+    const tx      = await deployLockerFn(capacity, tier, fee);
+    const receipt = await waitConfirmed(tx, `Locker ${tier} cap=${capacity}`);
+
+    // Parse LockerDeployed event to get the deployed address
+    const iface               = new ethers.Interface(LockerFactoryArtifact.abi);
+    const lockerDeployedTopic = iface.getEvent("LockerDeployed")?.topicHash;
+
+    const deployedLog = receipt.logs.find(
+      l => l.topics[0] === lockerDeployedTopic
+    );
+
+    if (deployedLog) {
+      const parsed    = iface.parseLog({
+        topics: [...deployedLog.topics],
+        data:   deployedLog.data,
+      });
+      const lockerAddr = parsed?.args.locker_address as string;
+      const lockerId   = Number(parsed?.args.locker_id);
+      addresses.lockers!.push({ id: lockerId, address: lockerAddr, capacity, tier });
+      log(`  Locker ${lockerId} (${tier} cap=${capacity}): ${lockerAddr}`);
+    }
+  }
 
   // ── Step 5: Verify EntryPoint ────────────────────────────
   section("Step 5 — EntryPoint verification");
@@ -204,12 +283,13 @@ async function main() {
   console.log("\n╔═══════════════════════════════════════════════════╗");
   console.log("║              DEPLOYMENT COMPLETE                  ║");
   console.log("╚═══════════════════════════════════════════════════╝");
-  console.log(`  OracleVerifier   : ${addresses.oracleVerifier}`);
-  console.log(`  VaultFactory     : ${addresses.vaultFactory}`);
-  console.log(`  TreasurySplitter : ${addresses.treasurySplitter}`);
-  console.log(`  EntryPoint       : ${addresses.entryPoint}`);
-  console.log(`  Locker blueprint : ${addresses.lockerBlueprint}`);
-  console.log(`  Locker factory   : ${addresses.lockerFactory}`);
+  console.log(`  OracleVerifier         : ${addresses.oracleVerifier}`);
+  console.log(`  VaultFactory           : ${addresses.vaultFactory}`);
+  console.log(`  TreasurySplitter       : ${addresses.treasurySplitter}`);
+  console.log(`  LockerTreasurySplitter : ${addresses.lockerTreasurySplitter}`);
+  console.log(`  Locker blueprint       : ${addresses.lockerBlueprint}`);
+  console.log(`  LockerFactory          : ${addresses.lockerFactory}`);
+  console.log(`  EntryPoint             : ${addresses.entryPoint}`);
 
   // ── Write addresses file ─────────────────────────────────
   const outDir  = join(__dirname, "..", "deployed");
