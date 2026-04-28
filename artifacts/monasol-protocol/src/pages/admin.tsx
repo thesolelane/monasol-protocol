@@ -412,7 +412,7 @@ export default function AdminDashboard() {
       <DeployLockerModal
         isOpen={isDeployModalOpen}
         onClose={() => setIsDeployModalOpen(false)}
-        onSuccess={() => console.log("Locker deployed")}
+        onSuccess={() => {}}
       />
 
       <LockerZoomModal
