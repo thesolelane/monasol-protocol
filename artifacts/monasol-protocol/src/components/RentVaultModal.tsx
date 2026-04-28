@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Key, Check, Shield, Zap, Wallet } from "lucide-react";
+import { Key, Check, Shield, Zap, Wallet, ArrowRight, CheckCircle, Sparkles, Loader2, DoorOpen, AlertTriangle } from "lucide-react";
 
 interface MintedNft {
   mint: string;
@@ -10,6 +10,7 @@ interface MintedNft {
   tokenId: string;
   lockerRef: string;
   slotNumber: number;
+  maxSlots: number;
 }
 
 interface RentVaultModalProps {
@@ -56,12 +57,40 @@ const TIERS = [
   },
 ];
 
+type Step = "list" | "renting" | "nft-received" | "movein" | "movein-processing" | "done";
+
 export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, onConnectWallet }: RentVaultModalProps) {
-  const [step, setStep] = useState<"list" | "renting" | "success">("list");
+  const [step, setStep] = useState<Step>("list");
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [mintedNft, setMintedNft] = useState<MintedNft | null>(null);
 
+  // move-in fields
+  const [slotNumber, setSlotNumber] = useState("");
+  const [slotError, setSlotError] = useState<string | null>(null);
+  const [signingWallet, setSigningWallet] = useState("");
+  const [signingWalletError, setSigningWalletError] = useState<string | null>(null);
+
+  // move-in processing progress
+  const [initProgress, setInitProgress] = useState(0);
+  const [initDone, setInitDone] = useState(false);
+
   const selected = TIERS.find(t => t.id === selectedTier);
+
+  // Drive the move_in processing animation
+  useEffect(() => {
+    if (step !== "movein-processing" || initDone) return;
+    setInitProgress(0);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const stages = [15, 35, 55, 75, 90, 100];
+    let i = 0;
+    const tick = () => {
+      if (i >= stages.length) { timers.push(setTimeout(() => setInitDone(true), 400)); return; }
+      setInitProgress(stages[i]); i++;
+      timers.push(setTimeout(tick, 700 + Math.random() * 500));
+    };
+    timers.push(setTimeout(tick, 800));
+    return () => timers.forEach(clearTimeout);
+  }, [step, initDone]);
 
   const handleRent = () => {
     if (!selectedTier || !connectedWallet || !selected) return;
@@ -75,24 +104,68 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
         tokenId: `${selected.tier}-${slotNum}`,
         lockerRef,
         slotNumber: slotNum,
+        maxSlots: selected.slotsTotal,
       };
       setMintedNft(nft);
-      setStep("success");
+      setStep("nft-received");
     }, 2200);
   };
 
+  const validateSlot = () => {
+    const max = mintedNft?.maxSlots ?? 100;
+    const n = parseInt(slotNumber, 10);
+    if (!slotNumber.trim() || isNaN(n)) { setSlotError("Please enter a slot number."); return false; }
+    if (n < 1 || n > max) { setSlotError(`Slot must be between 1 and ${max}.`); return false; }
+    setSlotError(null);
+    return true;
+  };
+
+  const validateSigningWallet = () => {
+    const trimmed = signingWallet.trim();
+    if (!trimmed) { setSigningWalletError("Signing wallet address is required."); return false; }
+    if (trimmed.length < 32) { setSigningWalletError("Address looks too short — paste your full wallet address."); return false; }
+    setSigningWalletError(null);
+    return true;
+  };
+
+  const handleSubmitMoveIn = () => {
+    if (!validateSlot() || !validateSigningWallet()) return;
+    setInitDone(false);
+    setInitProgress(0);
+    setStep("movein-processing");
+  };
+
   const handleClose = () => {
+    // Capture before clearing: if the NFT was already minted but the user
+    // is deferring move-in, still call onSuccess so the NFT list refreshes.
+    const alreadyMinted = mintedNft;
     setStep("list");
     setSelectedTier(null);
     setMintedNft(null);
+    setSlotNumber("");
+    setSlotError(null);
+    setSigningWallet("");
+    setSigningWalletError(null);
+    setInitProgress(0);
+    setInitDone(false);
     onClose();
+    if (alreadyMinted) onSuccess(alreadyMinted);
   };
 
-  const handleClaimNow = () => {
-    if (mintedNft) {
-      onSuccess(mintedNft);
-    }
-    handleClose();
+  const handleFinish = () => {
+    // Clear mintedNft before handleClose so handleClose doesn't double-fire onSuccess
+    const nft = mintedNft;
+    setMintedNft(null);
+    setStep("list");
+    setSelectedTier(null);
+    setSlotNumber("");
+    setSlotError(null);
+    setSigningWallet("");
+    setSigningWalletError(null);
+    setInitProgress(0);
+    setInitDone(false);
+    onClose();
+    if (nft) onSuccess(nft);
   };
 
   return (
@@ -107,7 +180,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
             Rent a Vault
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            Choose a locker tier and pay the one-time lifetime lease in SOL. Your NFT key is minted on Solana — no Monad interaction at this step.
+            Choose a locker tier, pay the one-time lease in SOL, receive your NFT key, then move in to become the slot's first signer.
           </DialogDescription>
         </DialogHeader>
 
@@ -205,7 +278,6 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                 })}
               </div>
 
-              {/* Fee summary — lifetime lease only */}
               {selected && (
                 <div className="mt-3 p-3 rounded-lg bg-solana-green/5 border border-solana-green/20 text-xs space-y-1">
                   <div className="flex justify-between font-bold">
@@ -213,7 +285,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                     <span className="font-mono text-solana-green">{selected.oneTimeFeeSOL} SOL</span>
                   </div>
                   <p className="text-gray-500 pt-1">
-                    This is the only fee charged now. Vault claim is a separate Monad-side action done after you hold the NFT key.
+                    Fee is paid now. After minting you will move in and become the slot's first signer on Monad.
                   </p>
                 </div>
               )}
@@ -250,21 +322,21 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
             </motion.div>
           )}
 
-          {/* ── Success ── */}
-          {step === "success" && mintedNft && (
+          {/* ── NFT received — prompt move-in ── */}
+          {step === "nft-received" && mintedNft && (
             <motion.div
-              key="success"
+              key="nft-received"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="py-8 flex flex-col items-center text-center space-y-4"
+              className="py-6 flex flex-col items-center text-center space-y-4"
             >
               <div className="h-20 w-20 rounded-full bg-solana-green/20 flex items-center justify-center border border-solana-green/30">
                 <Key className="h-10 w-10 text-solana-green" />
               </div>
               <div>
-                <h3 className="font-display text-xl font-bold text-white mb-1">NFT Key Minted</h3>
+                <h3 className="font-display text-xl font-bold text-white mb-1">NFT Key Received</h3>
                 <p className="text-sm text-gray-400 max-w-xs mx-auto">
-                  Your key has been minted to your Solana wallet. To take ownership of the vault, you now need to complete the Claim flow on Monad.
+                  Your key is in your wallet. Now move in — choose your slot and become the first signer.
                 </p>
               </div>
 
@@ -281,33 +353,326 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                   <span className="text-gray-500">Locker</span>
                   <span className="text-white font-mono">{mintedNft.lockerRef}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Slot</span>
-                  <span className="text-white font-mono">#{mintedNft.slotNumber}</span>
+              </div>
+
+              {/* First move-in callout */}
+              <div className="w-full p-3 rounded-lg bg-monad-purple/5 border border-monad-purple/20 flex items-start gap-2 text-left">
+                <Sparkles className="h-4 w-4 text-monad-purple shrink-0 mt-0.5" />
+                <p className="text-xs text-monad-purple/90 leading-relaxed">
+                  <span className="font-bold">First move-in:</span> This slot has no previous occupant. You will be registered on Monad as the genesis signer via <span className="font-mono">move_in</span>.
+                </p>
+              </div>
+
+              <Button
+                data-testid="button-proceed-movein"
+                onClick={() => setStep("movein")}
+                className="w-full h-11 bg-monad-purple hover:bg-monad-purple/90 text-white font-bold shadow-[0_0_15px_-3px_rgba(130,71,229,0.4)]"
+              >
+                <DoorOpen className="h-4 w-4 mr-2" />
+                Move In — become the signer
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+
+              <button
+                data-testid="button-movein-later"
+                onClick={handleClose}
+                className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+              >
+                Do it later from your vault dashboard
+              </button>
+            </motion.div>
+          )}
+
+          {/* ── Move-in: slot + signing wallet ── */}
+          {step === "movein" && mintedNft && (
+            <motion.div
+              key="movein"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-5 overflow-y-auto"
+            >
+              {/* Header label */}
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 rounded-lg bg-monad-purple/20 flex items-center justify-center shrink-0">
+                  <DoorOpen className="h-3.5 w-3.5 text-monad-purple" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">First Move-In</p>
+                  <p className="text-[11px] text-gray-500">
+                    Initializing a fresh slot via <span className="font-mono">move_in</span> — no prior occupant
+                  </p>
+                </div>
+                <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-monad-purple/20 text-monad-purple border border-monad-purple/30 uppercase tracking-wider shrink-0">
+                  New Slot
+                </span>
+              </div>
+
+              {/* NFT context */}
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10 flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-solana-green/10 flex items-center justify-center shrink-0">
+                  <Key className="h-4 w-4 text-solana-green" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] text-gray-500">NFT key in wallet</p>
+                  <p className="text-sm font-medium text-white truncate">{mintedNft.name}</p>
+                  <p className="text-[11px] font-mono text-gray-600 truncate">{mintedNft.lockerRef}</p>
                 </div>
               </div>
 
-              <p className="text-xs text-gray-500">
-                The NFT key alone does not give you vault control. Claim the vault on Monad to register ownership.
-              </p>
-
-              <div className="flex gap-2 w-full">
-                <Button
-                  data-testid="button-dismiss-rent"
-                  onClick={handleClose}
-                  variant="outline"
-                  className="flex-1 border-white/10 text-gray-400 hover:text-white"
-                >
-                  Do it later
-                </Button>
-                <Button
-                  data-testid="button-claim-vault-from-rent"
-                  onClick={handleClaimNow}
-                  className="flex-1 h-11 bg-monad-purple hover:bg-monad-purple/90 text-white font-bold shadow-[0_0_15px_-3px_rgba(130,71,229,0.4)]"
-                >
-                  Claim Vault now →
-                </Button>
+              {/* Slot number */}
+              <div>
+                <label className="text-xs text-gray-500 mb-2 block">
+                  Slot number <span className="text-monad-purple">*</span>
+                  <span className="text-gray-600 ml-1">(1 – {mintedNft.maxSlots})</span>
+                </label>
+                <input
+                  data-testid="input-slot-number"
+                  type="number"
+                  min={1}
+                  max={mintedNft.maxSlots}
+                  value={slotNumber}
+                  onChange={(e) => { setSlotNumber(e.target.value); setSlotError(null); }}
+                  placeholder="e.g. 42"
+                  className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none font-mono text-sm transition-colors ${
+                    slotError
+                      ? "border-red-500/50 focus:border-red-500"
+                      : "border-white/10 focus:border-monad-purple/50"
+                  }`}
+                />
+                {slotError && <p className="text-xs text-red-400 mt-1">{slotError}</p>}
+                <p className="text-xs text-gray-600 mt-1">Each slot is independent with its own balance and signer.</p>
               </div>
+
+              {/* Occupant (read-only) */}
+              <div>
+                <label className="text-xs text-gray-500 mb-2 block">First occupant (your connected wallet)</label>
+                <div className="px-4 py-3 rounded-lg bg-white/5 border border-white/10 font-mono text-xs text-white break-all">
+                  {connectedWallet}
+                </div>
+                <p className="text-xs text-gray-600 mt-1">Passed as <span className="font-mono">occupant</span> in move_in.</p>
+              </div>
+
+              {/* Signing wallet */}
+              <div>
+                <label className="text-xs text-gray-500 mb-2 block">
+                  Signing wallet <span className="text-monad-purple">*</span>
+                </label>
+                <input
+                  data-testid="input-signing-wallet-movein"
+                  type="text"
+                  value={signingWallet}
+                  onChange={(e) => { setSigningWallet(e.target.value); setSigningWalletError(null); }}
+                  placeholder="Paste wallet address..."
+                  className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none font-mono text-xs transition-colors ${
+                    signingWalletError
+                      ? "border-red-500/50 focus:border-red-500"
+                      : "border-white/10 focus:border-monad-purple/50"
+                  }`}
+                />
+                {signingWalletError && <p className="text-xs text-red-400 mt-1">{signingWalletError}</p>}
+                <p className="text-xs text-gray-600 mt-1">
+                  This wallet authorizes future vault transactions. Can match your occupant wallet or be a separate cold-storage key.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-gray-400">
+                  Once initialized, the slot is permanently bound to your NFT key and you become its first occupant.
+                </p>
+              </div>
+
+              <Button
+                data-testid="button-submit-movein"
+                onClick={handleSubmitMoveIn}
+                className="w-full h-11 bg-monad-purple hover:bg-monad-purple/90 text-white font-bold"
+              >
+                <DoorOpen className="h-4 w-4 mr-2" />
+                Initialize slot — move in
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </motion.div>
+          )}
+
+          {/* ── Move-in processing ── */}
+          {step === "movein-processing" && mintedNft && (
+            <motion.div
+              key="movein-processing"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-5"
+            >
+              <div className="text-center space-y-2 py-2">
+                <div className="relative h-14 w-14 mx-auto">
+                  <div className="absolute inset-0 bg-monad-purple/20 blur-xl rounded-full" />
+                  <div className="relative h-14 w-14 rounded-full bg-monad-purple/20 border border-monad-purple/30 flex items-center justify-center">
+                    {initDone
+                      ? <CheckCircle className="h-7 w-7 text-monad-purple" />
+                      : <Sparkles className="h-7 w-7 text-monad-purple animate-pulse" />
+                    }
+                  </div>
+                </div>
+                <h3 className="font-display text-base font-bold text-white">
+                  {initDone ? "Slot initialized" : "Broadcasting move_in…"}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  {initDone ? "You are now the first occupant." : "Sending move_in call to the Monad vault contract."}
+                </p>
+              </div>
+
+              {/* Progress */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Initialization progress</span>
+                  <span className={initDone ? "text-monad-purple font-bold" : "text-white"}>{initProgress}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                  <div
+                    className="h-full bg-monad-purple rounded-full transition-all duration-700"
+                    style={{ width: `${initProgress}%` }}
+                  />
+                </div>
+
+                <div className="pt-2 space-y-1.5">
+                  {[
+                    { label: "Verifying NFT key ownership", threshold: 15 },
+                    { label: "Checking slot availability", threshold: 35 },
+                    { label: "Writing occupant record", threshold: 55 },
+                    { label: "Registering signing wallet", threshold: 75 },
+                    { label: "Finalizing on-chain state", threshold: 90 },
+                    { label: "Confirmed on Monad", threshold: 100 },
+                  ].map(({ label, threshold }, i) => {
+                    const done = initProgress >= threshold;
+                    return (
+                      <div
+                        key={i}
+                        data-testid={`init-stage-${i}`}
+                        className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-all duration-300 ${
+                          done ? "border-monad-purple/30 bg-monad-purple/5" : "border-white/5 bg-black/20"
+                        }`}
+                      >
+                        <span className={done ? "text-white" : "text-gray-600"}>{label}</span>
+                        <span className={done ? "text-monad-purple font-semibold" : "text-gray-600"}>{done ? "✓" : "…"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Parameters summary */}
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10 text-xs space-y-2">
+                <p className="text-gray-500 uppercase tracking-wider">move_in parameters</p>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">NFT mint</span>
+                  <span className="text-white font-mono">{mintedNft.mint}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Locker ref</span>
+                  <span className="text-white font-mono">{mintedNft.lockerRef}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Slot</span>
+                  <span className="text-white font-mono">#{slotNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Occupant</span>
+                  <span className="text-white font-mono">
+                    {connectedWallet?.slice(0, 6)}...{connectedWallet?.slice(-4)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Signing wallet</span>
+                  <span className="text-white font-mono">
+                    {signingWallet.slice(0, 6)}...{signingWallet.slice(-4)}
+                  </span>
+                </div>
+              </div>
+
+              {initDone && (
+                <Button
+                  data-testid="button-finalize-movein"
+                  onClick={() => setStep("done")}
+                  className="w-full bg-monad-purple hover:bg-monad-purple/90 text-white font-bold"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  View my vault
+                </Button>
+              )}
+              {!initDone && (
+                <div className="flex items-center justify-center gap-2 py-1 text-xs text-gray-600">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Waiting for Monad confirmation…
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* ── Done ── */}
+          {step === "done" && mintedNft && (
+            <motion.div
+              key="done"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="py-6 text-center space-y-5"
+            >
+              <div className="relative h-16 w-16 mx-auto">
+                <div className="absolute inset-0 bg-monad-purple/30 blur-xl rounded-full" />
+                <div className="relative h-16 w-16 rounded-full bg-monad-purple/20 border border-monad-purple/30 flex items-center justify-center">
+                  <CheckCircle className="h-8 w-8 text-monad-purple" />
+                </div>
+              </div>
+
+              <div>
+                <p className="text-lg font-bold text-white mb-1">You're in.</p>
+                <p className="text-sm text-gray-400">
+                  Slot <span className="text-monad-purple font-mono">#{slotNumber}</span> is initialized. You are the first occupant and signing authority.
+                </p>
+              </div>
+
+              <div
+                data-testid="card-movein-result"
+                className="p-4 rounded-xl bg-white/5 border border-monad-purple/20 text-left space-y-3"
+              >
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider">Vault record</p>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Locker</span>
+                  <span className="text-white font-mono">{mintedNft.lockerRef}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Slot</span>
+                  <span className="text-white font-mono">#{slotNumber}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Occupant</span>
+                  <span className="text-monad-purple font-mono">
+                    {connectedWallet?.slice(0, 8)}...{connectedWallet?.slice(-4)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Signing wallet</span>
+                  <span className="text-monad-purple font-mono">
+                    {signingWallet.slice(0, 8)}...{signingWallet.slice(-4)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">NFT key</span>
+                  <span className="text-solana-green font-mono">{mintedNft.mint}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Slot history</span>
+                  <span className="text-gray-500 italic">None — genesis entry</span>
+                </div>
+              </div>
+
+              <Button
+                data-testid="button-done-movein"
+                onClick={handleFinish}
+                className="w-full bg-monad-purple hover:bg-monad-purple/90 text-white font-bold"
+              >
+                Done — open vault controls
+              </Button>
             </motion.div>
           )}
 

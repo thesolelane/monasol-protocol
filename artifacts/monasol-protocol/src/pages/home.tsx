@@ -319,7 +319,7 @@ export default function Home() {
                 <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-white/10" />
                 {[
                   "Rent a Vault on Solana — pay a one-time fee and receive your NFT key",
-                  "Claim Vault on Monad — use your NFT key to register ownership via transfer_lease",
+                  "Move In on Monad — after receiving your key, initialize your vault slot and become the first signer",
                   "Select your NFT key to unlock vault controls",
                   "Deposit MON, set security rules, or share a proof with Private Explorer",
                 ].map((step, i) => (
@@ -343,10 +343,9 @@ export default function Home() {
         onClose={() => setIsRentModalOpen(false)}
         connectedWallet={solanaConnected ? MOCK_WALLET : null}
         onConnectWallet={() => setSolanaConnected(true)}
-        onSuccess={(mintedNft) => {
+        onSuccess={() => {
           setIsRentModalOpen(false);
           queryClient.invalidateQueries({ queryKey: ["/api/nfts", MOCK_WALLET] });
-          openClaimModal(mintedNft);
         }}
       />
 
