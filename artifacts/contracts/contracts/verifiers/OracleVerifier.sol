@@ -45,7 +45,7 @@ contract OracleVerifier is IVaultVerifier, Ownable, Pausable {
     }
 
     /// @inheritdoc IVaultVerifier
-    function verifyOwnership(
+    function verifyAccess(
         bytes32 nftMint,
         bytes32 owner,
         bytes calldata proof,

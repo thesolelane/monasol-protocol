@@ -26,7 +26,7 @@ interface IVaultVerifier {
     /// @param proof    Verifier-specific proof payload (oracle sig or Merkle proof).
     /// @param expiry   Unix timestamp — proof must not be used after this time.
     /// @return valid   True if ownership is confirmed.
-    function verifyOwnership(
+    function verifyAccess(
         bytes32 nftMint,
         bytes32 owner,
         bytes calldata proof,

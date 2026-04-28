@@ -54,12 +54,12 @@ contract ZKVerifier is IVaultVerifier, Ownable {
     /// @dev STUB: always reverts until the light client is implemented.
     ///      proof is expected to be an RLP-encoded Merkle inclusion proof
     ///      against `latestStateRoot` once real implementation lands.
-    function verifyOwnership(
+    function verifyAccess(
         bytes32,
         bytes32,
         bytes calldata,
         uint256
-    ) external override returns (bool) {
+    ) external pure override returns (bool) {
         revert("ZKVerifier: not yet implemented - use OracleVerifier");
     }
 

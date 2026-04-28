@@ -121,7 +121,7 @@
           "type": "uint256"
         }
       ],
-      "name": "verifyOwnership",
+      "name": "verifyAccess",
       "outputs": [
         {
           "internalType": "bool",

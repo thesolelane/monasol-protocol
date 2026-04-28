@@ -66,7 +66,7 @@ describe("OracleVerifier", function () {
       const proof = await buildProof(NFT_MINT, NFT_OWNER, expiry, oracle);
 
       await expect(
-        verifier.verifyOwnership(NFT_MINT, NFT_OWNER, proof, expiry)
+        verifier.verifyAccess(NFT_MINT, NFT_OWNER, proof, expiry)
       )
         .to.emit(verifier, "OwnershipVerified")
         .withArgs(NFT_MINT, NFT_OWNER, expiry);
@@ -79,7 +79,7 @@ describe("OracleVerifier", function () {
       const proof = await buildProof(NFT_MINT, NFT_OWNER, expiry, oracle);
 
       await expect(
-        verifier.verifyOwnership(NFT_MINT, NFT_OWNER, proof, expiry)
+        verifier.verifyAccess(NFT_MINT, NFT_OWNER, proof, expiry)
       ).to.be.revertedWith("OracleVerifier: proof expired");
     });
 
@@ -88,7 +88,7 @@ describe("OracleVerifier", function () {
       const proof = await buildProof(NFT_MINT, NFT_OWNER, expiry, stranger);
 
       await expect(
-        verifier.verifyOwnership(NFT_MINT, NFT_OWNER, proof, expiry)
+        verifier.verifyAccess(NFT_MINT, NFT_OWNER, proof, expiry)
       ).to.be.revertedWith("OracleVerifier: signer not approved");
     });
 
@@ -96,10 +96,10 @@ describe("OracleVerifier", function () {
       const expiry = (await time.latest()) + 120;
       const proof = await buildProof(NFT_MINT, NFT_OWNER, expiry, oracle);
 
-      await verifier.verifyOwnership(NFT_MINT, NFT_OWNER, proof, expiry);
+      await verifier.verifyAccess(NFT_MINT, NFT_OWNER, proof, expiry);
 
       await expect(
-        verifier.verifyOwnership(NFT_MINT, NFT_OWNER, proof, expiry)
+        verifier.verifyAccess(NFT_MINT, NFT_OWNER, proof, expiry)
       ).to.be.revertedWith("OracleVerifier: proof already used");
     });
 
@@ -109,7 +109,7 @@ describe("OracleVerifier", function () {
       const proof = await buildProof(NFT_MINT, NFT_OWNER, expiry, oracle);
 
       await expect(
-        verifier.verifyOwnership(NFT_MINT, NFT_OWNER, proof, expiry)
+        verifier.verifyAccess(NFT_MINT, NFT_OWNER, proof, expiry)
       ).to.be.revertedWithCustomError(verifier, "EnforcedPause");
     });
   });
