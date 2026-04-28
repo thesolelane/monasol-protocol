@@ -1,45 +1,573 @@
-# MonasolProtocol: Zero-Trust Cross-Chain Vault Architecture
+# MonasolProtocol: Trustless Cross-Chain Vault Architecture
 
-*Cooperanth Consulting LLC*
+> **Document status:** v3.0 — Node lifecycle architecture added. Supersedes v2.0.
+> v2.0 fixes correspond to the April 2026 security and legal audit. v3.0 adds the full node health, failover, rotation, and backup encryption model.
+
+---
 
 ## Core Concept
-MonasolProtocol is a decentralized protocol that enables users to lock high-value, deep-liquidity assets on EVM blockchains (like Monad) while controlling those assets exclusively via NFT bearer instruments on high-speed, low-cost blockchains (like Solana).
 
-By divorcing the **asset storage** from the **access key**, MonasolProtocol turns any EVM token into a tradeable, composable Solana NFT.
+MonasolProtocol is a decentralized protocol that enables users to lock high-value assets on EVM blockchains (like Monad) while controlling those assets exclusively via NFT bearer instruments on high-speed, low-cost blockchains (like Solana).
+
+By divorcing **asset storage** from the **access key**, MonasolProtocol turns any EVM token into a tradeable, composable Solana NFT — a highly capital-efficient primitive for cross-chain institutional custody, vesting liquidity, inheritance, and DeFi composability.
+
+The core insight: MonasolProtocol does not move money. It moves the deed to the vault.
+
+**Custody is always with the user.** MonasolProtocol never holds the NFT, never holds a complete key, and never has custody of any unlock credential. The user holds the complete NFT in their own Solana wallet at all times. What MonasolProtocol nodes hold are verification shards and vault-mapping data — neither of which can unlock anything independently. The NFT in the user's wallet plus a valid signature from that wallet are the only combination that opens a vault.
+
+---
 
 ## The Security & Architecture Model
 
-1. **Compartmentalized Risk (The Submarine Model):** Instead of a single monolithic smart contract holding all user funds, MonasolProtocol deploys isolated "Locker Collections" capped at specific sizes (e.g., 10, 500, or 1,500 vaults). If one Locker experiences a vulnerability, the blast radius is strictly contained.
-2. **Zero-Trust Execution:** MonasolProtocol does not run an exchange or take custody of trades. Users execute trustless OTC (Over-The-Counter) trades using established Solana NFT marketplaces (like Magic Eden or Tensor). The marketplace handles the secure swap of the NFT key for funds; MonasolProtocol simply honors the new key holder.
-3. **Zero-Knowledge Privacy:** Vault contents are hidden on the EVM side. A buyer can only verify the contents of a vault if the current owner generates and shares a cryptographic "Access Key" for the MonasolProtocol Private Explorer.
+MonasolProtocol is designed from the ground up for maximum compartmentalization and mathematical security. Every design decision eliminates a class of trust assumptions.
+
+### 1. Compartmentalized Risk — The "Apartment Building" Model
+
+Instead of a single monolithic smart contract holding all user funds (a honeypot for attackers), MonasolProtocol deploys isolated smart contracts called **Lockers**. Think of the protocol as a neighborhood of independent buildings — a fire in one building does not affect any other.
+
+- Each **Locker** is a standalone smart contract at its own unique on-chain address. There is no shared state between Lockers.
+- Inside each Locker are individual **Vaults**. Each Locker maintains its own internal vault addressing scheme — vault numbers are local to the Locker, not global. Vault #38,847,291 in Locker #4,891,203 has no relationship to Vault #38,847,291 in Locker #3,002,441. The full address of any vault is always expressed as Locker # + Vault #. In production these are large integers — Locker #4,891,203 → Vault #38,847,291. In alerts and UI they are abbreviated: LCK-4891...203 → VLT-38847...291, following the same convention used for wallet addresses.
+- Vault numbers within a Locker are not assigned consecutively. Like apartment numbers in a real building, the numbering reflects the Locker's internal structure. Proximity in address space does not imply proximity in vulnerability — Vault #26 and Vault #28 in the same Locker are independently encrypted and independently secured.
+- Inside each Vault, the owner can create **Sub-vaults** (Rooms) for granular internal access control.
+- **Public Lockers** hold up to 20,000 vaults. Gas costs are distributed across many users, making them cost-efficient for retail.
+- **VIP Lockers** hold as few as 10 vaults. They cost more to deploy but offer maximum blast-radius isolation.
+
+**Three-tier blast radius containment:**
+
+| Breach level | Who is affected | Who gets notified |
+|---|---|---|
+| Sub-vault (a Room) | That sub-vault only | The vault owner — full alarm |
+| Vault (an apartment) | That vault only | Vault owner — full alarm; other vault owners in same Locker — building watch notification |
+| Locker (the building) | All vaults in that Locker | All vault owners in that Locker — full alarm; all other Lockers — neighborhood watch notification |
+
+A building watch notification is informational — "something occurred in your building, your apartment is unaffected." No action is required and no vault is locked. A neighborhood watch notification is also informational — "something occurred in the protocol, your building is clean." The blast radius of any exploit is strictly contained to the affected Locker. No breach at any level triggers any response outside its containment boundary.
+
+### 2. Individual Vault Encryption — The Second Layer of Defense
+
+Even if an attacker breaches a Locker contract, they do not gain automatic access to any vault inside it. Every vault is independently secured by a cryptographic key commitment derived from the corresponding Solana NFT's token ID and the owner's off-chain secret — neither value alone is sufficient to unlock the vault.
+
+Key derivation uses SHA-256 or SHA-512. Compromising one vault's key reveals nothing about any other.
+
+### 3. Sub-Vault Gating — The "Rooms" Model
+
+Inside a single vault, the owner can create distinct **sub-vaults** (Rooms). This enables highly granular, delegated access without exposing the full principal.
+
+**Example:** A treasury holds $5M USDC in a vault. The CFO is issued a restricted sub-key that opens only "Room A" (10,000 USDC for operational payroll). "Room B" (the $5M reserve) is mathematically inaccessible to that restricted key. The CEO holds the master key to the whole vault.
+
+### 4. Trustless Cross-Chain Verification — Solana Light Client on Monad
+
+> **Audit fix #1: Oracle replaced with a Solana Light Client**
+
+**The old model (removed):** A trusted oracle monitored Solana and told the Monad contract who owned the NFT. This oracle was a centralized chokepoint — a single entity that could be bribed, compromised, or go offline, breaking the zero-trust promise.
+
+**The new model:** MonasolProtocol deploys a **Solana Light Client directly on Monad**. This on-chain light client tracks Solana validator signatures and block headers. To unlock a vault, a user submits a **Merkle proof** of NFT ownership drawn from a recent Solana block. The Monad contract verifies this proof cryptographically against the light client's known Solana state — with no intermediary, no trusted third party, and no admin key.
+
+**The tradeoff:** Proof generation and light client sync add latency (seconds, not milliseconds). Sub-second unlocks are not possible with this model. This is an explicit design choice: trustlessness over speed.
+
+### 5. On-Chain Opacity
+
+> **Audit fix #3: "Zero-Knowledge Privacy" claim corrected**
+
+Vault contents are not visible on the EVM side. An observer can see that a vault exists and what Locker it belongs to, but cannot determine the assets held inside without the owner generating and sharing a cryptographic Access Key for the MonasolProtocol Explorer.
+
+This property is correctly described as **on-chain opacity** — a strong privacy guarantee enforced by smart contract architecture. It is not zero-knowledge privacy in the cryptographic sense (ZK proofs are not used in this system). Any Solana NFT transfers are visible on-chain; pseudonymity is provided, not anonymity.
+
+### 6. User-Owned Circuit Breakers — Two-Mode Security
+
+> **Audit fix #2: Platform-wide AI Sentinel removed and replaced with user-sovereign threat response**
+
+**The old model (removed):** An AI monitoring system with the ability to automatically freeze any Locker. This was functionally an admin kill-switch — a target for regulatory subpoenas, key theft, and centralized capture.
+
+**The new model:** MonasolProtocol has no platform-wide admin freeze capability. Instead, every vault owner makes a one-time security mode selection during vault setup. This preference is stored in their vault configuration on-chain and determines exactly how their vault responds when the threat detection system fires.
+
+#### Threat Detection Triggers
+
+The on-chain monitoring system watches for three classes of suspicious activity simultaneously:
+
+- Unusual withdrawal patterns or amounts relative to the vault's historical behaviour
+- An unrecognized wallet attempting to access or unlock the vault
+- DVN bridge anomalies — irregular cross-chain message patterns, oracle manipulation attempts, or relay failures
+
+Any one of these triggers a threat event at a specific level in the containment hierarchy — sub-vault, vault, or Locker. The threat level determines who receives an actionable alarm and who receives an informational notification only.
+
+#### Notification Hierarchy
+
+Not every threat reaches every user. The system routes alerts strictly within the affected containment boundary:
+
+**Full alarm** (System or Self mode response required): sent only to the owner of the directly affected vault or sub-vault.
+
+**Building watch notification** (informational, no action required): sent to all other vault owners within the same Locker when a vault-level breach occurs in that Locker. Their vaults are unaffected. No lock is triggered.
+
+**Neighborhood watch notification** (informational, no action required): sent to vault owners in all other Lockers when a Locker-level breach occurs somewhere in the protocol. Their Lockers are unaffected. No lock is triggered.
+
+No alert ever crosses its containment boundary as an actionable event. A Locker-level breach in LCK-3002...441 generates zero actionable alerts for any user in LCK-4891...203.
+
+The response to a full alarm depends entirely on which mode the user selected.
+
+#### System Mode
+
+The user pre-authorizes collective protection within their Locker. When a threat event is confirmed at the Locker level, every System-mode vault within that same Locker locks simultaneously. Vaults in other Lockers are completely unaffected — collective action is scoped to the containment boundary, never the whole protocol. No notification is sent first — the user opted into this behaviour at setup. Their vault remains locked until the system returns to a green state, at which point it unlocks automatically.
+
+This is not an admin action. System-mode users are not being frozen by MonasolProtocol — they voluntarily pre-authorized the collective lock by choosing this mode. The authorization lives in their vault config, not in any platform key.
+
+#### Self Mode
+
+The user retains direct control at all times. When a threat event fires, the user receives an on-device alarm with two explicit options:
+
+- **Lock my vault** — the user approves the lockdown. Their vault immediately enters a frozen state.
+- **Deny** — the user dismisses the alarm, having reviewed the threat and judged it a false positive. Their vault remains operational.
+
+If the user does not respond to the alarm within the configured timeout window, the vault automatically enters a **degraded state**: read-only access only, all withdrawals blocked. The vault remains in degraded state until the system monitoring shows green, at which point normal operation resumes automatically. MonasolProtocol never unilaterally locks a Self-mode vault — it can only degrade it. The user retains the final lock decision.
+
+#### Why This Is Architecturally Sound
+
+The distinction between System mode and Self mode preserves zero-trust in both directions. System-mode users consent to collective action at the contract level — their pre-authorization is on-chain and auditable. Self-mode users are never locked without their explicit approval — only degraded as a protective intermediate state. MonasolProtocol holds no key that can override either mode. The threat detection system is read-only — it observes and signals, but cannot act on any vault that hasn't pre-authorized it to do so.
+
+### 7. The Pledged State — Closing the Front-Running Window
+
+> **Audit fix #4: Race condition on ownership transfer eliminated**
+
+**The vulnerability:** While a Solana NFT is being transferred to a buyer (e.g., via a marketplace trade), the seller could simultaneously submit a transaction on Monad to drain the vault — before the Monad light client recognizes the new owner.
+
+**The fix:** MonasolProtocol implements an explicit vault state machine with four states:
+
+| State | Description |
+|---|---|
+| **Active** | Normal operation. The current NFT holder can unlock the vault. |
+| **Pledged** | The vault is frozen pending an ownership event (sale, DeFi deposit, transfer). Unlocks are blocked. |
+| **Settling** | Ownership proof is being submitted and verified by the light client. |
+| **Released** | New owner's proof has been verified. Vault returns to Active under new control. |
+
+To list an NFT for sale on a marketplace or deposit it into a DeFi protocol as collateral, the vault **must first be moved into the Pledged state**. This on-chain action is visible to any buyer and cryptographically prevents the seller from draining the vault mid-transfer. The vault remains in Pledged state until the new owner submits a valid Merkle proof and the light client confirms the Solana transaction's finality.
+
+### 8. Node Health, Failover & Mandatory Rotation
+
+The five-party consensus model (2 Active Wallets + 3 Approvers) is only as strong as the operational health of its constituent nodes. MonasolProtocol enforces a fully automatic, smart-contract-driven lifecycle for every node — covering health monitoring, threshold-triggered failover, encrypted backup activation, retirement with cryptographic wipe, and mandatory 120-hour rotation. No human intervention is required or permitted at any stage.
+
+#### Node Roster — Always-Maintained Composition
+
+| Role | Count | Backup Reserve | Health Threshold |
+|---|---|---|---|
+| Active Wallets (shard holders) | 2 | 1 dedicated backup per wallet | 95% |
+| Approvers (guardian ledgers) | 3 | Shared pool of 2 | 90% |
+
+All backup nodes are **dormant and encrypted** until activated by the contract. A dormant backup holds no live data and no signing keys — it is cryptographically inert until the contract decrypts and onboards it.
+
+#### Health Score Definition
+
+Every active node publishes a health score, computed as:
+
+```
+health_score = (uptime_rate + signature_success_rate) / 2
+```
+
+Sampled every 10 minutes over a rolling 24-hour window. Both components are weighted equally. The resulting score is published on-chain continuously, making node health auditable by any observer.
+
+#### Active Wallet Failover (95% Threshold)
+
+When an Active Wallet's health score drops below 95%, the smart contract automatically:
+
+1. Decrypts and activates that wallet's dedicated backup (Backup A-1 or B-1).
+2. Transfers the shard data to the backup.
+3. Expands the signing requirement temporarily — both the degraded wallet and its backup co-sign all transactions during the handoff window.
+4. Triggers retirement of the failing wallet: full data migration to the backup, followed by a cryptographic wipe of all keys, shards, and ledger data.
+5. Publishes a wipe receipt hash on-chain. The backup permanently assumes the active role.
+
+Each Active Wallet has exactly one dedicated backup. There is no shared pool — the backup is reserved exclusively for its paired wallet.
+
+#### Approver Failover (90% Threshold)
+
+When an Approver's health score drops below 90%, the smart contract automatically:
+
+1. Pulls the next available backup from the shared pool of 2, decrypts it, and onboards it into the quorum.
+2. The failing approver migrates its full NFT-to-vault mapping ledger to the backup.
+3. The remaining healthy approvers co-sign a confirmation that the migration is complete and the Merkle root of the received ledger matches the on-chain commitment.
+4. The failing approver executes a full self-wipe: all ledger data, signing keys, and mapping data are deleted. A wipe receipt hash is published on-chain.
+5. The backup permanently joins the active approver set. The quorum integrity is maintained throughout — no window exists where fewer than 3 approvers are operational.
+
+#### Approver Backup Pool Floor
+
+The shared backup pool must always contain at least 2 nodes. The contract enforces a hard floor:
+
+- When a retirement reduces the pool to 1, the contract emits an on-chain alert requiring a new backup to be provisioned and added before any further retirement can proceed.
+- When the pool reaches 0, all approver retirements are blocked entirely. No healthy approver can be rotated out until the pool is refilled.
+
+This rule is enforced at the contract level and cannot be overridden.
+
+#### Mandatory 120-Hour Rotation
+
+Independent of health score, every active node — both Active Wallets and all three Approvers — rotates out of service every 120 hours. This is a hard contract-enforced timer. A node that is perfectly healthy at the 120-hour mark is still replaced.
+
+The rotation sequence:
+
+1. A new backup node is provisioned and encrypted before the timer fires.
+2. A handoff window opens: the outgoing node and the incoming node both sign all transactions in parallel, ensuring continuity.
+3. The outgoing node transfers all data and keys to the incoming node.
+4. The outgoing node executes a full self-wipe. Wipe receipt hash published on-chain.
+5. The incoming node enters active service. The quorum is maintained throughout.
+
+The rotation ensures no node accumulates enough operational history to become a high-value target for long-duration attacks.
+
+#### Collision Guard
+
+If a node's 120-hour rotation timer fires at the same time a health-triggered failover is in progress on the same node, the contract enforces a collision guard: one process blocks until the other completes. The health-triggered failover takes priority. The rotation timer resets once the failover is resolved. This prevents a race condition between two competing contract actions on the same node.
+
+#### Backup Encryption Model
+
+Dormant backups are encrypted using threshold encryption: decrypting a backup requires a quorum signature from the remaining healthy active nodes of the same tier. This means:
+
+- Decrypting an Active Wallet backup requires both active wallets to co-sign the decryption request.
+- Decrypting an Approver backup requires at least 2 of the 3 active approvers to co-sign.
+
+A single compromised node cannot unilaterally decrypt any backup. A contract-level exploit alone is also insufficient — the threshold signatures are required. This eliminates the risk of a single breach unlocking the entire reserve.
 
 ---
 
 ## Primary Use Cases
 
 ### 1. Trustless Cross-Chain OTC Trading & Barter
-* **The Problem:** Trading illiquid or locked assets across different blockchains requires trusting a centralized exchange or paying exorbitant bridge fees.
-* **The MonasolProtocol Solution:** Alice locks 100,000 USDC on Monad. The protocol mints a Solana NFT key. Alice lists the NFT on Magic Eden for 500 SOL. Bob buys the NFT. Bob is now the sole entity capable of unlocking the 100,000 USDC on Monad.
-* **Bonus (Pure Barter):** Because the keys are NFTs, users can execute trustless swaps (e.g., trading a vault containing Monad tokens directly for a vault containing Wrapped Bitcoin) without either asset ever leaving its native chain.
 
-### 2. Borderless, Frictionless Capital Flight
-* **The Problem:** Moving large amounts of capital across borders is slow, highly surveilled, and subject to centralized freezing.
-* **The MonasolProtocol Solution:** A user locks their wealth in an EVM vault. They only need to memorize or transport the seed phrase to their Solana wallet holding the NFT key. Because the EVM assets never move, and the Solana NFT can be transferred to a new wallet in 400 milliseconds for a fraction of a cent, large-scale capital can change hands instantly and globally with near-zero on-chain footprint.
+**The problem:** Trading illiquid or locked assets across blockchains requires trusting a centralized exchange or paying large bridge fees with slow finality.
 
-### 3. Trustless Inheritance & Estate Planning
-* **The Problem:** Passing on crypto assets to heirs securely is incredibly dangerous. If you give them the seed phrase early, they could steal it. If you use a complex multi-sig, they might lose the keys.
-* **The MonasolProtocol Solution:** A parent locks their crypto estate in a Monad vault. They place the Solana NFT key into a time-locked smart contract on Solana (or a decentralized dead-man's switch). If the parent doesn't "check in" every 6 months, the Solana contract automatically transfers the NFT key to the child's wallet. The child inherits full control of the EVM estate seamlessly.
+**The solution:** Alice locks 100,000 USDC on Monad. The protocol mints a Solana NFT directly into Alice's wallet — MonasolProtocol never holds it. Alice moves her vault to Pledged state, then lists the NFT on Magic Eden for 500 SOL. Bob buys the NFT. Bob submits a Merkle proof of ownership to the Monad light client. Once Solana finality is confirmed, the vault transitions to Released and Bob holds sole unlock authority over the 100,000 USDC.
 
-### 4. Liquid Vesting for Teams & Investors
-* **The Problem:** When early investors receive locked tokens (e.g., a 2-year cliff), their capital is completely illiquid.
-* **The MonasolProtocol Solution:** A protocol deposits unvested tokens into MonasolProtocol lockers and airdrops the Solana NFT keys to investors. Even though the EVM tokens are hard-locked for 2 years, an investor needing immediate capital can sell their Solana NFT on the open market at a discount. The buyer acquires the right to the tokens when they unlock.
+Because the vault was Pledged before listing, Alice has no ability to drain it during the transfer window.
 
-### 5. DeFi Composability (Cross-Chain Collateral)
-* **The Problem:** You have $50,000 in assets on Monad, but you want to participate in a high-yield opportunity on Solana without bridging and paying slippage.
-* **The MonasolProtocol Solution:** Because the Solana NFT represents $50,000 of locked EVM value, the user can deposit that NFT into a Solana NFT-Fi lending protocol (like SharkyFi). They can borrow USDC natively on Solana against the value of their Monad assets.
+**Pure barter:** Users can execute trustless direct swaps — e.g., trading a vault containing Monad tokens for a vault containing Wrapped Bitcoin — without either asset leaving its native chain.
+
+### 2. Peer-to-Peer NFT Key Swap
+
+**The problem:** Two vault owners want to exchange vault access rights directly, but trustless cross-wallet NFT swaps without a custodial intermediary are difficult to execute safely.
+
+**The solution:** MonasolProtocol provides a trustless atomic swap primitive. Both users input their Solana wallet addresses and select which NFT key they are offering and which they want to receive. The swap contract holds neither NFT at any point — it executes atomically on Solana, meaning both NFTs transfer simultaneously in a single transaction or neither does. If either party's conditions are not met, the entire transaction reverts and both parties keep their original NFTs.
+
+**The three constraints — hardcoded into the protocol, not configurable:**
+
+1. **Atomic only.** Both NFTs transfer in the same transaction or neither does. There is no escrow window, no hold period, no intermediate state where MonasolProtocol or any other party holds an NFT.
+2. **Flat fee only.** The protocol charges a fixed fee in MON for executing the swap transaction — the same fee regardless of which NFTs are being swapped or what any vault contains. No percentage, no spread, no variable pricing.
+3. **No vault contents displayed.** The swap UI shows NFT identifiers and wallet addresses only. Vault contents are never surfaced, suggested, or referenced during the swap flow. What a vault holds is between the two parties — MonasolProtocol has no visibility into it and does not expose it.
+
+**What MonasolProtocol does:** Constructs the atomic swap transaction. Verifies both NFTs are in a valid state before executing. Collects the flat protocol fee.
+
+**What MonasolProtocol does not do:** Hold either NFT. Display, reference, or estimate vault contents. Set or suggest exchange terms. Match counterparties. Act as counterparty. Take custody of anything.
+
+**Regulatory position:** MonasolProtocol is infrastructure, not an exchange operator. It is never a counterparty. Price discovery and negotiation happen entirely off-platform between the two parties. The flat fee is infrastructure pricing for transaction construction and execution — not compensation for facilitating an asset exchange. The vault assets themselves never move during a swap — only the access credentials change hands.
+
+### 3. Cross-Chain Institutional Custody & Settlement
+
+> **Audit fix #3: "Capital flight" use case reframed**
+
+**The problem:** Moving large pools of institutional capital between custody environments across chains is slow, audit-heavy, and exposes funds to bridge risk during transit.
+
+**The solution:** An institution locks assets in a dedicated VIP Locker on Monad. The institution holds the NFT in their own Solana multisig wallet (e.g., Squads) — MonasolProtocol has no custody of it at any point (e.g., Squads). When capital needs to change hands — between funds, entities, or jurisdictions — the NFT is transferred via standard Solana infrastructure. The heavy EVM assets never move; only the access credential does. Settlement is final once the Monad light client confirms the new owner's Merkle proof.
+
+This model is appropriate for regulated entities operating under standard AML/KYC frameworks. MonasolProtocol does not obscure beneficial ownership or facilitate circumvention of reporting requirements.
+
+### 4. Trustless Inheritance & Estate Planning
+
+**The problem:** Passing crypto assets to heirs securely is difficult. Sharing a seed phrase early risks theft. Multi-sig setups risk lost keys.
+
+**The solution:** A principal locks their crypto estate in a Monad vault. The principal transfers the NFT from their own wallet into a time-locked or dead-man's-switch contract on Solana — a user-controlled action. MonasolProtocol is not a party to this transfer. If the principal fails to check in (sign a transaction) within a configured window (e.g., 6 months), the Solana contract automatically transfers the NFT to the heir's wallet. The heir then submits a Merkle proof to the Monad light client and gains full control of the estate.
+
+No lawyer, no court, no trusted executor. The rules are encoded in immutable contracts.
+
+### 5. Liquid Vesting for Teams & Investors
+
+**The problem:** Locked vesting allocations (2-year cliffs, quarterly unlocks) are completely illiquid during the lock period.
+
+**The solution:** A protocol deposits unvested tokens into MonasolProtocol Lockers and airdrops the Solana NFTs directly into investor wallets — each investor holds their own NFT in self-custody from the moment of receipt. Even though the EVM tokens are hard-locked for 2 years, an investor needing immediate liquidity can move the vault to Pledged state and sell the NFT on the open market at a discount. The buyer acquires the right to the tokens when the time-lock expires, creating a compliant secondary market for vesting allocations — the underlying assets never leave the Monad contract.
+
+### 6. DeFi Composability — Cross-Chain Collateral
+
+**The problem:** A user holds $50,000 in assets on Monad and wants to participate in a Solana lending protocol without bridging funds and absorbing slippage.
+
+**The solution:** The Solana NFT mathematically represents the locked EVM value. The user moves the vault to Pledged state and deposits the NFT into a Solana NFT-Fi lending protocol (e.g., SharkyFi). They borrow USDC natively on Solana against the collateral value. The Monad assets remain locked and isolated — they cannot be touched while the NFT is pledged as collateral.
+
+### 7. Event Ticketing — Quantity-Based Purchase, AI Screening & Identity-Locked Tickets
+
+**The problem:** Concert and event ticketing is plagued by bots sweeping allocations in milliseconds, scalpers flipping tickets immediately at multiples of face value, multi-wallet buyers circumventing per-person limits, and no reliable way to tie a ticket to its legitimate owner at the venue door.
+
+**The solution:** A promoter deploys a dedicated Locker for their event containing one vault per ticket tier. Every ticket is a unique numbered NFT whose token name encodes the seat range, admission count, and discount — all derived from how many tickets the buyer selects at purchase time. Three compounding layers of protection eliminate scalping: AI wallet screening before sale, soul-bound identity verification at purchase, and dual-token door check at the venue.
+
+---
+
+#### Layer 1 — Ticket Token Notation
+
+The `*` operator in a ticket token denotes a seat **range** — seats from the start number through the end number inclusive. The admission count is always mathematically derived: `end seat − start seat + 1`. No stored value, no lookup table.
+
+| Token | Seats | Admissions | Discount |
+|---|---|---|---|
+| `#021` | Seat 21 only | 1 | None |
+| `#021*022-0` | Seats 21 through 22 | 2 | None |
+| `#021*025-10` | Seats 21 through 25 | 5 | $10 |
+| `#021*030-25` | Seats 21 through 30 | 10 | $25 |
+| `#VIP-014` | VIP seat 14 | 1 | None |
+| `#ACC-008` | Accessible seat 8 | 1 | None |
+
+The discount suffix is locked into the NFT metadata at mint time. The purchase contract reads start seat, end seat, calculates the range, multiplies by per-seat price, subtracts the discount. It cannot be changed after minting.
+
+#### Layer 1 — Consumer-Driven Grouping
+
+The promoter does not pre-group seats. The buyer selects a quantity at purchase time — 1, 2, 3, 4, or 5 tickets (up to the vault's per-wallet maximum). The system automatically finds contiguous available seats and mints the appropriate range token in one transaction.
+
+A buyer selecting 5 tickets receives one NFT: `#021*025-10`. One wallet. One NFT. Five admissions. $10 group discount applied automatically. A scalper attempting to buy 5 individual tickets through one wallet still receives `#021*025-10` — the system bundles contiguous seats regardless. They cannot receive 5 separate NFTs through one wallet. Multi-wallet attempts are caught by AI screening.
+
+Discount tiers are configured by the promoter per vault and applied automatically based on quantity:
+
+| Quantity | Discount | Token example |
+|---|---|---|
+| 1 | None | `#021` |
+| 2 | $5 | `#021*022-5` |
+| 3–4 | $10 | `#021*025-10` |
+| 5+ | $15 | `#021*025-15` |
+
+---
+
+#### Layer 2 — AI Wallet Screening (Pre-Registration)
+
+Fans register their Solana wallet up to 2 weeks before sale day. MonasolProtocol runs AI-assisted on-chain screening on each registered wallet.
+
+**What the screening analyzes:**
+
+- **Wallet age** — wallets created within 72 hours of registration are flagged as likely bots
+- **Transaction depth** — genuine wallets show varied on-chain activity across protocols; empty wallets do not
+- **Connected wallet clustering** — the AI maps wallets sharing transaction counterparties, funding sources, or protocol interactions to detect multi-wallet buyers attempting to circumvent per-wallet limits
+- **Prior event behavior** — wallets that purchased event NFTs and listed them on secondary markets within 24 hours are flagged as scalpers
+- **NFT holding history** — genuine collectors hold NFTs; bot wallets typically hold nothing
+
+**Results:**
+
+- **Confirmed** — guaranteed purchase window on sale day
+- **Waitlist** — access only if Confirmed allocation remains (15-minute delay)
+- **Flagged** — locked out of that event's vaults entirely
+
+---
+
+#### Layer 3 — Soul-Bound Identity Verification (KYC at Purchase)
+
+After wallet screening, the buyer must hold a **Soul-Bound Identity Token** — a non-transferable NFT permanently tied to their wallet proving they are a verified unique human. Soul-bound tokens cannot be transferred under any circumstances. They are the cryptographic proof of personhood.
+
+MonasolProtocol integrates with Civic Pass for identity verification. The user verifies once (at whichever level the promoter requires), receives a soul-bound token to their wallet, and that token is checked at purchase time for every event that requires verification.
+
+**Promoter-configurable KYC levels per vault:**
+
+| Level | Requirement | Use case |
+|---|---|---|
+| None | AI screening only | General events, no identity required |
+| Soft | Email + phone verified | Mid-tier events |
+| Standard | Government ID verified | High-demand shows |
+| Hard | Biometric + government ID | Premium / VIP only |
+
+The soul-bound token records which verification level was completed. A VIP vault requiring Hard verification will reject a wallet holding only a Soft token. The contract enforces this at purchase — no human review required.
+
+**Conditional transfer lock:** After the initial transfer lock period expires, tickets can only transfer to a wallet holding a soul-bound token at the same or higher verification level as the original buyer. A scalper who buys and tries to sell to an anonymous wallet is blocked at the contract level.
+
+---
+
+#### Vault Structure per Event Locker
+
+Each event Locker contains one vault per tier, each with independent configuration:
+
+| Vault | Max per wallet | KYC level | Release window | Transfer lock |
+|---|---|---|---|---|
+| General | 5 seats | Soft | General sale | 30 days |
+| Premium | 3 seats | Standard | General sale | 14 days |
+| VIP | 2 seats | Hard | 48h early access | None |
+| Accessible | 2 seats | Soft | General sale | 30 days |
+
+All vaults start in Pledged state. They release simultaneously at their configured timestamp — or in the case of VIP, 48 hours before general sale.
+
+**Additional promoter controls (all contract-enforced):**
+
+- **Batch release** — tickets release in configurable batches (e.g., 100 every 5 minutes) preventing bot sweeps
+- **Maximum wallet spend** — optional cap on total SOL spendable per wallet across all tiers in one event
+- **Wallet allowlist** — option to restrict purchases to a pre-approved list (for private events or corporate allocations)
+
+---
+
+#### Venue Access — Dual-Token Door Check
+
+At the venue, the ticket holder's wallet is scanned. Two things are verified simultaneously:
+
+```
+Scan wallet →
+  ✓ Holds ticket NFT (e.g. #021*025-15)
+  ✓ Holds Soul-Bound Identity Token matching purchase record
+  ✓ Identity verification level ≥ vault requirement
+  ✓ Transfer lock satisfied (if applicable)
+  ✓ Seat range: 021 through 025 = 5 admissions
+→ ADMIT 5
+```
+
+One scan. No paper. No QR code that can be screenshotted. No PDF that can be forwarded. The NFT in the holder's wallet is the ticket — and only the holder's private key can sign the door challenge. If the ticket was sold to a new wallet, that wallet must also hold a valid soul-bound token at the required verification level. Without it, entry is denied regardless of ticket ownership.
+
+**What this eliminates:** Bot purchases, multi-wallet scalping, immediate ticket flipping, anonymous resale, QR screenshot sharing, and fraudulent duplicate admissions.
+
+---
+
+#### Why This Matters for Promoters
+
+A festival running 50,000 seats across 5 nights configures the entire operation from one MonasolProtocol admin panel — five Lockers, each with multiple vault tiers, coordinated release windows, AI screening, and KYC requirements. Every ticket is on-chain, every transfer is auditable, every restriction is contract-enforced. No third-party ticketing platform takes a percentage of revenue. No box office staff needed to police limits. The promoter owns the infrastructure and keeps the margin.
+
+### 8. Generational Trust & Yield Rights
+
+
+### 8. Generational Trust & Yield Rights
+
+**The problem:** Passing wealth to unborn beneficiaries without trusting lawyers or knowing future wallet addresses.
+
+**The solution:** A user locks wealth in an isolated Monad vault and places the Solana NFT into a Time-Capsule contract with a specific unlock date (e.g., 2076). The Time-Capsule issues a cryptographic claim ticket — a secret that can be held physically or digitally. Whoever possesses the claim ticket when the date arrives can withdraw the NFT and subsequently unlock the vault.
+
+**Yield rights separation (see also: Two-NFT Model below):** While the principal is locked, the vault owner can issue a separate Yield NFT granting a lessee the right to receive generated yield. The lessee pays periodic rent into the vault's smart contract in exchange for the yield stream. The principal NFT — and sole control of the underlying deposit — remains with the original owner or their designated heir.
 
 ---
 
 ## Why This Works
 
-By utilizing Solana for the **access layer** (fast, cheap, highly liquid NFT infrastructure) and Monad for the **storage layer** (deep EVM liquidity, battle-tested DeFi standards), MonasolProtocol bypasses the traditional "bridging" dilemma. It doesn't move the money; it simply moves the deed to the vault.
+Solana handles the **access layer**: fast, cheap, highly liquid NFT infrastructure with a thriving marketplace ecosystem. Monad handles the **storage layer**: deep EVM liquidity, battle-tested DeFi primitives, and high throughput for settlement.
+
+MonasolProtocol bridges these by replacing the traditional trusted bridge with a cryptographic proof system. The Monad light client doesn't trust Solana — it verifies it. This is the same security model used by Ethereum's Beacon Chain light clients and IBC in the Cosmos ecosystem.
+
+The result: no bridges, no oracles, no custodians, no admin keys. Just math.
+
+---
+
+## Recommended Tech Stack
+
+### Solana Access Layer — Rust & Anchor
+
+Rust's borrow checker prevents entire classes of memory management bugs at compile time. The Anchor framework adds strict account validation and authorization checks specific to Solana's account model. All NFT minting, Pledged-state transitions, and circuit breaker logic lives here.
+
+#### NFT Key Strategy — v1 Launch
+
+**Decision: mint via Metaplex Core on launch. Shard tool for existing NFTs is roadmapped post-launch.**
+
+At launch, vault keys are purpose-built NFTs minted through Metaplex Core via the MonasolProtocol minting UI. The user connects their Solana wallet and mints a fresh NFT directly into their own wallet — MonasolProtocol never holds it. The NFT metadata is structured by the protocol and contains:
+
+- The abbreviated vault address (`LCK-4891...203 → VLT-38847...291`)
+- The Locker tier (Public or VIP)
+- The user's chosen security mode (System or Self)
+- A unique visual identity generated at mint time
+
+Because the NFT is purpose-built, its structure is exactly what the Active Wallet shards and Approver Ledger mapping expect. There is no ambiguity about token standard, metadata format, or ownership verification. This eliminates an entire class of edge cases at launch.
+
+**Why not the shard tool first:** Allowing users to register any existing NFT as a vault key requires handling arbitrary metadata standards, resolving composability conflicts (staked NFTs, listed NFTs, NFTs locked in lending protocols), and ensuring the shard verification system handles any token ID from any collection cleanly. These are solvable problems — but they are post-product-market-fit problems, not launch problems.
+
+#### NFT Key Strategy — v2 Roadmap (Post-Launch)
+
+The shard tool allows any existing Solana NFT to be registered as a vault key without minting anything new. The user connects their wallet, selects an NFT they already hold, and MonasolProtocol registers its token ID in the Approver Ledger mapping. The NFT gains vault-key functionality without leaving the user's wallet.
+
+This makes every existing Solana NFT holder a potential MonasolProtocol user. A Bored Ape, a Mad Lad, a Tensor Penguin — any NFT becomes a vault key. The growth vector is significant: rather than requiring new mints, adoption can spread through existing high-value NFT communities whose holders already have assets worth protecting.
+
+The shard tool will require a dedicated security audit focused on cross-collection compatibility and composability conflict resolution before launch.
+
+### Monad Storage Layer — Vyper
+
+Vyper's intentional constraints (no recursion, no infinite loops, no complex inheritance) make every vault contract fully auditable and formally verifiable. Gas costs per function call are deterministic. This is the correct language for contracts holding high-value, isolated assets.
+
+### Cross-Chain Verification — Solana Light Client (on Monad, in Vyper)
+
+The light client is the most critical and novel component of the stack. It must:
+
+1. Track Solana validator set changes and block headers on-chain.
+2. Verify Merkle proofs of account state (NFT ownership records) against those headers.
+3. Enforce Solana finality thresholds before recognizing an ownership change.
+
+This component requires an independent formal security audit before mainnet deployment and should be treated as the protocol's highest-risk surface area.
+
+### Two-NFT Model — Principal NFT & Yield NFT
+
+> **Audit fix #5: Yield routing isolation**
+
+**The old model (removed):** Users optionally deployed vault principal into external DeFi protocols for yield. This reintroduced external smart contract risk into vaults that users had paid a premium to isolate.
+
+**The new model:** Yield generation is architecturally separated from principal custody.
+
+- The **Principal NFT** controls the locked deposit. It never interacts with external DeFi protocols. Holders of this NFT can unlock the vault principal and nothing else.
+- The **Yield NFT** represents the right to receive interest generated by the principal. Yield is generated by routing *only the yield stream* (not the principal) through an external lending protocol. If that external protocol is exploited, the attacker can steal accrued interest — but the principal remains locked and isolated in the Locker contract.
+
+This model preserves the VIP Locker's isolation guarantee while still enabling yield generation as an opt-in feature.
+
+---
+
+## Revenue Model
+
+MonasolProtocol is the Locker deployer and infrastructure operator. Users do not subscribe, renew, or manage billing. Revenue is collected in two ways only: a one-time lifetime lease at vault creation, and a flat fee at each transaction event. At no point does any fee reference, percentage, or calculation touch the value or contents of any vault.
+
+### 1. Lifetime Lease — Paid Once at Vault Creation
+
+When a user creates a vault, they pay a one-time upfront lease. That payment secures their vault slot permanently — no expiry, no renewal, no risk of being priced out as the protocol grows. The lease is paid in MON at vault creation and collected automatically by the smart contract.
+
+**The lease transfers with the NFT.** When the NFT key is sold, swapped, or transferred, the lifetime lease travels with it. Whoever holds the NFT holds the lease. The new owner steps into the same permanent rights as the original holder — no re-registration, no additional payment, no admin action required. This makes the NFT more valuable as a tradeable instrument: buyers on Magic Eden or Tensor are acquiring vault access plus a permanent lease, not just a key.
+
+**Lease pricing scales by Locker tier** — the security cost is fixed per Locker regardless of vault count, so the more vaults in a Locker, the cheaper the per-vault lease:
+
+| Locker tier | Vault capacity | Lease cost | Security cost share |
+|---|---|---|---|
+| Public | Up to 20,000 vaults | Lowest | Split across thousands of tenants |
+| Standard | Up to 1,000 vaults | Mid-range | Moderate split |
+| VIP | 10–100 vaults | Higher | Split across very few tenants |
+| Dedicated (institutional) | Custom | Negotiated | One organization, private Locker |
+
+### 2. Per-Transaction Fee — Flat, Collected at the Event
+
+Every time a vault transaction occurs, a small flat fee is collected automatically at the contract level. The fee is identical for every transaction of the same type, regardless of which vault, which Locker tier, or what the vault contains.
+
+Two transaction types carry a fee:
+
+- **Deposit** — assets moving into a vault
+- **Withdrawal** — assets moving out of a vault
+
+All other vault interactions — Pledged state transitions, atomic swaps, sub-vault access changes, circuit breaker state changes, light client verification — also carry a flat fee. Every fee is the same flat amount for its event type. No variable pricing, no percentage, no reference to transaction size or vault contents.
+
+The per-transaction fee is the protocol's recurring revenue engine. As vault activity grows, revenue grows — without ever changing the price on existing lease holders or touching anything inside a vault.
+
+### 3. Dedicated Institutional Lockers
+
+MonasolProtocol can deploy a private Locker exclusively for a single organization — a DAO, investment fund, corporate treasury, or family office. The organization receives a Locker at its own on-chain address, vault numbering scoped to their deployment, and security infrastructure dedicated entirely to their use. Lease terms and per-transaction fees are negotiated upfront. This is a direct enterprise relationship, not a self-serve flow.
+
+### 4. Two-NFT Yield Stream Fee
+
+When a vault owner opts into the Two-NFT model, the Yield NFT captures interest from the yield stream only — the principal never moves and is never referenced in any fee calculation. MonasolProtocol takes a flat performance fee on the yield generated as compensation for managing the yield routing layer. Entirely opt-in, entirely separate from the base lease and transaction fees.
+
+### What fees never reference
+
+No fee in the MonasolProtocol model is calculated as a percentage of vault contents, a spread on transaction value, or any function of what is inside a vault. MonasolProtocol has no visibility into vault contents and does not price based on them. The lease pays for the vault slot. The transaction fee pays for the transaction event. Security is the product.
+
+---
+
+## What Changed from v1.0 — Audit Diff
+
+| v1.0 Claim / Feature | v2.0 Replacement | Reason |
+|---|---|---|
+| Trusted oracle for cross-chain verification | Solana Light Client + Merkle proofs on Monad | Oracle = centralized trust assumption |
+| AI Sentinel platform-wide freeze | User-Owned Circuit Breakers (opt-in, self-custodied) | Platform freeze = admin key, coercible |
+| "Zero-Trust" with admin freeze capability | Genuinely no platform admin key | Contradiction in original model |
+| "Zero-Knowledge Privacy" | "On-Chain Opacity" | ZK is a specific cryptographic primitive; the claim was false |
+| "Borderless capital flight" | "Cross-Chain Institutional Custody & Settlement" | Regulatory landmine; same functionality, accurate framing |
+| Yield deployed from principal | Two-NFT Model: Yield NFT separate from Principal NFT | Yield routing broke VIP isolation guarantee |
+| No transfer race condition protection | Pledged state machine; vault frozen before any ownership event | Front-running attack vector |
+
+---
+
+| v2.0 Feature | v3.0 Addition | Reason |
+|---|---|---|
+| 5-of-5 consensus with no fault tolerance | Active Wallet backups (1 each, dedicated) + Approver pool (2 shared) | Zero fault tolerance = permanent lockout risk |
+| No node health monitoring | Automated health score (uptime + signature rate, rolling 24h) | Silent node degradation undetectable without monitoring |
+| No retirement process | Threshold-triggered retirement with data migration + cryptographic wipe | Graceful replacement without service interruption |
+| No rotation schedule | Mandatory 120h hard rotation for all active nodes | Long-lived nodes accumulate attack surface over time |
+| No collision handling | Contract collision guard — health failover takes priority over rotation | Race condition between two concurrent contract actions on same node |
+| Backup encryption unspecified | Threshold encryption — decrypting a backup requires quorum co-signature | Single compromise must not unlock entire backup reserve |
+| Backup pool management unspecified | Hard pool floor of 2 approver backups; retirements blocked if pool = 0 | Unmanaged pool depletion leaves no recovery path |
+
+| v3.0 Model | v4.0 Clarification / Decision | Reason |
+|---|---|---|
+| NFT key strategy unspecified | Launch with Metaplex Core mint; shard tool for existing NFTs roadmapped post-launch | Eliminates composability edge cases at launch; shard tool is a growth lever, not a prerequisite |
+| Custody model ambiguous in places | MonasolProtocol never holds the NFT or any complete key — only shards and mapping data | Custody of the NFT determines regulatory classification; must be unambiguous |
+| Key derivation implied MonasolProtocol involvement | User's NFT + user's Solana wallet signature = the only complete unlock credential | Shards verify, mapping points, only the user's wallet unlocks |
+| Circuit breaker described as protocol-wide | System mode locks only the affected Locker, not all System-mode vaults globally | Containment boundary is the Locker, not the protocol |
+| Vault addresses shown as short integers | Production addresses are large integers, abbreviated in UI: LCK-4891...203 → VLT-38847...291 | Matches wallet address convention; sufficient to identify without exposing full number |
+
+---
+
+*MonasolProtocol v4.0 — April 2026*
