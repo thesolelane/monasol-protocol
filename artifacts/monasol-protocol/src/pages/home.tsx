@@ -6,6 +6,7 @@ import { LockerForm } from "@/components/LockerForm";
 import { VaultExplorer } from "@/components/VaultExplorer";
 import { StatsCard } from "@/components/StatsCard";
 import { CircuitBreaker } from "@/components/CircuitBreaker";
+import { RentVaultModal } from "@/components/RentVaultModal";
 import { MoveInModal } from "@/components/MoveInModal";
 import { MintNftModal } from "@/components/MintNftModal";
 import { Shield, Coins, Activity, Zap, Wallet, Key, ArrowLeftRight, Ticket } from "lucide-react";
@@ -51,6 +52,7 @@ export default function Home() {
   const [evmConnected, setEvmConnected] = useState(false);
   const [solanaConnected, setSolanaConnected] = useState(false);
   const [selectedNft, setSelectedNft] = useState<string | null>(null);
+  const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isMoveInOpen, setIsMoveInOpen] = useState(false);
   const [isMintNftOpen, setIsMintNftOpen] = useState(false);
   const [mintedNft, setMintedNft] = useState<{ mint: string; name: string; image: string; tokenId: string } | null>(null);
@@ -144,6 +146,14 @@ export default function Home() {
               className="h-10 bg-monad-purple hover:bg-monad-purple/90 text-black font-bold shadow-[0_0_15px_-3px_rgba(130,71,229,0.4)]"
             >
               Move In
+            </Button>
+            <Button
+              onClick={() => setIsRentModalOpen(true)}
+              variant="outline"
+              className="h-10 bg-black/40 border-solana-green/30 text-solana-green hover:bg-solana-green/10 hover:text-solana-green shadow-[0_0_10px_rgba(20,241,149,0.1)]"
+            >
+              <Key className="h-4 w-4 mr-2" />
+              Rent a Vault
             </Button>
             <WalletConnect
               type="evm"
@@ -309,6 +319,18 @@ export default function Home() {
         </div>
       </div>
 
+
+      <RentVaultModal
+        isOpen={isRentModalOpen}
+        onClose={() => setIsRentModalOpen(false)}
+        connectedWallet={solanaConnected ? MOCK_WALLET : null}
+        onConnectWallet={() => setSolanaConnected(true)}
+        onSuccess={() => {
+          setIsRentModalOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["/api/nfts", MOCK_WALLET] });
+          setIsMoveInOpen(true);
+        }}
+      />
 
       <MoveInModal
         isOpen={isMoveInOpen}
