@@ -1,0 +1,83 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
+import "@account-abstraction/contracts/interfaces/IStakeManager.sol";
+import "@account-abstraction/contracts/interfaces/INonceManager.sol";
+import "@account-abstraction/contracts/interfaces/PackedUserOperation.sol";
+
+/**
+ * @title MockEntryPoint
+ * @notice Minimal EntryPoint stub for local Hardhat testing.
+ *         Satisfies the IEntryPoint interface without full bundler logic.
+ *         Do NOT deploy to any real network.
+ */
+contract MockEntryPoint is IEntryPoint {
+
+    mapping(address => uint256) private _deposits;
+    mapping(address => mapping(uint192 => uint256)) private _nonces;
+
+    function handleOps(
+        PackedUserOperation[] calldata,
+        address payable
+    ) external pure override {}
+
+    function handleAggregatedOps(
+        UserOpsPerAggregator[] calldata,
+        address payable
+    ) external pure override {}
+
+    function simulateValidation(
+        PackedUserOperation calldata
+    ) external pure override {}
+
+    function getSenderAddress(bytes memory) external pure override {}
+
+    function delegateAndRevert(address, bytes calldata) external pure override {}
+
+    function getUserOpHash(
+        PackedUserOperation calldata userOp
+    ) external view override returns (bytes32) {
+        return keccak256(abi.encode(userOp, block.chainid, address(this)));
+    }
+
+    function getNonce(
+        address sender,
+        uint192 key
+    ) external view override returns (uint256) {
+        return _nonces[sender][key];
+    }
+
+    function incrementNonce(uint192 key) external override {
+        _nonces[msg.sender][key]++;
+    }
+
+    function balanceOf(address account) external view override returns (uint256) {
+        return _deposits[account];
+    }
+
+    function depositTo(address account) external payable override {
+        _deposits[account] += msg.value;
+    }
+
+    function withdrawTo(
+        address payable withdrawAddress,
+        uint256 withdrawAmount
+    ) external override {
+        require(_deposits[msg.sender] >= withdrawAmount, "Insufficient deposit");
+        _deposits[msg.sender] -= withdrawAmount;
+        (bool ok,) = withdrawAddress.call{value: withdrawAmount}("");
+        require(ok, "Transfer failed");
+    }
+
+    function addStake(uint32) external payable override {}
+    function unlockStake() external override {}
+    function withdrawStake(address payable) external override {}
+
+    function getDepositInfo(address)
+        external pure override
+        returns (IStakeManager.DepositInfo memory info)
+    {
+        return info;
+    }
+}
