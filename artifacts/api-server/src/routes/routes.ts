@@ -162,4 +162,71 @@ router.patch("/swaps/:token/confirm", async (req, res) => {
   }
 });
 
+// ── Vault Sessions ──────────────────────────────────────────────────────────
+
+router.get("/sessions/:vaultId", async (req, res) => {
+  try {
+    const session = await storage.getActiveVaultSession(req.params.vaultId);
+    if (!session) return res.status(404).json({ error: "No active session" });
+    res.json({
+      id: session.id,
+      sessionId: session.sessionId,
+      vaultId: session.vaultId,
+      nftMint: session.nftMint,
+      authorizedAddress: session.authorizedAddress,
+      label: session.label,
+      openedAt: session.openedAt.getTime(),
+      expiresAt: session.expiresAt.getTime(),
+      status: session.status,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch session" });
+  }
+});
+
+router.post("/sessions", async (req, res) => {
+  try {
+    const { vaultId, nftMint, authorizedAddress, label, durationMs } = req.body;
+    if (!vaultId || !nftMint || !durationMs) {
+      return res.status(400).json({ error: "vaultId, nftMint, and durationMs are required" });
+    }
+    const openedAt = new Date();
+    const expiresAt = new Date(openedAt.getTime() + Number(durationMs));
+    const sessionId = "SES-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+    const session = await storage.createVaultSession({
+      vaultId,
+      nftMint,
+      sessionId,
+      authorizedAddress: authorizedAddress || "Any holder",
+      label: label || "General session",
+      expiresAt,
+      status: "open",
+      closedAt: null,
+    });
+    res.status(201).json({
+      id: session.id,
+      sessionId: session.sessionId,
+      vaultId: session.vaultId,
+      nftMint: session.nftMint,
+      authorizedAddress: session.authorizedAddress,
+      label: session.label,
+      openedAt: session.openedAt.getTime(),
+      expiresAt: session.expiresAt.getTime(),
+      status: session.status,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to create session" });
+  }
+});
+
+router.delete("/sessions/:vaultId", async (req, res) => {
+  try {
+    const session = await storage.closeVaultSession(req.params.vaultId);
+    if (!session) return res.status(404).json({ error: "No active session to close" });
+    res.json({ status: "closed", sessionId: session.sessionId });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to close session" });
+  }
+});
+
 export default router;

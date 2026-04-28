@@ -107,6 +107,23 @@ export const insertTicketTierSchema = createInsertSchema(ticketTiers).omit({ id:
 export type InsertTicketTier = z.infer<typeof insertTicketTierSchema>;
 export type TicketTier = typeof ticketTiers.$inferSelect;
 
+export const vaultSessions = pgTable("vault_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vaultId: text("vault_id").notNull(),
+  nftMint: text("nft_mint").notNull(),
+  sessionId: text("session_id").notNull().unique(),
+  authorizedAddress: text("authorized_address").notNull(),
+  label: text("label").notNull(),
+  openedAt: timestamp("opened_at").notNull().default(sql`now()`),
+  expiresAt: timestamp("expires_at").notNull(),
+  closedAt: timestamp("closed_at"),
+  status: text("status").notNull().default("open"),
+});
+
+export const insertVaultSessionSchema = createInsertSchema(vaultSessions).omit({ id: true, openedAt: true });
+export type InsertVaultSession = z.infer<typeof insertVaultSessionSchema>;
+export type VaultSession = typeof vaultSessions.$inferSelect;
+
 export const swapSessions = pgTable("swap_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   token: text("token").notNull().unique(),

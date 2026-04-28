@@ -307,7 +307,7 @@ export default function Home() {
             ) : (
               <>
                 <LockerForm isConnected={allConnected} hasNftKey={!!selectedNft} activeVault={activeVault} />
-                <SessionPanel vaultId={activeVault?.id ?? ""} nftName={activeVault?.nftName ?? ""} />
+                <SessionPanel vaultId={activeVault?.id ?? ""} nftMint={selectedNft ?? ""} nftName={activeVault?.nftName ?? ""} />
                 <CircuitBreaker />
                 <VaultExplorer />
               </>
