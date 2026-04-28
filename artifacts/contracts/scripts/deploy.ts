@@ -1,4 +1,5 @@
 import { ethers, network } from "hardhat";
+import type { ContractTransactionResponse, ContractTransactionReceipt } from "ethers";
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 
@@ -58,9 +59,9 @@ function section(title: string) {
 }
 
 async function waitConfirmed(
-  tx: ethers.ContractTransactionResponse,
+  tx: ContractTransactionResponse,
   label: string
-): Promise<ethers.ContractTransactionReceipt> {
+): Promise<ContractTransactionReceipt> {
   log(`${label}... tx: ${tx.hash}`);
   const receipt = await tx.wait(1);
   if (!receipt || receipt.status !== 1) {
