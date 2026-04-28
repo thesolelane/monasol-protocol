@@ -1,24 +1,22 @@
 {
-  "name": "@workspace/contracts",
-  "version": "0.0.0",
+  "name": "@nexus/contracts",
+  "version": "0.0.1",
   "private": true,
-  "type": "commonjs",
+  "description": "MonaSol Protocol smart contracts — Vault, Locker, OracleVerifier",
   "scripts": {
-    "compile": "hardhat compile",
+    "build": "hardhat compile",
+    "typecheck": "tsc --noEmit",
     "test": "hardhat test",
-    "deploy": "hardhat run scripts/deploy.ts --network monadTestnet",
-    "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
-    "clean": "hardhat clean",
-    "typecheck": "tsc --noEmit"
+    "clean": "hardhat clean"
   },
   "devDependencies": {
+    "@account-abstraction/contracts": "0.7.0",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@types/node": "^20.0.0",
+    "@openzeppelin/contracts": "^5.3.0",
     "hardhat": "^2.22.0",
+    "ethers": "^6.13.0",
+    "typescript": "~5.9.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.0"
-  },
-  "dependencies": {
-    "@openzeppelin/contracts": "^5.0.0"
+    "@types/node": "^25.3.3"
   }
 }
