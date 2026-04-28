@@ -26,9 +26,16 @@ const config: HardhatUserConfig = {
     },
   },
   // Vyper — Locker.vy and LockerFactory.vy
-  // Update the version string to match the pragma in your .vy files.
   vyper: {
-    version: "0.3.10",
+    compilers: [
+      {
+        version: "0.4.0",
+        settings: {
+          evmVersion: "cancun",
+          optimize: "gas",
+        },
+      },
+    ],
   },
   networks: {
     // Local Hardhat node — used for all tests
