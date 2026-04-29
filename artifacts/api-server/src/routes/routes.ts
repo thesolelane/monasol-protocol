@@ -1,7 +1,10 @@
 import { Router, type IRouter } from "express";
 import { storage } from "../storage";
+import vaultsRouter from "./vaults";
 
 const router: IRouter = Router();
+
+router.use("/vaults", vaultsRouter);
 
 router.get("/stats", async (_req, res) => {
   try {
