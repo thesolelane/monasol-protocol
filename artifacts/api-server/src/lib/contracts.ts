@@ -17,6 +17,7 @@ const VAULT_FACTORY_ABI = [
 
 const LOCKER_ABI = [
   "function move_in(uint256 slot_index, address signing_wallet, bytes32 nft_mint, uint8 security_mode) external payable",
+  "function move_in_fee() view returns (uint256)",
   "function open_session(uint256 slot_index) external",
   "function close_session(uint256 slot_index) external",
   "function transfer_lease(uint256 slot_index, address new_owner, address new_signer, bytes32 new_nft_mint) external",
