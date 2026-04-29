@@ -105,7 +105,7 @@ export const SECURITY_MODE = {
 // testnet run by setting to gasUsed * 1.2.
 export const GAS_LIMITS = {
   deployVault:      332_000n,    // measured 276,438 + 20% headroom (block 28467415)
-  moveIn:           200_000n,    // uncalibrated — tighten after first successful move_in
+  moveIn:           400_000n,    // measured 332,236 via estimateGas + 20% headroom
   openSession:      120_000n,    // uncalibrated
   closeSession:     80_000n,     // uncalibrated
   transferLease:    150_000n,    // uncalibrated
