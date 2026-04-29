@@ -378,6 +378,80 @@ router.post("/session/open", async (req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /api/vaults/session/close
+//
+// Body: {
+//   vaultAddress: string   — deployed vault address
+// }
+//
+// Flow:
+//   1. Look up vault record to get locker + slotIndex
+//   2. Confirm slot has an active session (on-chain read)
+//   3. Call Locker.close_session(slotIndex)
+//   4. Wait for confirmation
+//   5. Log transaction
+// ---------------------------------------------------------------------------
+
+router.post("/session/close", async (req: Request, res: Response) => {
+  const { vaultAddress } = req.body ?? {};
+
+  if (!vaultAddress) {
+    return res.status(400).json({ error: "Missing required field: vaultAddress" });
+  }
+
+  if (!ethers.isAddress(vaultAddress)) {
+    return res.status(400).json({ error: "vaultAddress is not a valid address" });
+  }
+
+  try {
+    const vault = await storage.getVaultByAddress(vaultAddress);
+    if (!vault) {
+      return res.status(404).json({ error: "Vault not found" });
+    }
+
+    const locker = getLocker(vault.locker);
+    const slot = await locker.get_slot(vault.slotIndex);
+    if (!slot.session_active) {
+      return res.status(409).json({ error: "No active session on this slot" });
+    }
+
+    const lockerWriter = getLocker(vault.locker, true);
+    const tx = await sendWithNonce(
+      (overrides) => lockerWriter.close_session(vault.slotIndex, overrides),
+      GAS_LIMITS.closeSession
+    );
+
+    logger.info({ txHash: tx.hash, vaultAddress }, "close_session tx submitted");
+
+    const receipt = await tx.wait(1);
+    if (!receipt || receipt.status === 0) {
+      throw new Error(`Transaction reverted: ${tx.hash}`);
+    }
+
+    await storage.logTransaction({
+      vaultAddress,
+      action: "session_close",
+      txHash: tx.hash,
+      callerWallet: vault.signingWallet,
+      metadata: { slotIndex: vault.slotIndex },
+      createdAt: new Date(),
+    });
+
+    logger.info({ vaultAddress, txHash: tx.hash }, "session closed");
+
+    return res.json({
+      vaultAddress,
+      sessionOpen: false,
+      txHash:      tx.hash,
+      blockNumber: receipt.blockNumber,
+    });
+  } catch (err) {
+    logger.error({ err: errorMessage(err) }, "close_session failed");
+    return res.status(500).json({ error: "Failed to close session" });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // POST /api/vaults/lease/transfer
 //
 // Body: {
