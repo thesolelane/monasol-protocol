@@ -107,6 +107,6 @@ export const GAS_LIMITS = {
   deployVault:      332_000n,    // measured 276,438 + 20% headroom (block 28467415)
   moveIn:           400_000n,    // measured 332,236 via estimateGas + 20% headroom
   openSession:      140_000n,    // measured 111,681 via estimateGas + 20% headroom
-  closeSession:     80_000n,     // uncalibrated
-  transferLease:    150_000n,    // uncalibrated
+  closeSession:     90_000n,     // measured 68,919 via estimateGas + 20% headroom
+  transferLease:    150_000n,    // measured 116,967 via estimateGas + 20% headroom
 } as const;
