@@ -106,7 +106,7 @@ export const SECURITY_MODE = {
 export const GAS_LIMITS = {
   deployVault:      332_000n,    // measured 276,438 + 20% headroom (block 28467415)
   moveIn:           400_000n,    // measured 332,236 via estimateGas + 20% headroom
-  openSession:      120_000n,    // uncalibrated
+  openSession:      140_000n,    // measured 111,681 via estimateGas + 20% headroom
   closeSession:     80_000n,     // uncalibrated
   transferLease:    150_000n,    // uncalibrated
 } as const;

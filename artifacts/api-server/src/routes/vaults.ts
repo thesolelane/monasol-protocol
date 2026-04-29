@@ -284,8 +284,9 @@ router.post("/deploy", async (req: Request, res: Response) => {
 // POST /api/vaults/session/open
 //
 // Body: {
-//   vaultAddress: string   — deployed vault address (used to look up locker/slot)
-//   nftMint:      string   — hex bytes32
+//   vaultAddress:    string   — deployed vault address (used to look up locker/slot)
+//   nftMint:         string   — Solana NFT mint address (plain string, max 64 chars)
+//   durationSeconds: number   — session duration in seconds (1–86400, default 86400)
 // }
 //
 // Flow:
@@ -298,7 +299,8 @@ router.post("/deploy", async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 
 router.post("/session/open", async (req: Request, res: Response) => {
-  const { vaultAddress, nftMint } = req.body ?? {};
+  const { vaultAddress, nftMint, durationSeconds: rawDuration } = req.body ?? {};
+  const durationSeconds = rawDuration !== undefined ? Number(rawDuration) : 86400;
 
   if (!vaultAddress || !nftMint) {
     return res.status(400).json({ error: "Missing required fields: vaultAddress, nftMint" });
@@ -306,6 +308,10 @@ router.post("/session/open", async (req: Request, res: Response) => {
 
   if (!ethers.isAddress(vaultAddress)) {
     return res.status(400).json({ error: "vaultAddress is not a valid address" });
+  }
+
+  if (!Number.isInteger(durationSeconds) || durationSeconds <= 0 || durationSeconds > 86400) {
+    return res.status(400).json({ error: "durationSeconds must be an integer between 1 and 86400" });
   }
 
   try {
@@ -324,7 +330,7 @@ router.post("/session/open", async (req: Request, res: Response) => {
     // Open session
     const lockerWriter = getLocker(vault.locker, true);
     const tx = await sendWithNonce(
-      (overrides) => lockerWriter.open_session(vault.slotIndex, overrides),
+      (overrides) => lockerWriter.open_session(vault.slotIndex, durationSeconds, overrides),
       GAS_LIMITS.openSession
     );
 
