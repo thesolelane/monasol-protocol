@@ -161,7 +161,17 @@ router.post("/deploy", async (req: Request, res: Response) => {
     }
 
     if (!vaultAddress) {
-      throw new Error("VaultDeployed event not found in receipt");
+      // Idempotent case: vault was already deployed in a prior attempt.
+      // VaultFactory returns the existing address without re-emitting VaultDeployed.
+      // Recover the address via predictVaultAddress so move_in can still run.
+      logger.warn({ slotIndex, nftMint }, "VaultDeployed event not found — recovering via predictVaultAddress");
+      vaultAddress = await factory.predictVaultAddress(
+        lockerAddress,
+        slotIndex,
+        nftMint,
+        signingWallet,
+      ) as string;
+      logger.info({ vaultAddress }, "recovered vault address from prediction");
     }
 
     // Read move_in_fee from locker — exact match required (assert msg.value == self.move_in_fee)

@@ -10,7 +10,7 @@ import addresses from "../../../contracts/deployed/monad_testnet-addresses.json"
 
 const VAULT_FACTORY_ABI = [
   "function deployVault(address locker, uint256 slotIndex, bytes32 nftMint, address signingWallet, uint8 securityMode, address verifier) external returns (address vault)",
-  "function predictVaultAddress(address locker, uint256 slotIndex, bytes32 nftMint) external view returns (address)",
+  "function predictVaultAddress(address locker, uint256 slotIndex, bytes32 nftMint, address signingWallet) external view returns (address)",
   "function authorizeCaller(address caller) external",
   "event VaultDeployed(address indexed vault, address indexed locker, uint256 slotIndex, bytes32 nftMint)",
 ] as const;
