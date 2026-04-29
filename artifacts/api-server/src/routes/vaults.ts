@@ -67,7 +67,7 @@ async function sendWithNonce(
 //   slotIndex:     number
 //   nftMint:       string   — hex bytes32 (0x…)
 //   signingWallet: string   — guardian address
-//   securityMode:  number   — 0 = standard, 1 = strict
+//   securityMode:  number   — 1 = SYSTEM_MODE, 2 = SELF_MODE (contract constants)
 // }
 //
 // Flow:
@@ -95,6 +95,10 @@ router.post("/deploy", async (req: Request, res: Response) => {
 
   if (!ethers.isAddress(signingWallet)) {
     return res.status(400).json({ error: "signingWallet is not a valid address" });
+  }
+
+  if (securityMode !== 1 && securityMode !== 2) {
+    return res.status(400).json({ error: "securityMode must be 1 (SYSTEM_MODE) or 2 (SELF_MODE)" });
   }
 
   if (!/^0x[0-9a-fA-F]{64}$/.test(nftMint)) {
