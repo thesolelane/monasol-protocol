@@ -92,7 +92,7 @@ export const BASE_FEE = ethers.parseUnits("100", "gwei");
 export const PRIORITY_FEE = ethers.parseUnits("1", "gwei");
 
 export const GAS_LIMITS = {
-  deployVault:      2_000_000n,
+  deployVault:      332_000n,   // estimateGas: 276_438, +20% = 331_725
   openSession:      120_000n,
   closeSession:     80_000n,
   transferLease:    150_000n,
