@@ -45,7 +45,7 @@ export interface IStorage {
   getVaultByAddress(address: string): Promise<Vault | null>;
   logTransaction(data: {
     vaultAddress: string;
-    action: "deploy" | "session_open" | "session_close" | "lease_transfer";
+    action: "deploy" | "move_in" | "session_open" | "session_close" | "lease_transfer";
     txHash: string;
     callerWallet: string;
     metadata?: Record<string, unknown>;
@@ -280,7 +280,7 @@ export class DrizzleStorage implements IStorage {
 
   async logTransaction(data: {
     vaultAddress: string;
-    action: "deploy" | "session_open" | "session_close" | "lease_transfer";
+    action: "deploy" | "move_in" | "session_open" | "session_close" | "lease_transfer";
     txHash: string;
     callerWallet: string;
     metadata?: Record<string, unknown>;

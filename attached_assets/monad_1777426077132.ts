@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { EthersWalletSigner } from "./signer";
-import { logger } from "./logger";
+import logger from "./logger";
 
 // ---------------------------------------------------------------------------
 // Provider singleton

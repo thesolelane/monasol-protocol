@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { ethers } from "ethers";
 import { storage } from "../storage";
-import { logger } from "../lib/logger";
+import logger from "../lib/logger";
 import {
   provider,
   getNextNonce,
@@ -76,8 +76,7 @@ async function sendWithNonce(
 //   3. Call VaultFactory.deployVault
 //   4. Wait for confirmation
 //   5. Parse VaultDeployed event to get vault address
-//   6. Call Locker.move_in atomically (registers slot in Locker state)
-//   7. Persist vault record + log transactions
+//   6. Persist vault record + log transaction
 // ---------------------------------------------------------------------------
 
 router.post("/deploy", async (req: Request, res: Response) => {
@@ -170,8 +169,8 @@ router.post("/deploy", async (req: Request, res: Response) => {
 
     // Call Locker.move_in atomically — registers the slot in Locker state
     // so open_session and transfer_lease can find it
-    let moveInTx: ethers.TransactionResponse | null = null;
-    let moveInReceipt: ethers.TransactionReceipt | null = null;
+    let moveInTx: import("ethers").TransactionResponse | null = null;
+    let moveInReceipt: import("ethers").TransactionReceipt | null = null;
     let moveInFailed = false;
 
     try {
@@ -242,6 +241,7 @@ router.post("/deploy", async (req: Request, res: Response) => {
     logger.info({ vaultAddress, moveInFailed }, "deploy route complete");
 
     if (moveInFailed) {
+      // 207 Multi-Status — vault exists, locker registration pending
       return res.status(207).json({
         vault:        vaultAddress,
         locker:       lockerAddress,
@@ -297,6 +297,7 @@ router.post("/session/open", async (req: Request, res: Response) => {
   }
 
   try {
+    // Look up the vault record so we know which locker + slot to call
     const vault = await storage.getVaultByAddress(vaultAddress);
     if (!vault) {
       return res.status(404).json({ error: "Vault not found" });
@@ -323,13 +324,14 @@ router.post("/session/open", async (req: Request, res: Response) => {
       throw new Error(`Transaction reverted: ${tx.hash}`);
     }
 
+    // Persist — update nftKeys row and create session record
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24h default
     await storage.updateVaultSessionState(nftMint, true, expiresAt, false);
     await storage.createVaultSession({
       vaultId:           vaultAddress,
       nftMint,
-      sessionId:         tx.hash,
+      sessionId:         tx.hash,          // txHash as unique session identifier
       authorizedAddress: vault.signingWallet,
       label:             `slot-${vault.slotIndex}`,
       expiresAt,
@@ -350,7 +352,7 @@ router.post("/session/open", async (req: Request, res: Response) => {
     return res.json({
       vaultAddress,
       sessionOpen: true,
-      txHash:      tx.hash,
+      txHash: tx.hash,
       blockNumber: receipt.blockNumber,
     });
   } catch (err) {
@@ -374,7 +376,7 @@ router.post("/session/open", async (req: Request, res: Response) => {
 //   2. Confirm slot is occupied and no active session (on-chain read)
 //   3. Call Locker.transfer_lease(slotIndex, newOwner, newSigner, newNftMint)
 //   4. Wait for confirmation
-//   5. Log transaction
+//   5. Update vault record + log transaction
 // ---------------------------------------------------------------------------
 
 router.post("/lease/transfer", async (req: Request, res: Response) => {
@@ -437,7 +439,7 @@ router.post("/lease/transfer", async (req: Request, res: Response) => {
       txHash: tx.hash,
       callerWallet: newOwner,
       metadata: {
-        slotIndex:     vault.slotIndex,
+        slotIndex: vault.slotIndex,
         previousOwner: vault.signingWallet,
         newOwner,
         newSigner,
@@ -453,7 +455,7 @@ router.post("/lease/transfer", async (req: Request, res: Response) => {
       newOwner,
       newSigner,
       newNftMint,
-      txHash:      tx.hash,
+      txHash: tx.hash,
       blockNumber: receipt.blockNumber,
     });
   } catch (err) {
