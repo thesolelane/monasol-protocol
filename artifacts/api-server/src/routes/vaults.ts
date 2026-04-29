@@ -163,7 +163,7 @@ router.post("/deploy", async (req: Request, res: Response) => {
     if (!vaultAddress) {
       // VaultFactory returned early — vault already exists at this slot.
       // Recover the address via predictVaultAddress and continue to move_in.
-      vaultAddress = await factory.predictVaultAddress(lockerAddress, slotIndex, nftMint) as string;
+      vaultAddress = await factory.predictVaultAddress(lockerAddress, slotIndex, nftMint, signingWallet) as string;
       logger.warn({ vaultAddress }, "VaultDeployed event missing — recovered via predictVaultAddress");
     }
 
