@@ -65,7 +65,9 @@ async function sendWithNonce(
 // Body: {
 //   lockerId:      number   — index into addresses.lockers
 //   slotIndex:     number
-//   nftMint:       string   — hex bytes32 (0x…)
+//   nftMint:       string   — Solana NFT mint address (plain string, max 64 chars)
+//                            Passed as encodeBytes32String to VaultFactory (bytes32 salt),
+//                            passed directly as string to Locker.move_in (String[64])
 //   signingWallet: string   — guardian address
 //   securityMode:  number   — 1 = SYSTEM_MODE, 2 = SELF_MODE (0 is invalid, contract will revert)
 // }
@@ -98,8 +100,8 @@ router.post("/deploy", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "signingWallet is not a valid address" });
   }
 
-  if (!/^0x[0-9a-fA-F]{64}$/.test(nftMint)) {
-    return res.status(400).json({ error: "nftMint must be a 0x-prefixed 32-byte hex string" });
+  if (typeof nftMint !== "string" || nftMint.length === 0 || nftMint.length > 64) {
+    return res.status(400).json({ error: "nftMint must be a non-empty string of at most 64 characters" });
   }
 
   const mode = Number(securityMode);
@@ -122,14 +124,16 @@ router.post("/deploy", async (req: Request, res: Response) => {
       return res.status(409).json({ error: "Slot is already occupied" });
     }
 
-    // Deploy
+    // Deploy — VaultFactory expects nftMint as bytes32 (used as part of the
+    // deterministic salt); Locker expects the raw string (String[64]).
+    const nftMintBytes32 = ethers.encodeBytes32String(nftMint);
     const factory = getVaultFactoryWriter();
     const tx = await sendWithNonce(
       (overrides) =>
         factory.deployVault(
           lockerAddress,
           slotIndex,
-          nftMint,
+          nftMintBytes32,
           signingWallet,
           mode,
           addresses.oracleVerifier,
@@ -163,7 +167,7 @@ router.post("/deploy", async (req: Request, res: Response) => {
     if (!vaultAddress) {
       // VaultFactory returned early — vault already exists at this slot.
       // Recover the address via predictVaultAddress and continue to move_in.
-      vaultAddress = await factory.predictVaultAddress(lockerAddress, slotIndex, nftMint, signingWallet) as string;
+      vaultAddress = await factory.predictVaultAddress(lockerAddress, slotIndex, nftMintBytes32, signingWallet) as string;
       logger.warn({ vaultAddress }, "VaultDeployed event missing — recovered via predictVaultAddress");
     }
 
@@ -369,7 +373,7 @@ router.post("/session/open", async (req: Request, res: Response) => {
 //   vaultAddress:  string   — deployed vault address
 //   newOwner:      string   — new occupant address
 //   newSigner:     string   — new guardian signing wallet
-//   newNftMint:    string   — hex bytes32 for new NFT key
+//   newNftMint:    string   — Solana NFT mint address (plain string, max 64 chars)
 // }
 //
 // Flow:
@@ -393,8 +397,8 @@ router.post("/lease/transfer", async (req: Request, res: Response) => {
     }
   }
 
-  if (!/^0x[0-9a-fA-F]{64}$/.test(newNftMint)) {
-    return res.status(400).json({ error: "newNftMint must be a 0x-prefixed 32-byte hex string" });
+  if (typeof newNftMint !== "string" || newNftMint.length === 0 || newNftMint.length > 64) {
+    return res.status(400).json({ error: "newNftMint must be a non-empty string of at most 64 characters" });
   }
 
   try {
