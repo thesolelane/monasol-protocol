@@ -214,27 +214,32 @@ router.post("/deploy", async (req: Request, res: Response) => {
       );
     }
 
-    // Persist vault record regardless of move_in outcome
-    await storage.createVault({
-      address: vaultAddress,
-      locker: lockerAddress,
-      slotIndex: Number(slotIndex),
-      nftMint,
-      signingWallet,
-      securityMode: Number(securityMode),
-      txHash: tx.hash,
-      deployedAt: new Date(),
-    });
+    // Persist vault record — skip if already in DB from a prior partial attempt
+    const existingVault = await storage.getVaultByAddress(vaultAddress);
 
-    await storage.logTransaction({
-      vaultAddress,
-      action: "deploy",
-      txHash: tx.hash,
-      callerWallet: signingWallet,
-      metadata: { lockerId, slotIndex, nftMint, securityMode, moveInFailed },
-      createdAt: new Date(),
-    });
+    if (!existingVault) {
+      await storage.createVault({
+        address: vaultAddress,
+        locker: lockerAddress,
+        slotIndex: Number(slotIndex),
+        nftMint,
+        signingWallet,
+        securityMode: Number(securityMode),
+        txHash: tx.hash,
+        deployedAt: new Date(),
+      });
 
+      await storage.logTransaction({
+        vaultAddress,
+        action: "deploy",
+        txHash: tx.hash,
+        callerWallet: signingWallet,
+        metadata: { lockerId, slotIndex, nftMint, securityMode, moveInFailed },
+        createdAt: new Date(),
+      });
+    }
+
+    // Always log move_in if it succeeded in this request
     if (!moveInFailed && moveInTx && moveInReceipt) {
       await storage.logTransaction({
         vaultAddress,
