@@ -143,6 +143,37 @@ export const insertSwapSessionSchema = createInsertSchema(swapSessions).omit({ i
 export type InsertSwapSession = z.infer<typeof insertSwapSessionSchema>;
 export type SwapSession = typeof swapSessions.$inferSelect;
 
+export const vaults = pgTable("vaults", {
+  id:            varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  address:       text("address").notNull().unique(),
+  locker:        text("locker").notNull(),
+  slotIndex:     integer("slot_index").notNull(),
+  nftMint:       text("nft_mint").notNull(),
+  signingWallet: text("signing_wallet").notNull(),
+  securityMode:  integer("security_mode").notNull().default(0),
+  txHash:        text("tx_hash").notNull(),
+  deployedAt:    timestamp("deployed_at").notNull(),
+  createdAt:     timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertVaultSchema = createInsertSchema(vaults).omit({ id: true, createdAt: true });
+export type InsertVault = z.infer<typeof insertVaultSchema>;
+export type Vault = typeof vaults.$inferSelect;
+
+export const vaultTransactions = pgTable("vault_transactions", {
+  id:            varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vaultAddress:  text("vault_address").notNull(),
+  action:        text("action").notNull(),   // 'deploy' | 'session_open' | 'session_close' | 'lease_transfer'
+  txHash:        text("tx_hash").notNull(),
+  callerWallet:  text("caller_wallet").notNull(),
+  metadata:      text("metadata"),           // JSON stringified Record<string, unknown>
+  createdAt:     timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertVaultTransactionSchema = createInsertSchema(vaultTransactions).omit({ id: true, createdAt: true });
+export type InsertVaultTransaction = z.infer<typeof insertVaultTransactionSchema>;
+export type VaultTransaction = typeof vaultTransactions.$inferSelect;
+
 export const sessionHistory = pgTable("session_history", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   vaultId: text("vault_id").notNull(),

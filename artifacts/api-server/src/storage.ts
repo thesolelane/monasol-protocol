@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
-  users, protocolStats, lockers, nftKeys, events, ticketTiers, swapSessions, vaultSessions, sessionHistory,
+  users, protocolStats, lockers, nftKeys, events, ticketTiers, swapSessions, vaultSessions, sessionHistory, vaults, vaultTransactions,
   type User,
   type InsertUser,
   type ProtocolStats,
@@ -16,6 +16,8 @@ import {
   type InsertVaultSession,
   type SessionHistoryEntry,
   type InsertSessionHistory,
+  type Vault,
+  type InsertVault,
 } from "@workspace/db";
 
 export interface IStorage {
@@ -37,6 +39,18 @@ export interface IStorage {
   updateSwapSessionStatus(token: string, status: string, txSig?: string): Promise<SwapSession | undefined>;
 
   updateLockerMonadAddress(lockerId: string, monadAddress: string): Promise<Locker | undefined>;
+
+  createVault(data: InsertVault): Promise<Vault>;
+  getVaultBySlot(locker: string, slotIndex: number): Promise<Vault | null>;
+  getVaultByAddress(address: string): Promise<Vault | null>;
+  logTransaction(data: {
+    vaultAddress: string;
+    action: "deploy" | "session_open" | "session_close" | "lease_transfer";
+    txHash: string;
+    callerWallet: string;
+    metadata?: Record<string, unknown>;
+    createdAt: Date;
+  }): Promise<void>;
   updateVaultSessionState(mint: string, sessionOpen: boolean, sessionExpiresAt: Date | null, readOnly: boolean): Promise<NftKey | undefined>;
 
   getActiveVaultSession(vaultId: string, nftMint: string): Promise<VaultSession | undefined>;
@@ -238,6 +252,49 @@ export class DrizzleStorage implements IStorage {
       .where(eq(lockers.id, lockerId))
       .returning();
     return locker;
+  }
+
+  async createVault(data: InsertVault): Promise<Vault> {
+    const [vault] = await db
+      .insert(vaults)
+      .values({ ...data, id: randomUUID() })
+      .returning();
+    return vault;
+  }
+
+  async getVaultBySlot(locker: string, slotIndex: number): Promise<Vault | null> {
+    const rows = await db
+      .select()
+      .from(vaults)
+      .where(eq(vaults.locker, locker));
+    return rows.find(v => v.slotIndex === slotIndex) ?? null;
+  }
+
+  async getVaultByAddress(address: string): Promise<Vault | null> {
+    const [vault] = await db
+      .select()
+      .from(vaults)
+      .where(eq(vaults.address, address));
+    return vault ?? null;
+  }
+
+  async logTransaction(data: {
+    vaultAddress: string;
+    action: "deploy" | "session_open" | "session_close" | "lease_transfer";
+    txHash: string;
+    callerWallet: string;
+    metadata?: Record<string, unknown>;
+    createdAt: Date;
+  }): Promise<void> {
+    await db.insert(vaultTransactions).values({
+      id:           randomUUID(),
+      vaultAddress: data.vaultAddress,
+      action:       data.action,
+      txHash:       data.txHash,
+      callerWallet: data.callerWallet,
+      metadata:     data.metadata ? JSON.stringify(data.metadata) : null,
+      createdAt:    data.createdAt,
+    });
   }
 
   async updateVaultSessionState(
