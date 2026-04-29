@@ -1,0 +1,24 @@
+Three findings worth flagging for tomorrow's discussion:
+
+1. Wormhole Sunrise — direct Monad↔Solana relevance
+This is the most important find. Wormhole Labs launched Sunrise specifically as a liquidity gateway from external chains to Solana, with MON as its first asset. It uses Wormhole's Native Token Transfers (NTT) framework. The Solana Foundation is explicitly backing it. This means there is already a live, production Wormhole NTT connection between Monad and Solana. That changes the Phase 3-4 cross-chain messaging picture significantly — instead of building our own bridge layer, we can build on top of an existing Wormhole channel that already has Monad↔Solana liquidity.
+2. Blockchain Payments Consortium
+Solana Foundation, Monad Foundation, Fireblocks, Polygon, Stellar, TON, and Mysten Labs all joined the BPC to standardize cross-chain payments. This is governance-level alignment between Monad and Solana. Not immediately useful for Phase 2 but it signals that the two ecosystems are treating interoperability as a priority — which reduces long-term risk for MonaSol's architecture.
+3. deBridge supports Monad
+deBridge's 0-TVL intent-based architecture already supports Monad. Another production option for the cross-chain messaging layer if we need an alternative to Wormhole.
+
+What this means for tomorrow:
+The cross-chain messaging decision just got more concrete. We have three live options for Phase 3-4 messaging, all with Monad support:
+
+Wormhole NTT — already has MON on Solana, native to both ecosystems, most aligned
+Chainlink CCIP — proven with Base↔Solana, institutional-grade, not yet Monad-specific
+deBridge — supports Monad, intent-based, zero TVL risk
+
+For Phase 2 we still go backend-as-bridge as discussed. But knowing Wormhole already has the Monad↔Solana pipe means Phase 4 is closer than the roadmap suggests. Good research — this materially changes the options available.You said: can i share this with replitcan i share this with replit8:30 AMClaude responded: Yes — copy the full conversation and paste it into a new Replit AI chat.Yes — copy the full conversation and paste it into a new Replit AI chat. Everything it needs is here:
+
+Full Phase 1F context — all six routes, the bugs found, the fixes applied, the calibrated gas limits
+Phase 2 architecture decisions — three programs, Metaplex Core, shard model, state machine
+Cross-chain messaging research — Wormhole Sunrise (Monad↔Solana live), deBridge, CCIP
+Tomorrow's agenda — cross-chain messaging pattern first, then Anchor scaffold
+
+One thing to flag when you paste it in: tell Replit AI that the code files I generated (the four lib files and vaults.ts) are already applied to the repo. Otherwise it may try to regenerate them from scratch and create conflicts.
