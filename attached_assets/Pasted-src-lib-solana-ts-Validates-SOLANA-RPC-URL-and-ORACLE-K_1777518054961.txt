@@ -1,0 +1,31 @@
+src/lib/solana.ts
+
+Validates SOLANA_RPC_URL and ORACLE_KEYPAIR at startup — fail fast before any connection is attempted
+64-byte length check on the keypair array — catches truncated env vars before fromSecretKey silently accepts them
+Program IDs are env-overridable (process.env.VAULT_KEY_PROGRAM_ID ?? "placeholder") — same binary works on localnet, devnet, and mainnet just by rotating env vars
+getSolanaHealth() returns structured { status, slot, rpc } — drop-in for the /health endpoint
+
+src/lib/oracle-client.ts
+
+Lazy program initialisation — getPrograms() constructs Anchor clients once on first call, not at module load. This prevents connection errors at startup if Solana is temporarily unreachable
+sendAndConfirm() has blockhash expiry retry — the most common transient failure on Solana. Retries up to 3 times, logs each attempt, re-throws after exhaustion
+All PDA derivations use leaseId.toArrayLike(Buffer, "le", 8) — exact match to Rust's to_le_bytes(), same as the test helpers
+Account fetchers return null on miss rather than throwing — routes use this for pre-flight state checks before firing CPIs
+
+src/routes/oracle.ts
+
+pubkeySchema validates base58 before constructing PublicKey — prevents silent PublicKey constructor failures from reaching the CPI layer
+txHashSchema accepts both 0x-prefixed and bare hex — Monad RPC returns both formats depending on the method
+Pre-flight state checks on confirm-settlement and finalize-release — reads on-chain state and returns a 409 Conflict if the session isn't in the expected state. This prevents double-firing CPIs
+GET /api/oracle/session/:leaseId added as a bonus — read-only, no signing, gives the backend a way to poll session state without a separate Solana client
+finalize-release imports oracleKeypair dynamically with a comment marking where OPERATOR_KEYPAIR splits in Phase 3+
+
+
+What needs wiring in the existing backend before these routes are live
+Two things you mentioned need extending — tell me which to write next:
+
+src/index.ts (or wherever the router is mounted) — add oracleRouter at /api/oracle
+src/lib/contracts.ts — add VaultMoveIn and SessionSettled Monad event ABIs for the event listener
+storage.ts — add 3 new action types to logTransaction union
+
+All three are small — I can write them as targeted patches once you paste the current state of those files.
