@@ -26,6 +26,9 @@ const LOCKER_ABI = [
   "function capacity() external view returns (uint256)",
   "function is_full() external view returns (bool)",
   "function get_slot(uint256 index) external view returns (bool occupied, address occupant, address signer, uint8 mode, bool read_only, bool session_active)",
+  // TODO: replace with final event signatures once defined in Locker.sol
+  "event VaultMoveIn(uint256 indexed slot_index, address indexed signing_wallet, string nft_mint, uint8 security_mode)",
+  "event SessionSettled(uint256 indexed slot_index, address indexed occupant, uint256 settled_at)",
 ] as const;
 
 const ORACLE_VERIFIER_ABI = [
