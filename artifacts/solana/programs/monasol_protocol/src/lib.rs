@@ -53,15 +53,11 @@ pub const PROTOCOL_STATE_SEED: &[u8]  = b"protocol_state";
 pub const SESSION_RECORD_SEED: &[u8]  = b"session_record";
 pub const ORACLE_VERIFIER_SEED: &[u8] = b"oracle_verifier";
 
-/// vault_key program ID — placeholder, updated by `anchor keys sync`.
-/// Used here as documentation only; address constraint is omitted until
-/// real IDs are generated on the server.
 pub const VAULT_KEY_PROGRAM_ID: &str =
-    "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS";
+    "MSL1yHXY3tn1fXBg52v2GgGA2qNuQofBMoehEf8arjw";
 
-/// guardian_multisig program ID — placeholder, updated by `anchor keys sync`.
 pub const GUARDIAN_MULTISIG_PROGRAM_ID: &str =
-    "4Nd1mBQtrMJVYVfKf2PX8Q7pSe8KBnM23sYs5KGR2ZtG";
+    "MSLLafYHvuDb1kkukoEijtnERRScQn2n6x7YyH2mMhX";
 
 // --------------------------------------------------------------------------
 // Program
@@ -511,8 +507,7 @@ fn build_vault_key_thaw_ix(
     mpl_core_program: &Pubkey,
     system_program: &Pubkey,
 ) -> Result<Instruction> {
-    // PLACEHOLDER — recompute after first build: sha256("global:thaw_key")[..8]
-    let discriminator: [u8; 8] = [0x8c, 0x6e, 0x2e, 0x7f, 0x9a, 0x1b, 0x3d, 0x5f];
+    let discriminator: [u8; 8] = [0xf3, 0x17, 0x30, 0x6e, 0xd2, 0xd0, 0xd0, 0x9d];
 
     let data = discriminator.to_vec();
 
@@ -542,8 +537,7 @@ fn build_vault_key_move_out_ix(
     mpl_core_program: &Pubkey,
     system_program: &Pubkey,
 ) -> Result<Instruction> {
-    // PLACEHOLDER — recompute after first build: sha256("global:move_out")[..8]
-    let discriminator: [u8; 8] = [0x1a, 0x2b, 0x3c, 0x4d, 0x5e, 0x6f, 0x7a, 0x8b];
+    let discriminator: [u8; 8] = [0x46, 0xe1, 0xfe, 0x10, 0xdd, 0xe9, 0xe9, 0x3b];
 
     let data = discriminator.to_vec();
 
@@ -570,8 +564,7 @@ fn build_guardian_mark_settled_ix(
     guardian_set: &Pubkey,
     system_program: &Pubkey,
 ) -> Result<Instruction> {
-    // PLACEHOLDER — recompute after first build: sha256("global:mark_settled")[..8]
-    let discriminator: [u8; 8] = [0x3f, 0x4e, 0x5d, 0x6c, 0x7b, 0x8a, 0x91, 0xa0];
+    let discriminator: [u8; 8] = [0x55, 0x24, 0xc0, 0x92, 0x53, 0x2a, 0x31, 0x3c];
 
     let data = discriminator.to_vec();
 
@@ -594,8 +587,7 @@ fn build_guardian_close_set_ix(
     fee_payer: &Pubkey,
     system_program: &Pubkey,
 ) -> Result<Instruction> {
-    // PLACEHOLDER — recompute after first build: sha256("global:close_guardian_set")[..8]
-    let discriminator: [u8; 8] = [0xb1, 0xc2, 0xd3, 0xe4, 0xf5, 0x06, 0x17, 0x28];
+    let discriminator: [u8; 8] = [0x34, 0x2d, 0x9d, 0x65, 0x38, 0x56, 0x78, 0xb3];
 
     let data = discriminator.to_vec();
 
