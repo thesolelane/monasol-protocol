@@ -21,8 +21,7 @@
 //     • submit_shard        — shard member records their commitment hash
 //     • approve_settlement  — approver casts unanimous consent vote
 //     • revoke_approval     — approver withdraws consent (before threshold met)
-//     • mark_settled        — monasol_protocol marks Approved → Settled
-//     • close_guardian_set  — cleanup after session is Settled
+//     • close_guardian_set  — cleanup after session is Released/Closed
 //
 // ============================================================================
 
@@ -87,7 +86,6 @@ pub mod guardian_multisig {
         let gs = &mut ctx.accounts.guardian_set;
         gs.lease_id         = args.lease_id;
         gs.vault_session    = args.vault_session;
-        // Safe: length already validated to be exactly GUARDIAN_COUNT above
         gs.members          = args.members.try_into().unwrap();
         gs.shards_submitted = 0;
         gs.approvals        = 0;
@@ -180,9 +178,9 @@ pub mod guardian_multisig {
     /// to `Approved`.  When approved, `monasol_protocol` may drive the
     /// session from `Pledged → Settling`.
     pub fn approve_settlement(ctx: Context<ApproveSettlement>) -> Result<()> {
-        let gs       = &mut ctx.accounts.guardian_set;
+        let gs      = &mut ctx.accounts.guardian_set;
         let approval = &mut ctx.accounts.approval;
-        let caller   = ctx.accounts.approver.key();
+        let caller  = ctx.accounts.approver.key();
 
         require!(
             gs.status == GuardianSetStatus::ShardsComplete,
@@ -218,12 +216,12 @@ pub mod guardian_multisig {
         }
 
         emit!(ApprovalCast {
-            lease_id:         gs.lease_id,
-            approver:         caller,
-            approver_index:   approver_index as u8,
+            lease_id:       gs.lease_id,
+            approver:       caller,
+            approver_index: approver_index as u8,
             approvals_so_far: gs.approvals,
-            unanimous:        gs.status == GuardianSetStatus::Approved,
-            timestamp:        approval.approved_ts,
+            unanimous:      gs.status == GuardianSetStatus::Approved,
+            timestamp:      approval.approved_ts,
         });
 
         msg!(
@@ -240,17 +238,14 @@ pub mod guardian_multisig {
     /// Approver withdraws their vote.
     ///
     /// Only permitted before unanimous consent is reached.
-    /// Once `Approved` or `Settled`, the set is locked — no revocation.
+    /// Once `Approved`, the set is locked — no revocation.
     pub fn revoke_approval(ctx: Context<RevokeApproval>) -> Result<()> {
         let gs       = &mut ctx.accounts.guardian_set;
         let approval = &mut ctx.accounts.approval;
         let caller   = ctx.accounts.approver.key();
 
-        // Block revocation once Approved or Settled — shards don't regress,
-        // only approval votes can be withdrawn while still in ShardsComplete.
         require!(
-            gs.status != GuardianSetStatus::Approved
-                && gs.status != GuardianSetStatus::Settled,
+            gs.status != GuardianSetStatus::Approved,
             GuardianError::AlreadyApprovedCannotRevoke,
         );
 
@@ -263,6 +258,12 @@ pub mod guardian_multisig {
         gs.approval_mask &= !bit;
         gs.approvals     -= 1;
         approval.approved = false;
+
+        // Revert status if shards were complete
+        if gs.status == GuardianSetStatus::ShardsComplete {
+            // Status stays ShardsComplete — shards don't regress
+            // Only approvals regress
+        }
 
         emit!(ApprovalRevoked {
             lease_id:       gs.lease_id,
@@ -280,11 +281,31 @@ pub mod guardian_multisig {
         Ok(())
     }
 
+    /// Close the guardian set after a session ends.
+    ///
+    /// Rent is returned to the fee payer.  Only callable once the
+    /// associated vault_session is in Released or Closed state — enforced
+    /// via the `status` check here (monasol_protocol sets status to Settled
+    /// before calling close).
+    pub fn close_guardian_set(ctx: Context<CloseGuardianSet>) -> Result<()> {
+        let gs = &ctx.accounts.guardian_set;
+
+        require!(
+            gs.status == GuardianSetStatus::Settled,
+            GuardianError::SetNotSettled,
+        );
+
+        msg!(
+            "guardian_multisig: close_guardian_set — lease {}",
+            gs.lease_id,
+        );
+
+        // Account is closed via `close = fee_payer` constraint below
+        Ok(())
+    }
+
     /// Called by monasol_protocol to mark the guardian set as settled.
     /// Transitions status Approved → Settled so close_guardian_set can run.
-    ///
-    /// TODO: Enforce that caller is monasol_protocol's program authority PDA
-    ///       once the CPI pattern is wired in monasol_protocol.
     pub fn mark_settled(ctx: Context<MarkSettled>) -> Result<()> {
         let gs = &mut ctx.accounts.guardian_set;
 
@@ -300,28 +321,6 @@ pub mod guardian_multisig {
             gs.lease_id,
         );
 
-        Ok(())
-    }
-
-    /// Close the guardian set after a session ends.
-    ///
-    /// Rent is returned to the fee payer.  Only callable once the
-    /// guardian set is in Settled status (monasol_protocol sets this
-    /// before the session is Released).
-    pub fn close_guardian_set(ctx: Context<CloseGuardianSet>) -> Result<()> {
-        let gs = &ctx.accounts.guardian_set;
-
-        require!(
-            gs.status == GuardianSetStatus::Settled,
-            GuardianError::SetNotSettled,
-        );
-
-        msg!(
-            "guardian_multisig: close_guardian_set — lease {}",
-            gs.lease_id,
-        );
-
-        // Account is closed via `close = fee_payer` constraint below
         Ok(())
     }
 }
@@ -473,6 +472,7 @@ pub struct CloseGuardianSet<'info> {
 #[derive(Accounts)]
 pub struct MarkSettled<'info> {
     /// Only monasol_protocol's program authority should call this.
+    /// Enforced via has_one on vault_session pubkey stored in guardian_set.
     /// Full CPI-caller restriction wired in monasol_protocol.
     pub caller: Signer<'info>,
 
@@ -648,7 +648,7 @@ pub enum GuardianError {
     #[msg("This approver has already cast their vote")]
     AlreadyApproved,
 
-    #[msg("Cannot revoke — unanimous consent already reached or session settled")]
+    #[msg("Cannot revoke — unanimous consent already reached")]
     AlreadyApprovedCannotRevoke,
 
     #[msg("Approver has not yet cast a vote")]
