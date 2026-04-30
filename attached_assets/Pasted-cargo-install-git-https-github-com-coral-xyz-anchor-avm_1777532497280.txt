@@ -1,0 +1,54 @@
+cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+export PATH="$HOME/.cargo/bin:$PATH"
+avm install 0.31.1
+avm use 0.31.1
+    Updating git repository `https://github.com/coral-xyz/anchor`
+    Updating git submodule `https://github.com/openbook-dex/program`
+    Updating git submodule `https://github.com/project-serum/stake.git`
+    Updating git submodule `https://github.com/project-serum/swap.git`
+    Updating git submodule `https://github.com/project-serum/serum-dex.git`
+warning: skipping duplicate package `relations-derivation` found at `/home/cooperanth/.cargo/git/checkouts/anchor-50c4b9c8b5e0501f/b368145/tests/idl/programs/relations-derivation`
+warning: skipping duplicate package `external` found at `/home/cooperanth/.cargo/git/checkouts/anchor-50c4b9c8b5e0501f/b368145/tests/idl/programs/external`
+warning: skipping duplicate package `swap` found at `/home/cooperanth/.cargo/git/checkouts/anchor-50c4b9c8b5e0501f/b368145/tests/cfo/deps/swap/programs/swap`
+warning: skipping duplicate package `test-instruction-validation` found at `/home/cooperanth/.cargo/git/checkouts/anchor-50c4b9c8b5e0501f/b368145/tests/test-instruction-validation/fail-args-count/programs/test-instruction-validation`
+warning: skipping duplicate package `test-instruction-validation` found at `/home/cooperanth/.cargo/git/checkouts/anchor-50c4b9c8b5e0501f/b368145/tests/test-instruction-validation/pass-type/programs/test-instruction-validation`
+warning: skipping duplicate package `test-instruction-validation` found at `/home/cooperanth/.cargo/git/checkouts/anchor-50c4b9c8b5e0501f/b368145/tests/test-instruction-validation/fail-type/programs/test-instruction-validation`
+warning: skipping duplicate package `shared` found at `/home/cooperanth/.cargo/git/checkouts/anchor-50c4b9c8b5e0501f/b368145/tests/typescript/programs/shared`
+warning: skipping duplicate package `shared` found at `/home/cooperanth/.cargo/git/checkouts/anchor-50c4b9c8b5e0501f/b368145/tests/misc/programs/shared`
+error: failed to load manifest for workspace member `/home/cooperanth/.cargo/git/checkouts/anchor-50c4b9c8b5e0501f/b368145/cli`
+referenced by workspace at `/home/cooperanth/.cargo/git/checkouts/anchor-50c4b9c8b5e0501f/b368145/Cargo.toml`
+
+Caused by:
+  failed to load manifest for dependency `anchor-cli-macros`
+
+Caused by:
+  failed to parse manifest at `/home/cooperanth/.cargo/git/checkouts/anchor-50c4b9c8b5e0501f/b368145/cli/cli-macros/Cargo.toml`
+
+Caused by:
+  feature `edition2024` is required
+
+  The package requires the Cargo feature called `edition2024`, but that feature is not stabilized in this version of Cargo (1.79.0 (ffa9cf99a 2024-06-03)).
+  Consider trying a newer version of Cargo (this may require the nightly release).
+  See https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#edition-2024 for more information about the status of this feature.
+Command 'avm' not found, did you mean:
+  command 'gvm' from snap gvm (1.1.0)
+  command 'kvm' from deb qemu-system-x86 (1:8.2.2+ds-0ubuntu1.16)
+  command 'ava' from deb ava (5.3.1+dfsg+~cs46.3.10-3)
+  command 'pvm' from deb pvm (3.4.6-5)
+  command 'acm' from deb acm (6.0+20200416-1.1ubuntu1)
+  command 'vam' from deb vim-addon-manager (0.5.10)
+  command 'lvm' from deb lvm2 (2.03.16-3ubuntu3.2)
+  command 'aim' from deb abinit (9.10.4-2)
+  command 'vm' from deb mgetty-voice (1.2.1-1.2)
+See 'snap info <snapname>' for additional versions.
+Command 'avm' not found, did you mean:
+  command 'gvm' from snap gvm (1.1.0)
+  command 'acm' from deb acm (6.0+20200416-1.1ubuntu1)
+  command 'vam' from deb vim-addon-manager (0.5.10)
+  command 'ava' from deb ava (5.3.1+dfsg+~cs46.3.10-3)
+  command 'pvm' from deb pvm (3.4.6-5)
+  command 'lvm' from deb lvm2 (2.03.16-3ubuntu3.2)
+  command 'kvm' from deb qemu-system-x86 (1:8.2.2+ds-0ubuntu1.16)
+  command 'aim' from deb abinit (9.10.4-2)
+  command 'vm' from deb mgetty-voice (1.2.1-1.2)
+See 'snap info <snapname>' for additional versions.
