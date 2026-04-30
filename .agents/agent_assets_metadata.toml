@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "mSF7Eal_zRBmEkHQVzvQT"
+uri = "file://.local/reports/monasol-test-and-lint-report.zip"
+type = "unspecified"
+title = "MonaSol Protocol — Test & Code Quality Report"
