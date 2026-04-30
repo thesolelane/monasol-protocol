@@ -12,3 +12,11 @@ anchor-lang    = { workspace = true }
 
 [dev-dependencies]
 anchor-client = { version = "0.31.1", features = ["mock"] }
+
+[features]
+default        = []
+cpi            = ["no-entrypoint"]
+no-entrypoint  = []
+no-idl         = []
+no-log-ix-name = []
+idl-build      = ["anchor-lang/idl-build"]
