@@ -263,14 +263,18 @@ fn create_core_asset<'info>(
     uri:              String,
     signer_seeds:     &[&[&[u8]]],
 ) -> Result<()> {
+    // Encode CreateV2 args: name (string) + uri (string)
+    // Borsh encoding: u32 len LE + bytes
     let mut data = CREATE_V2_DISC.to_vec();
+    // name
     data.extend_from_slice(&(name.len() as u32).to_le_bytes());
     data.extend_from_slice(name.as_bytes());
+    // uri
     data.extend_from_slice(&(uri.len() as u32).to_le_bytes());
     data.extend_from_slice(uri.as_bytes());
-    // plugins: None
+    // plugins: None (Option<Vec<PluginAuthorityPair>>) = 0u8
     data.push(0u8);
-    // external_plugins: None
+    // external_plugins: None = 0u8
     data.push(0u8);
 
     let accounts = vec![
@@ -309,10 +313,13 @@ fn add_freeze_delegate_plugin<'info>(
     signer_seeds:     &[&[&[u8]]],
 ) -> Result<()> {
     let mut data = ADD_PLUGIN_DISC.to_vec();
+    // Plugin::FreezeDelegate(FreezeDelegate { frozen: false })
+    // type discriminant as u32 LE
     data.extend_from_slice(&FREEZE_DELEGATE_TYPE.to_le_bytes());
-    // frozen: false initially
+    // frozen: bool = false (will be set to true by update immediately after)
     data.push(0u8);
-    // PluginAuthority::Address { address } — type 2
+    // PluginAuthority::Address { address: authority.key() }
+    // authority type: 2 = Address
     data.push(2u8);
     data.extend_from_slice(authority.key().as_ref());
 
@@ -351,7 +358,9 @@ fn update_freeze_delegate<'info>(
     signer_seeds:     &[&[&[u8]]],
 ) -> Result<()> {
     let mut data = UPDATE_PLUGIN_DISC.to_vec();
+    // Plugin::FreezeDelegate type
     data.extend_from_slice(&FREEZE_DELEGATE_TYPE.to_le_bytes());
+    // frozen
     data.push(frozen as u8);
 
     let accounts = vec![
@@ -387,7 +396,8 @@ fn burn_core_asset<'info>(
     system_program:   &AccountInfo<'info>,
     signer_seeds:     &[&[&[u8]]],
 ) -> Result<()> {
-    let data = BURN_DISC.to_vec();
+    let mut data = BURN_DISC.to_vec();
+    // BurnV1 has no additional args beyond the discriminator
 
     let accounts = vec![
         AccountMeta::new(asset.key(), false),
