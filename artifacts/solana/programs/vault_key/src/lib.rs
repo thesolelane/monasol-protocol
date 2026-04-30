@@ -44,14 +44,14 @@ pub const MPL_CORE_ID: Pubkey = pubkey!("CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZ
 // sha256("global:<instruction>")[..8]
 // --------------------------------------------------------------------------
 
-/// mpl_core::instructions::CreateV2 discriminator
-const CREATE_V2_DISC:       [u8; 8] = [0x6e, 0x5c, 0x68, 0x38, 0x1e, 0x8c, 0x4a, 0x3b];
-/// mpl_core::instructions::AddPlugin discriminator  
-const ADD_PLUGIN_DISC:      [u8; 8] = [0x5a, 0x7c, 0x1f, 0x2d, 0x4e, 0x8b, 0x3c, 0x6a];
-/// mpl_core::instructions::UpdatePlugin discriminator
-const UPDATE_PLUGIN_DISC:   [u8; 8] = [0x3c, 0x9a, 0x2f, 0x7e, 0x5b, 0x1d, 0x4c, 0x8f];
-/// mpl_core::instructions::Burn discriminator
-const BURN_DISC:            [u8; 8] = [0x2a, 0x4c, 0x6e, 0x8b, 0x1d, 0x3f, 0x5a, 0x7c];
+/// mpl_core CreateV2 — sha256("global:create_v2")[..8]
+const CREATE_V2_DISC:       [u8; 8] = [0xd6, 0x90, 0x4c, 0xec, 0x5f, 0x8b, 0x31, 0xb4];
+/// mpl_core AddPluginV1 — sha256("global:add_plugin_v1")[..8]
+const ADD_PLUGIN_DISC:      [u8; 8] = [0x60, 0x15, 0x5e, 0xe2, 0xc2, 0x35, 0x78, 0x03];
+/// mpl_core UpdatePluginV1 — sha256("global:update_plugin_v1")[..8]
+const UPDATE_PLUGIN_DISC:   [u8; 8] = [0xad, 0x44, 0x30, 0x0d, 0xff, 0x00, 0x76, 0x20];
+/// mpl_core BurnV1 — sha256("global:burn_v1")[..8]
+const BURN_DISC:            [u8; 8] = [0xf1, 0x63, 0xc2, 0x4c, 0x06, 0x7e, 0x31, 0x9a];
 
 // Plugin type discriminants (borsh-encoded u32 LE)
 // FreezeDelegate = 4 in the MPL Core plugin registry
