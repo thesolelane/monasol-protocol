@@ -1,0 +1,39 @@
+Here's a clear report you can paste directly to your Replit dev:
+
+MonaSol Protocol — Build Blocker Report
+Date: April 30, 2026
+
+The Problem
+anchor build is failing on the Ubuntu server with this error:
+feature `edition2024` is required
+The package requires the Cargo feature called `edition2024`,
+but that feature is not stabilized in this version of Cargo (1.79.0)
+Root Cause
+The dependency chain is:
+anchor-lang 0.31.1
+  → solana-program 2.3.0
+    → blake3 1.8.5
+      → cpufeatures 0.3.0
+        → requires edition2024 (needs Cargo 1.85+)
+anchor build uses an internal tool called cargo-build-sbf which bundles its own Rust/Cargo toolchain called platform-tools. The version currently installed (v1.43/v1.48) bundles Cargo 1.79.0 / 1.84.0 — both too old for edition2024.
+What We Need
+Platform-tools v1.51 or later which ships with Cargo 1.85+.
+What's Been Tried
+
+agave-install init 2.3.0 ✓ installed but ships platform-tools v1.48 (Cargo 1.84.0 — still too old)
+agave-install init 2.4.0 — version doesn't exist yet
+Patching Cargo.toml to pin cpufeatures and blake3 — blocked because solana-program 2.3.0 requires blake3 ^1.5.5 minimum
+Removing all extra dependencies (mpl-core, anchor-spl, solana-program) — done, only anchor-lang remains, but the chain still goes through it
+Deleting cargo registry cache — done, problem persists
+
+Current State of the Repo
+All three programs compile-ready with zero dependency conflicts except for the platform-tools Cargo version. The code itself is clean.
+The Fix
+Force platform-tools v1.51:
+bashcargo-build-sbf --tools-version v1.51 --manifest-path programs/vault_key/Cargo.toml
+We are currently testing this. If v1.51 doesn't work, v1.52 or v1.53 (latest) will.
+Alternatively — downgrade anchor-lang to 0.30.1 which pulls solana-program 1.x instead of 2.3.0, avoiding the blake3/cpufeatures chain entirely. This is the nuclear option and would require reverting some program code.
+Recommended Action
+Test --tools-version v1.51 through v1.53 on the server. One of these will have Cargo 1.85+ and the build will go through.
+
+Let me know what the dev says or if they want the downgrade path laid out.
