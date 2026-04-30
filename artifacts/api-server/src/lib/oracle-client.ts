@@ -220,14 +220,14 @@ export async function registerSession(
         monadTxRef:   params.monadTxRef,
       })
       .accountsStrict({
-        oracle:        oracleKeypair.publicKey,
-        payer:         oracleKeypair.publicKey,
+        oracle:        oracleKeypair!.publicKey,
+        payer:         oracleKeypair!.publicKey,
         protocolState,
         oracleVerifier,
         sessionRecord,
         systemProgram: SystemProgram.programId,
       })
-      .signers([oracleKeypair])
+      .signers([oracleKeypair!])
       .rpc();
 
     logger.info(
@@ -262,8 +262,8 @@ export async function confirmSettlement(
     const sig = await monasol.methods
       .confirmSettlement(params.monadTxHash)
       .accountsStrict({
-        oracle:                   oracleKeypair.publicKey,
-        payer:                    oracleKeypair.publicKey,
+        oracle:                   oracleKeypair!.publicKey,
+        payer:                    oracleKeypair!.publicKey,
         protocolState,
         oracleVerifier,
         sessionRecord,
@@ -276,7 +276,7 @@ export async function confirmSettlement(
         mplCoreProgram:           MPL_CORE_PROGRAM_ID,
         systemProgram:            SystemProgram.programId,
       })
-      .signers([oracleKeypair])
+      .signers([oracleKeypair!])
       .rpc();
 
     logger.info(

@@ -72,7 +72,7 @@ router.get("/events/current", async (_req, res) => {
     if (!event) {
       return res.status(404).json({ error: "No active event found" });
     }
-    res.json({
+    return res.json({
       id: event.id,
       name: event.name,
       venue: event.venue,
@@ -95,7 +95,7 @@ router.get("/events/current", async (_req, res) => {
       })),
     });
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch event" });
+    return res.status(500).json({ error: "Failed to fetch event" });
   }
 });
 
@@ -121,9 +121,9 @@ router.post("/swaps", async (req, res) => {
       expiresAt,
     });
 
-    res.status(201).json({ id: session.id, token: session.token, status: session.status, expiresAt: session.expiresAt });
+    return res.status(201).json({ id: session.id, token: session.token, status: session.status, expiresAt: session.expiresAt });
   } catch (err) {
-    res.status(500).json({ error: "Failed to create swap session" });
+    return res.status(500).json({ error: "Failed to create swap session" });
   }
 });
 
@@ -134,7 +134,7 @@ router.get("/swaps/:token", async (req, res) => {
       return res.status(404).json({ error: "Swap session not found" });
     }
     const expired = new Date() > session.expiresAt;
-    res.json({
+    return res.json({
       id: session.id,
       token: session.token,
       status: expired ? "expired" : session.status,
@@ -144,7 +144,7 @@ router.get("/swaps/:token", async (req, res) => {
       expiresAt: session.expiresAt,
     });
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch swap session" });
+    return res.status(500).json({ error: "Failed to fetch swap session" });
   }
 });
 
@@ -159,9 +159,9 @@ router.patch("/swaps/:token/confirm", async (req, res) => {
     }
     const txSig = `${Math.random().toString(36).slice(2, 8)}...${Math.random().toString(36).slice(2, 6)}`;
     const updated = await storage.updateSwapSessionStatus(req.params.token, "complete", txSig);
-    res.json({ status: updated?.status, txSignature: updated?.txSignature });
+    return res.json({ status: updated?.status, txSignature: updated?.txSignature });
   } catch (err) {
-    res.status(500).json({ error: "Failed to confirm swap" });
+    return res.status(500).json({ error: "Failed to confirm swap" });
   }
 });
 
@@ -173,7 +173,7 @@ router.get("/sessions/:vaultId", async (req, res) => {
     if (!nftMint) return res.status(400).json({ error: "nftMint query param is required" });
     const session = await storage.getActiveVaultSession(req.params.vaultId, nftMint);
     if (!session) return res.status(404).json({ error: "No active session" });
-    res.json({
+    return res.json({
       id: session.id,
       sessionId: session.sessionId,
       vaultId: session.vaultId,
@@ -185,7 +185,7 @@ router.get("/sessions/:vaultId", async (req, res) => {
       status: session.status,
     });
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch session" });
+    return res.status(500).json({ error: "Failed to fetch session" });
   }
 });
 
@@ -208,7 +208,7 @@ router.post("/sessions", async (req, res) => {
       status: "open",
       closedAt: null,
     });
-    res.status(201).json({
+    return res.status(201).json({
       id: session.id,
       sessionId: session.sessionId,
       vaultId: session.vaultId,
@@ -220,7 +220,7 @@ router.post("/sessions", async (req, res) => {
       status: session.status,
     });
   } catch (err) {
-    res.status(500).json({ error: "Failed to create session" });
+    return res.status(500).json({ error: "Failed to create session" });
   }
 });
 
@@ -230,9 +230,9 @@ router.delete("/sessions/:vaultId", async (req, res) => {
     if (!nftMint) return res.status(400).json({ error: "nftMint query param is required" });
     const session = await storage.closeVaultSession(req.params.vaultId, nftMint);
     if (!session) return res.status(404).json({ error: "No active session to close" });
-    res.json({ status: "closed", sessionId: session.sessionId });
+    return res.json({ status: "closed", sessionId: session.sessionId });
   } catch (err) {
-    res.status(500).json({ error: "Failed to close session" });
+    return res.status(500).json({ error: "Failed to close session" });
   }
 });
 
@@ -249,7 +249,7 @@ router.get("/sessions/:vaultId/history", async (req, res) => {
     if (entries === null) {
       return res.status(403).json({ error: "Access denied: wallet does not own this vault" });
     }
-    res.json(entries.map(e => ({
+    return res.json(entries.map(e => ({
       id: e.id,
       sessionId: e.sessionId,
       label: e.label,
@@ -260,7 +260,7 @@ router.get("/sessions/:vaultId/history", async (req, res) => {
       shareWithProtocol: e.shareWithProtocol,
     })));
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch session history" });
+    return res.status(500).json({ error: "Failed to fetch session history" });
   }
 });
 
@@ -286,9 +286,9 @@ router.post("/sessions/:vaultId/history", async (req, res) => {
       durationMs,
       shareWithProtocol: false,
     });
-    res.status(201).json({ id: entry.id });
+    return res.status(201).json({ id: entry.id });
   } catch (err) {
-    res.status(500).json({ error: "Failed to record session history" });
+    return res.status(500).json({ error: "Failed to record session history" });
   }
 });
 
@@ -303,9 +303,9 @@ router.patch("/sessions/:vaultId/sharing", async (req, res) => {
     if (!updated) {
       return res.status(403).json({ error: "Access denied: wallet does not own this vault" });
     }
-    res.json({ ok: true, shareWithProtocol: share });
+    return res.json({ ok: true, shareWithProtocol: share });
   } catch (err) {
-    res.status(500).json({ error: "Failed to update sharing preference" });
+    return res.status(500).json({ error: "Failed to update sharing preference" });
   }
 });
 
@@ -316,14 +316,14 @@ router.get("/sessions/:vaultId/system-aggregate", async (req, res) => {
     if (aggregate === null) {
       return res.json({ shared: false });
     }
-    res.json({
+    return res.json({
       shared: true,
       totalSessions: aggregate.totalSessions,
       totalDurationMs: aggregate.totalDurationMs,
       lastActivityAt: aggregate.lastActivityAt,
     });
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch system aggregate" });
+    return res.status(500).json({ error: "Failed to fetch system aggregate" });
   }
 });
 
