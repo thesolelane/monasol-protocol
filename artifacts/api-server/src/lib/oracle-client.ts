@@ -36,13 +36,15 @@ import {
   MPL_CORE_PROGRAM_ID,
 } from "./solana";
 
-// IDL loading via createRequire — resolved at runtime relative to dist/index.mjs.
-// Anchor generates these into artifacts/solana/target/idl/ after `anchor build`.
+// IDL loader — deferred until getPrograms() is first called so the server
+// starts cleanly in environments where `anchor build` hasn't run yet.
+// Paths are resolved at runtime relative to dist/index.mjs via createRequire.
 // From dist/index.mjs: ../../solana/target/idl/ = artifacts/solana/target/idl/
-const _require        = createRequire(import.meta.url);
-const vaultKeyIdl         = _require("../../solana/target/idl/vault_key.json");
-const guardianMultisigIdl = _require("../../solana/target/idl/guardian_multisig.json");
-const monasolProtocolIdl  = _require("../../solana/target/idl/monasol_protocol.json");
+const _require = createRequire(import.meta.url);
+
+function loadIdl(name: string): unknown {
+  return _require(`../../solana/target/idl/${name}.json`);
+}
 
 // Type-only imports — erased at compile time, safe with isolatedModules.
 // Paths relative to src/lib/: ../../../solana/target/types/ = artifacts/solana/target/types/
@@ -76,6 +78,9 @@ export function getPrograms(): {
   guardian: Program<GuardianMultisig>;
   monasol:  Program<MonasolProtocol>;
 } {
+  if (!connection)     throw new Error("SOLANA_RPC_URL is not configured");
+  if (!oracleKeypair) throw new Error("ORACLE_KEYPAIR is not configured");
+
   if (!_provider) {
     const wallet = new Wallet(oracleKeypair);
     _provider = new AnchorProvider(connection, wallet, {
@@ -86,13 +91,13 @@ export function getPrograms(): {
   }
 
   if (!_vaultKey) {
-    _vaultKey = new Program(vaultKeyIdl as unknown as VaultKey, _provider);
+    _vaultKey = new Program(loadIdl("vault_key") as unknown as VaultKey, _provider);
   }
   if (!_guardian) {
-    _guardian = new Program(guardianMultisigIdl as unknown as GuardianMultisig, _provider);
+    _guardian = new Program(loadIdl("guardian_multisig") as unknown as GuardianMultisig, _provider);
   }
   if (!_monasol) {
-    _monasol = new Program(monasolProtocolIdl as unknown as MonasolProtocol, _provider);
+    _monasol = new Program(loadIdl("monasol_protocol") as unknown as MonasolProtocol, _provider);
   }
 
   return { provider: _provider, vaultKey: _vaultKey, guardian: _guardian, monasol: _monasol };
@@ -337,8 +342,8 @@ export async function finalizeRelease(
 // -----------------------------------------------------------------------------
 
 export async function fetchSessionRecord(leaseId: BN) {
-  const { monasol } = getPrograms();
   try {
+    const { monasol } = getPrograms();
     return await monasol.account.sessionRecord.fetch(deriveSessionRecord(leaseId));
   } catch {
     return null;
@@ -346,8 +351,8 @@ export async function fetchSessionRecord(leaseId: BN) {
 }
 
 export async function fetchGuardianSet(leaseId: BN) {
-  const { guardian } = getPrograms();
   try {
+    const { guardian } = getPrograms();
     return await guardian.account.guardianSet.fetch(deriveGuardianSet(leaseId));
   } catch {
     return null;
@@ -355,8 +360,8 @@ export async function fetchGuardianSet(leaseId: BN) {
 }
 
 export async function fetchVaultSession(renter: PublicKey, collection: PublicKey) {
-  const { vaultKey } = getPrograms();
   try {
+    const { vaultKey } = getPrograms();
     return await vaultKey.account.vaultSession.fetch(deriveVaultSession(renter, collection));
   } catch {
     return null;

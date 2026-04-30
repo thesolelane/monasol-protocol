@@ -19,58 +19,67 @@ import bs58                               from "bs58";
 import { logger }                         from "./logger";
 
 // -----------------------------------------------------------------------------
-// Env validation — fail fast at startup
+// Env validation — non-fatal so the server starts without Solana config.
+// Oracle routes will return 503 when oracleKeypair is null.
+// On the Ubuntu deployment box, both vars must be set for oracle routes to work.
 // -----------------------------------------------------------------------------
 
-const RPC_URL = process.env.SOLANA_RPC_URL;
-if (!RPC_URL) throw new Error("SOLANA_RPC_URL is not set");
-
-const ORACLE_KEYPAIR_RAW = process.env.ORACLE_KEYPAIR;
-if (!ORACLE_KEYPAIR_RAW) throw new Error("ORACLE_KEYPAIR is not set");
+const RPC_URL = process.env.SOLANA_RPC_URL ?? null;
+const ORACLE_KEYPAIR_RAW = process.env.ORACLE_KEYPAIR ?? null;
 
 // -----------------------------------------------------------------------------
-// Connection singleton
-// commitment: "confirmed" — balances speed against finality.
-// Use "finalized" for confirm_settlement if stricter guarantees are needed.
+// Connection singleton — only created when RPC URL is present
 // -----------------------------------------------------------------------------
 
-export const connection = new Connection(RPC_URL, {
-  commitment:              "confirmed",
-  disableRetryOnRateLimit: false,
-});
+export const connection: Connection | null = RPC_URL
+  ? new Connection(RPC_URL, {
+      commitment:              "confirmed",
+      disableRetryOnRateLimit: false,
+    })
+  : null;
 
-logger.info({ rpc: RPC_URL }, "Solana connection initialised");
+if (connection) {
+  logger.info({ rpc: RPC_URL }, "Solana connection initialised");
+} else {
+  logger.warn("SOLANA_RPC_URL not set — Solana oracle routes are disabled");
+}
 
 // -----------------------------------------------------------------------------
-// Oracle keypair — base58 decode
+// Oracle keypair — base58 decode, null when not configured
 // -----------------------------------------------------------------------------
 
-function loadOracleKeypair(): Keypair {
+function loadOracleKeypair(): Keypair | null {
+  if (!ORACLE_KEYPAIR_RAW) {
+    logger.warn("ORACLE_KEYPAIR not set — oracle signing is disabled");
+    return null;
+  }
+
   let decoded: Uint8Array;
-
   try {
-    decoded = bs58.decode(ORACLE_KEYPAIR_RAW!);
+    decoded = bs58.decode(ORACLE_KEYPAIR_RAW);
   } catch {
-    throw new Error(
-      "ORACLE_KEYPAIR is not valid base58. Expected a base58-encoded 64-byte secret key."
-    );
+    logger.error("ORACLE_KEYPAIR is not valid base58 — oracle signing is disabled");
+    return null;
   }
 
   if (decoded.length !== 64) {
-    throw new Error(
-      `ORACLE_KEYPAIR decoded to ${decoded.length} bytes — expected 64.`
+    logger.error(
+      `ORACLE_KEYPAIR decoded to ${decoded.length} bytes (expected 64) — oracle signing is disabled`
     );
+    return null;
   }
 
   return Keypair.fromSecretKey(decoded);
 }
 
-export const oracleKeypair = loadOracleKeypair();
+export const oracleKeypair: Keypair | null = loadOracleKeypair();
 
-logger.info(
-  { oraclePubkey: oracleKeypair.publicKey.toBase58() },
-  "Oracle keypair loaded"
-);
+if (oracleKeypair) {
+  logger.info(
+    { oraclePubkey: oracleKeypair.publicKey.toBase58() },
+    "Oracle keypair loaded"
+  );
+}
 
 // -----------------------------------------------------------------------------
 // Program IDs — env-overridable so the same binary works across clusters
@@ -100,15 +109,16 @@ export const MPL_CORE_PROGRAM_ID = new PublicKey(
 // -----------------------------------------------------------------------------
 
 export async function getSolanaHealth(): Promise<{
-  status: "ok" | "degraded";
+  status: "ok" | "degraded" | "disabled";
   slot:   number;
-  rpc:    string;
+  rpc:    string | null;
 }> {
+  if (!connection) return { status: "disabled", slot: -1, rpc: null };
   try {
     const slot = await connection.getSlot("confirmed");
-    return { status: "ok", slot, rpc: RPC_URL! };
+    return { status: "ok", slot, rpc: RPC_URL };
   } catch (err) {
     logger.warn({ err }, "Solana health check failed");
-    return { status: "degraded", slot: -1, rpc: RPC_URL! };
+    return { status: "degraded", slot: -1, rpc: RPC_URL };
   }
 }

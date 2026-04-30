@@ -31,6 +31,21 @@ import {
 export const oracleRouter = Router();
 
 // -----------------------------------------------------------------------------
+// Guard — returns 503 when Solana is not configured in this environment
+// -----------------------------------------------------------------------------
+
+function requireOracle(res: any): boolean {
+  if (!oracleKeypair) {
+    res.status(503).json({
+      success: false,
+      error:   "Oracle signing is not configured in this environment. Set ORACLE_KEYPAIR and SOLANA_RPC_URL.",
+    });
+    return false;
+  }
+  return true;
+}
+
+// -----------------------------------------------------------------------------
 // Validation helpers
 // -----------------------------------------------------------------------------
 
@@ -71,6 +86,7 @@ const registerSessionBody = z.object({
 });
 
 oracleRouter.post("/register-session", async (req, res) => {
+  if (!requireOracle(res)) return;
   const parsed = registerSessionBody.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({
@@ -136,6 +152,7 @@ const confirmSettlementBody = z.object({
 });
 
 oracleRouter.post("/confirm-settlement", async (req, res) => {
+  if (!requireOracle(res)) return;
   const parsed = confirmSettlementBody.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({
@@ -214,6 +231,7 @@ const finalizeReleaseBody = z.object({
 });
 
 oracleRouter.post("/finalize-release", async (req, res) => {
+  if (!requireOracle(res)) return;
   const parsed = finalizeReleaseBody.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({
@@ -252,7 +270,7 @@ oracleRouter.post("/finalize-release", async (req, res) => {
   try {
     const sig = await finalizeRelease({
       leaseId,
-      operatorKeypair: oracleKeypair, // Phase 2: operator = oracle
+      operatorKeypair: oracleKeypair!, // Phase 2: operator = oracle (guarded above)
       vaultSession:    new PublicKey(vaultSession),
       guardianSet:     new PublicKey(guardianSet),
       asset:           new PublicKey(asset),
