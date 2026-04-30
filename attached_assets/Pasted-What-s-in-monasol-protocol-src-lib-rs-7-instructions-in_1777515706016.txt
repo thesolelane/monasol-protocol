@@ -1,0 +1,25 @@
+What's in monasol_protocol/src/lib.rs
+7 instructions:
+
+initialise — one-time deployment setup, registers authority + oracle pubkey, creates ProtocolState and OracleVerifier PDAs
+update_oracle — authority-only oracle rotation
+set_paused — emergency kill switch, gates all session instructions
+register_session — oracle backend registers a session after vault_key::move_in completes. Ties lease ID, renter, vault session PDA, guardian set PDA, and asset together into a SessionRecord
+pledge — operator advances Active → Pledged. Reads GuardianSetMirror to verify unanimous approval before allowing transition
+confirm_settlement — oracle-signed. Drives Pledged → Settling → Released atomically. CPIs vault_key::thaw_key and guardian_multisig::mark_settled
+finalize_release — burns the NFT and closes all accounts. CPIs vault_key::move_out and guardian_multisig::close_guardian_set
+emergency_halt — authority override. Halts any non-terminal session without burning
+
+Key architectural decisions:
+Loose coupling via raw CPI — monasol_protocol has no Cargo dependency on vault_key or guardian_multisig. It calls them via raw Instruction construction with known discriminators. This keeps the programs independently deployable and upgradeable. The discriminator comment block tells you exactly how to recompute them after first build with anchor idl parse.
+Mirror types — GuardianSetMirror and GuardianSetStatusMirror let monasol_protocol deserialize and read the guardian set account without importing the other program's crate. The layout comment is explicit: if GuardianSet changes, the mirror must change too.
+Cross-chain boundary is a sealed box — the oracle verification in confirm_settlement is a single constraint check (oracle_verifier.oracle == oracle.key()). The comment block marks exactly where Wormhole VAA verification replaces it in Phase 3-4, and where ZK proof verification replaces it in Phase 5. The rest of the state machine doesn't move.
+Halted state — added as a sixth state alongside Active/Pledged/Settling/Released/Closed. Emergency halt doesn't burn — it freezes the session for manual review. Disputes need investigation before destruction.
+
+What Needs to Happen on the Server Before This Compiles
+
+anchor keys sync — replaces all three placeholder declare_id! values with real keypairs
+anchor idl parse on each program after first build — recompute the 4 CPI discriminators in monasol_protocol and replace the placeholder byte arrays
+Verify mpl-core = "0.8.0" is the current crate version on crates.io — check before cargo build-sbf
+
+All three programs are ready to push to Replit → GitHub → server.
