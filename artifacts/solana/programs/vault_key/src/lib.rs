@@ -1,0 +1,501 @@
+// ============================================================================
+// vault_key — MonaSol Protocol
+// ----------------------------------------------------------------------------
+// Mints a Metaplex Core NFT (the "vault key") into the renter's wallet at
+// move_in time.  The NFT carries a FreezeDelegate plugin so the protocol can
+// lock the asset for the duration of an active session.
+//
+// Responsibilities:
+//   • move_in   — mint Core NFT + attach FreezeDelegate + freeze + emit event
+//   • move_out  — thaw NFT + burn (session closed, key destroyed)
+//   • freeze    — called by monasol_protocol on state transitions
+//   • thaw      — called by monasol_protocol on state transitions
+//
+// NOT responsible for:
+//   • Shard splitting / guardian logic  (guardian_multisig)
+//   • State machine enforcement         (monasol_protocol)
+//   • Cross-chain messaging             (monasol_protocol)
+// ============================================================================
+
+use anchor_lang::prelude::*;
+use mpl_core::{
+    ID as MPL_CORE_ID,
+    accounts::{BaseAssetV1, BaseCollectionV1},
+    instructions::{
+        CreateV2CpiBuilder,
+        UpdatePluginV1CpiBuilder,
+    },
+    types::{
+        FreezeDelegate,
+        Plugin,
+        PluginAuthority,
+        PluginAuthorityPair,
+    },
+};
+
+// Placeholder — run `anchor keys sync` on the server to update all three
+// declare_id! macros from the generated keypair files.
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+
+// --------------------------------------------------------------------------
+// Constants
+// --------------------------------------------------------------------------
+
+/// Seed for the VaultSession PDA — one per renter per collection.
+pub const VAULT_SESSION_SEED: &[u8] = b"vault_session";
+
+/// Seed for the protocol authority PDA that acts as FreezeDelegate.
+pub const PROTOCOL_AUTH_SEED: &[u8] = b"protocol_auth";
+
+// --------------------------------------------------------------------------
+// Program
+// --------------------------------------------------------------------------
+
+#[program]
+pub mod vault_key {
+    use super::*;
+
+    /// Called at move-in time.
+    ///
+    /// 1. Creates a Metaplex Core NFT in the renter's wallet.
+    /// 2. Attaches a FreezeDelegate plugin — authority is the protocol_auth PDA.
+    /// 3. Freezes the asset immediately (active session = locked key).
+    /// 4. Initialises the VaultSession account.
+    /// 5. Emits MoveInEvent.
+    pub fn move_in(
+        ctx: Context<MoveIn>,
+        args: MoveInArgs,
+    ) -> Result<()> {
+        let session = &mut ctx.accounts.vault_session;
+
+        // ----------------------------------------------------------------
+        // 1. Derive protocol_auth bump for CPI signer seeds
+        // ----------------------------------------------------------------
+        let auth_bump = ctx.bumps.protocol_auth;
+        let auth_seeds: &[&[u8]] = &[
+            PROTOCOL_AUTH_SEED,
+            &[auth_bump],
+        ];
+        let signer_seeds = &[auth_seeds];
+
+        // ----------------------------------------------------------------
+        // 2. Mint the Core NFT via CPI
+        //    Owner  = renter wallet
+        //    Payer  = payer (operator or renter)
+        //    Update authority = protocol_auth PDA
+        // ----------------------------------------------------------------
+        CreateV2CpiBuilder::new(&ctx.accounts.mpl_core_program)
+            .asset(&ctx.accounts.asset)
+            .collection(Some(&ctx.accounts.collection))
+            .authority(Some(&ctx.accounts.protocol_auth))
+            .payer(&ctx.accounts.payer)
+            .owner(Some(&ctx.accounts.renter))
+            .system_program(&ctx.accounts.system_program)
+            .name(args.name.clone())
+            .uri(args.uri.clone())
+            .plugins(vec![
+                // Attach FreezeDelegate at mint time so the protocol_auth
+                // PDA has immediate freeze authority.
+                PluginAuthorityPair {
+                    plugin: Plugin::FreezeDelegate(FreezeDelegate {
+                        frozen: true, // frozen from the moment of mint
+                    }),
+                    authority: Some(PluginAuthority::Address {
+                        address: ctx.accounts.protocol_auth.key(),
+                    }),
+                },
+            ])
+            .invoke_signed(signer_seeds)?;
+
+        // ----------------------------------------------------------------
+        // 3. Initialise VaultSession state
+        // ----------------------------------------------------------------
+        session.renter          = ctx.accounts.renter.key();
+        session.asset           = ctx.accounts.asset.key();
+        session.collection      = ctx.accounts.collection.key();
+        session.lease_id        = args.lease_id;
+        session.monad_tx_ref    = args.monad_tx_ref;
+        session.state           = SessionState::Active;
+        session.move_in_ts      = Clock::get()?.unix_timestamp;
+        session.move_out_ts     = 0;
+        session.bump            = ctx.bumps.vault_session;
+
+        // ----------------------------------------------------------------
+        // 4. Emit
+        // ----------------------------------------------------------------
+        emit!(MoveInEvent {
+            lease_id:     args.lease_id,
+            renter:       ctx.accounts.renter.key(),
+            asset:        ctx.accounts.asset.key(),
+            collection:   ctx.accounts.collection.key(),
+            monad_tx_ref: args.monad_tx_ref,
+            timestamp:    session.move_in_ts,
+        });
+
+        msg!(
+            "vault_key: move_in — lease {} renter {} asset {}",
+            args.lease_id,
+            ctx.accounts.renter.key(),
+            ctx.accounts.asset.key(),
+        );
+
+        Ok(())
+    }
+
+    /// Thaws the NFT, then burns it.
+    /// Called when a session reaches Released state.
+    ///
+    /// Only callable by monasol_protocol (enforced via has_one constraint
+    /// on vault_session.renter and protocol_auth CPI signer check).
+    pub fn move_out(ctx: Context<MoveOut>) -> Result<()> {
+        let session = &mut ctx.accounts.vault_session;
+
+        require!(
+            session.state == SessionState::Released,
+            VaultKeyError::SessionNotReleased,
+        );
+
+        let auth_bump = ctx.bumps.protocol_auth;
+        let auth_seeds: &[&[u8]] = &[PROTOCOL_AUTH_SEED, &[auth_bump]];
+        let signer_seeds = &[auth_seeds];
+
+        // ----------------------------------------------------------------
+        // Thaw — update FreezeDelegate plugin to frozen: false
+        // ----------------------------------------------------------------
+        UpdatePluginV1CpiBuilder::new(&ctx.accounts.mpl_core_program)
+            .asset(&ctx.accounts.asset)
+            .collection(Some(&ctx.accounts.collection))
+            .authority(&ctx.accounts.protocol_auth)
+            .payer(&ctx.accounts.payer)
+            .system_program(&ctx.accounts.system_program)
+            .plugin(Plugin::FreezeDelegate(FreezeDelegate { frozen: false }))
+            .invoke_signed(signer_seeds)?;
+
+        // ----------------------------------------------------------------
+        // Burn the asset — key is destroyed on session close
+        // ----------------------------------------------------------------
+        mpl_core::instructions::BurnV1CpiBuilder::new(
+            &ctx.accounts.mpl_core_program,
+        )
+        .asset(&ctx.accounts.asset)
+        .collection(Some(&ctx.accounts.collection))
+        .authority(Some(&ctx.accounts.protocol_auth))
+        .payer(&ctx.accounts.payer)
+        .system_program(Some(&ctx.accounts.system_program))
+        .invoke_signed(signer_seeds)?;
+
+        // ----------------------------------------------------------------
+        // Close VaultSession
+        // ----------------------------------------------------------------
+        session.state        = SessionState::Closed;
+        session.move_out_ts  = Clock::get()?.unix_timestamp;
+
+        emit!(MoveOutEvent {
+            lease_id:   session.lease_id,
+            renter:     session.renter,
+            asset:      session.asset,
+            timestamp:  session.move_out_ts,
+        });
+
+        msg!(
+            "vault_key: move_out — lease {} asset {} burned",
+            session.lease_id,
+            session.asset,
+        );
+
+        Ok(())
+    }
+
+    /// Freeze the vault key NFT.
+    /// Called by monasol_protocol when session transitions to Pledged.
+    pub fn freeze_key(ctx: Context<FreezeKey>) -> Result<()> {
+        let auth_bump = ctx.bumps.protocol_auth;
+        let auth_seeds: &[&[u8]] = &[PROTOCOL_AUTH_SEED, &[auth_bump]];
+        let signer_seeds = &[auth_seeds];
+
+        UpdatePluginV1CpiBuilder::new(&ctx.accounts.mpl_core_program)
+            .asset(&ctx.accounts.asset)
+            .collection(Some(&ctx.accounts.collection))
+            .authority(&ctx.accounts.protocol_auth)
+            .payer(&ctx.accounts.payer)
+            .system_program(&ctx.accounts.system_program)
+            .plugin(Plugin::FreezeDelegate(FreezeDelegate { frozen: true }))
+            .invoke_signed(signer_seeds)?;
+
+        msg!(
+            "vault_key: freeze_key — asset {}",
+            ctx.accounts.asset.key(),
+        );
+
+        Ok(())
+    }
+
+    /// Thaw the vault key NFT.
+    /// Called by monasol_protocol when session transitions to Settling.
+    pub fn thaw_key(ctx: Context<ThawKey>) -> Result<()> {
+        let auth_bump = ctx.bumps.protocol_auth;
+        let auth_seeds: &[&[u8]] = &[PROTOCOL_AUTH_SEED, &[auth_bump]];
+        let signer_seeds = &[auth_seeds];
+
+        UpdatePluginV1CpiBuilder::new(&ctx.accounts.mpl_core_program)
+            .asset(&ctx.accounts.asset)
+            .collection(Some(&ctx.accounts.collection))
+            .authority(&ctx.accounts.protocol_auth)
+            .payer(&ctx.accounts.payer)
+            .system_program(&ctx.accounts.system_program)
+            .plugin(Plugin::FreezeDelegate(FreezeDelegate { frozen: false }))
+            .invoke_signed(signer_seeds)?;
+
+        msg!(
+            "vault_key: thaw_key — asset {}",
+            ctx.accounts.asset.key(),
+        );
+
+        Ok(())
+    }
+}
+
+// --------------------------------------------------------------------------
+// Accounts
+// --------------------------------------------------------------------------
+
+#[derive(Accounts)]
+#[instruction(args: MoveInArgs)]
+pub struct MoveIn<'info> {
+    /// The renter receiving the vault key NFT.
+    pub renter: Signer<'info>,
+
+    /// Pays for rent / transaction.
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    /// Protocol authority PDA — acts as update authority and FreezeDelegate.
+    /// CHECK: PDA derived by this program; validated via seeds.
+    #[account(
+        seeds = [PROTOCOL_AUTH_SEED],
+        bump,
+    )]
+    pub protocol_auth: UncheckedAccount<'info>,
+
+    /// VaultSession PDA — one per (renter, collection) pair.
+    #[account(
+        init,
+        payer  = payer,
+        space  = VaultSession::LEN,
+        seeds  = [
+            VAULT_SESSION_SEED,
+            renter.key().as_ref(),
+            collection.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub vault_session: Account<'info, VaultSession>,
+
+    /// The Core asset account — a new keypair generated client-side.
+    /// CHECK: Created by mpl-core CPI.
+    #[account(mut)]
+    pub asset: Signer<'info>,
+
+    /// The Core collection this asset belongs to.
+    /// CHECK: Validated by mpl-core CPI.
+    #[account(mut)]
+    pub collection: UncheckedAccount<'info>,
+
+    /// Metaplex Core program.
+    /// CHECK: Known program address.
+    #[account(address = MPL_CORE_ID)]
+    pub mpl_core_program: UncheckedAccount<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct MoveOut<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    /// CHECK: PDA — validated via seeds.
+    #[account(
+        seeds = [PROTOCOL_AUTH_SEED],
+        bump,
+    )]
+    pub protocol_auth: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [
+            VAULT_SESSION_SEED,
+            vault_session.renter.as_ref(),
+            vault_session.collection.as_ref(),
+        ],
+        bump = vault_session.bump,
+        has_one = asset,
+        has_one = collection,
+        close = payer,
+    )]
+    pub vault_session: Account<'info, VaultSession>,
+
+    /// CHECK: Validated by mpl-core CPI.
+    #[account(mut)]
+    pub asset: UncheckedAccount<'info>,
+
+    /// CHECK: Validated by mpl-core CPI.
+    #[account(mut)]
+    pub collection: UncheckedAccount<'info>,
+
+    /// CHECK: Known program address.
+    #[account(address = MPL_CORE_ID)]
+    pub mpl_core_program: UncheckedAccount<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct FreezeKey<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    /// CHECK: PDA.
+    #[account(
+        seeds = [PROTOCOL_AUTH_SEED],
+        bump,
+    )]
+    pub protocol_auth: UncheckedAccount<'info>,
+
+    /// CHECK: Validated by mpl-core CPI.
+    #[account(mut)]
+    pub asset: UncheckedAccount<'info>,
+
+    /// CHECK: Validated by mpl-core CPI.
+    #[account(mut)]
+    pub collection: UncheckedAccount<'info>,
+
+    /// CHECK: Known program address.
+    #[account(address = MPL_CORE_ID)]
+    pub mpl_core_program: UncheckedAccount<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ThawKey<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    /// CHECK: PDA.
+    #[account(
+        seeds = [PROTOCOL_AUTH_SEED],
+        bump,
+    )]
+    pub protocol_auth: UncheckedAccount<'info>,
+
+    /// CHECK: Validated by mpl-core CPI.
+    #[account(mut)]
+    pub asset: UncheckedAccount<'info>,
+
+    /// CHECK: Validated by mpl-core CPI.
+    #[account(mut)]
+    pub collection: UncheckedAccount<'info>,
+
+    /// CHECK: Known program address.
+    #[account(address = MPL_CORE_ID)]
+    pub mpl_core_program: UncheckedAccount<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+// --------------------------------------------------------------------------
+// State
+// --------------------------------------------------------------------------
+
+#[account]
+#[derive(Default)]
+pub struct VaultSession {
+    /// The renter who holds the vault key.
+    pub renter:       Pubkey,       // 32
+    /// The Core asset (NFT) pubkey.
+    pub asset:        Pubkey,       // 32
+    /// The Core collection pubkey.
+    pub collection:   Pubkey,       // 32
+    /// Lease ID from the Monad contract.
+    pub lease_id:     u64,          // 8
+    /// Monad transaction hash that triggered move_in (32-byte hash as [u8;32]).
+    pub monad_tx_ref: [u8; 32],     // 32
+    /// Current session state.
+    pub state:        SessionState, // 1
+    /// Unix timestamp of move_in.
+    pub move_in_ts:   i64,          // 8
+    /// Unix timestamp of move_out (0 if still active).
+    pub move_out_ts:  i64,          // 8
+    /// PDA bump.
+    pub bump:         u8,           // 1
+}
+
+impl VaultSession {
+    // discriminator(8) + fields above
+    pub const LEN: usize = 8 + 32 + 32 + 32 + 8 + 32 + 1 + 8 + 8 + 1;
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Default)]
+pub enum SessionState {
+    #[default]
+    Active,    // NFT minted, FreezeDelegate frozen — normal operation
+    Pledged,   // Guardian shards captured, multisig threshold met
+    Settling,  // Monad-side settlement in progress
+    Released,  // Settlement confirmed — ready for move_out / burn
+    Closed,    // NFT burned, session ended
+}
+
+// --------------------------------------------------------------------------
+// Args
+// --------------------------------------------------------------------------
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct MoveInArgs {
+    /// Human-readable NFT name, e.g. "MonaSol Vault Key #42".
+    pub name:         String,
+    /// Arweave / IPFS URI for the NFT metadata JSON.
+    pub uri:          String,
+    /// Lease ID from the Monad LeaseManager contract.
+    pub lease_id:     u64,
+    /// 32-byte Monad transaction hash that triggered this move_in.
+    pub monad_tx_ref: [u8; 32],
+}
+
+// --------------------------------------------------------------------------
+// Events
+// --------------------------------------------------------------------------
+
+#[event]
+pub struct MoveInEvent {
+    pub lease_id:     u64,
+    pub renter:       Pubkey,
+    pub asset:        Pubkey,
+    pub collection:   Pubkey,
+    pub monad_tx_ref: [u8; 32],
+    pub timestamp:    i64,
+}
+
+#[event]
+pub struct MoveOutEvent {
+    pub lease_id:  u64,
+    pub renter:    Pubkey,
+    pub asset:     Pubkey,
+    pub timestamp: i64,
+}
+
+// --------------------------------------------------------------------------
+// Errors
+// --------------------------------------------------------------------------
+
+#[error_code]
+pub enum VaultKeyError {
+    #[msg("Session must be in Released state before move_out")]
+    SessionNotReleased,
+
+    #[msg("Session is already closed")]
+    SessionAlreadyClosed,
+
+    #[msg("Caller is not the protocol authority")]
+    UnauthorizedCaller,
+}

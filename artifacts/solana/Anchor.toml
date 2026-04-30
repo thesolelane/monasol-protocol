@@ -1,19 +1,31 @@
 [toolchain]
-package_manager = "yarn"
+anchor_version  = "0.31.1"
+solana_version  = "2.1.0"
 
 [features]
-resolution = true
-skip-lint = false
+seeds           = false
+skip-lint       = false
 
 [programs.localnet]
-solana = "4j5qMBBFtg5SL7JjjaCr7jqTNwHDu2Zt2Zf2miozsr9j"
+vault_key           = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+guardian_multisig   = "4Nd1mBQtrMJVYVfKf2PX8Q7pSe8KBnM23sYs5KGR2ZtG"
+monasol_protocol    = "HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"
+
+# Uncomment and populate after `anchor keys list` on devnet
+# [programs.devnet]
+# vault_key           = ""
+# guardian_multisig   = ""
+# monasol_protocol    = ""
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
-wallet = "~/.config/solana/id.json"
+cluster  = "localnet"
+wallet   = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn run mocha -t 1000000 tests/"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[workspace]
+types = "target/types"

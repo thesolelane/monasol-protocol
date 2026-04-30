@@ -9,7 +9,7 @@ resolver = "2"
 [workspace.dependencies]
 anchor-lang    = { version = "0.31.1", features = ["init-if-needed"] }
 anchor-spl     = { version = "0.31.1" }
-mpl-core       = { version = "0.8.0", features = ["anchor"] }
+mpl-core       = { version = "0.8.0", features = ["serde"] }
 solana-program = "=2.1.0"
 
 [profile.release]
