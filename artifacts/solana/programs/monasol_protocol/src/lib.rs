@@ -43,7 +43,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
 use anchor_lang::solana_program::program::invoke_signed;
 
-declare_id!("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny");
+declare_id!("MSL3a81xY93z7zzqFEjxh1EyUo2mUJeQ6xc8UAQRba9");
 
 // --------------------------------------------------------------------------
 // Constants

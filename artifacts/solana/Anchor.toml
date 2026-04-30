@@ -7,15 +7,14 @@ seeds           = false
 skip-lint       = false
 
 [programs.localnet]
-vault_key           = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
-guardian_multisig   = "4Nd1mBQtrMJVYVfKf2PX8Q7pSe8KBnM23sYs5KGR2ZtG"
-monasol_protocol    = "HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"
+vault_key           = "MSL1yHXY3tn1fXBg52v2GgGA2qNuQofBMoehEf8arjw"
+guardian_multisig   = "MSLLafYHvuDb1kkukoEijtnERRScQn2n6x7YyH2mMhX"
+monasol_protocol    = "MSL3a81xY93z7zzqFEjxh1EyUo2mUJeQ6xc8UAQRba9"
 
-# Uncomment and populate after `anchor keys list` on devnet
-# [programs.devnet]
-# vault_key           = ""
-# guardian_multisig   = ""
-# monasol_protocol    = ""
+[programs.devnet]
+vault_key           = "MSL1yHXY3tn1fXBg52v2GgGA2qNuQofBMoehEf8arjw"
+guardian_multisig   = "MSLLafYHvuDb1kkukoEijtnERRScQn2n6x7YyH2mMhX"
+monasol_protocol    = "MSL3a81xY93z7zzqFEjxh1EyUo2mUJeQ6xc8UAQRba9"
 
 [registry]
 url = "https://api.apr.dev"
