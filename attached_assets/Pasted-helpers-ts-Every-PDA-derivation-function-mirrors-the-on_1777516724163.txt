@@ -1,0 +1,33 @@
+helpers.ts
+
+Every PDA derivation function mirrors the on-chain seeds exactly — leaseId.toArrayLike(Buffer, "le", 8) is the correct little-endian encoding matching Rust's to_le_bytes()
+computeDiscriminator(instructionName) computes sha256("global:<name>")[0..8] — this is the exact formula Anchor uses
+printCpiDiscriminators() prints all 4 needed values in copy-paste format — call this once after first build, the output goes straight into the byte arrays in monasol_protocol
+makeGuardianCouncil() produces the 5-member array in the correct positional order every test needs
+mockShardCommitment() mirrors the off-chain formula: sha256(fragment || lease_id_le_bytes)
+TEST_LEASE_ID_BASE with offsets per suite — prevents PDA collisions across test files running in the same validator instance
+
+vault_key.ts
+
+.accountsStrict() used throughout — this is the important one. Anchor's strict mode rejects if any account is wrong or missing, surfacing ordering bugs immediately
+Discriminator test is a standalone it() block — after first build this prints and validates all 4 values needed by monasol_protocol
+move_out happy path deliberately deferred to monasol_protocol.ts — isolated unit tests can't advance state machine, integration test does it properly
+
+guardian_multisig.ts
+
+Revoke test documents a deliberate design decision: revoke is one-way per session because ApprovalRecord uses init. Once revoked, the account exists and re-init fails. This is intentional — a revoked approver signals a dispute, which routes to emergency_halt
+Clean unanimous path uses a fresh leaseId.addn(1) — prevents collision with the partial-approval suite above it
+close_guardian_set validates both account closure (getAccountInfo returns null) and balance increase
+
+monasol_protocol.ts
+
+Every negative case targets a specific error code — OracleNotAuthorised, InvalidStateTransition, GuardianSetNotApproved, SessionAlreadyTerminal, ReasonTooLong
+Oracle rotation test does a round-trip — rotates to new oracle then restores original so remaining tests aren't broken
+The final it() block documents the full 8-step integration sequence with the discriminator dependency callout — this is the runbook for first deploy
+
+
+What runs on the server in order
+bashanchor keys sync         # real program IDs
+anchor build             # compile all three
+anchor test              # runs all suites against localnet validator
+The discriminator it() in vault_key.ts will print the real byte values during anchor test. Copy those into monasol_protocol builder functions, then the full integration path in monasol_protocol.ts will work end-to-end.
