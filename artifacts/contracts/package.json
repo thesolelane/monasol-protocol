@@ -1,5 +1,5 @@
 {
-  "name": "@nexus/contracts",
+  "name": "@workspace/contracts",
   "version": "0.0.1",
   "private": true,
   "description": "MonaSol Protocol smart contracts — Vault, Locker, OracleVerifier",

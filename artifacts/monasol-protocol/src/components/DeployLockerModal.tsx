@@ -37,7 +37,7 @@ export function DeployLockerModal({ isOpen, onClose, onSuccess }: DeployLockerMo
       await addLog("Contract compiled successfully. Bytecode size: 14.2kb", 500);
       await addLog("Estimating deployment gas...", 400);
       await addLog(`Gas Estimate: ${lockerType === 'vip' ? '500,000' : '150,000'} gwei`, 300);
-      await addLog("> nexus-cli deploy --network monad", 1000);
+      await addLog("> monasol-cli deploy --network monad", 1000);
       await addLog("Broadcasting transaction to Monad...", 800);
       await addLog("Transaction Signature: 0x8f2a...91bC", 1500);
       await addLog("Awaiting 1 confirmation...", 1000);

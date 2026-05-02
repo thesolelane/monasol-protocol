@@ -60,7 +60,7 @@ export function MintNftModal({ isOpen, onClose, onSuccess }: MintNftModalProps) 
       if (mintMethod === 'qr') {
         await addLog("> Generating secure QR payload...", 400);
         await addLog(`Applying visual signature hash: ${currentSeed.substring(0, 8)}...`, 300);
-        await addLog("Payload: nexus://auth/vault/0442/sig=9x2...", 300);
+        await addLog("Payload: monasol://auth/vault/0442/sig=9x2...", 300);
       } else {
         await addLog("> Processing custom image asset...", 600);
         await addLog("Optimizing image resolution and generating hash...", 400);
