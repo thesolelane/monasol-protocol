@@ -1,0 +1,1525 @@
+cat ~/nexus-bridge/artifacts/solana/target/idl/monasol_protocol.json
+{
+  "address": "MSL3a81xY93z7zzqFEjxh1EyUo2mUJeQ6xc8UAQRba9",
+  "metadata": {
+    "name": "monasol_protocol",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "confirm_settlement",
+      "docs": [
+        "Oracle confirms that the Monad-side settlement transaction is valid.",
+        "",
+        "┌─────────────────────────────────────────────────────────────────┐",
+        "│  CROSS-CHAIN BOUNDARY — PHASE 2 (Oracle / Backend Model)        │",
+        "│                                                                  │",
+        "│  Verification: oracle Signer account must match                 │",
+        "│  OracleVerifier.oracle pubkey.  The Node.js backend signs this  │",
+        "│  transaction after confirming the Monad settlement event via     │",
+        "│  OracleVerifier (already wired in Phase 1).                     │",
+        "│                                                                  │",
+        "│  Phase 3-4 upgrade path:                                        │",
+        "│    Replace oracle signer check with Wormhole NTT VAA            │",
+        "│    verification.  The `monad_settlement_proof` account below     │",
+        "│    becomes a posted VAA account.                                 │",
+        "│                                                                  │",
+        "│  Phase 5 upgrade path:                                          │",
+        "│    Replace with SP1 ZK proof verification (Groth16 on Monad).   │",
+        "│    The proof is verified against the Monad state root.          │",
+        "└─────────────────────────────────────────────────────────────────┘",
+        "",
+        "On success:",
+        "Pledged → Settling  (thaw NFT via vault_key CPI)",
+        "→ Released  (same tx — settlement is atomic)",
+        "CPIs: guardian_multisig::mark_settled",
+        "thaw_key"
+      ],
+      "discriminator": [
+        171,
+        180,
+        45,
+        20,
+        120,
+        221,
+        11,
+        31
+      ],
+      "accounts": [
+        {
+          "name": "oracle",
+          "docs": [
+            "Oracle backend signs settlement confirmation."
+          ],
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_verifier",
+          "docs": [
+            "Validate oracle signature."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  118,
+                  101,
+                  114,
+                  105,
+                  102,
+                  105,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "session_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  115,
+                  115,
+                  105,
+                  111,
+                  110,
+                  95,
+                  114,
+                  101,
+                  99,
+                  111,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "session_record.lease_id",
+                "account": "SessionRecord"
+              }
+            ]
+          }
+        },
+        {
+          "name": "protocol_auth",
+          "docs": [
+            "Protocol authority PDA — CPI signer for vault_key and guardian calls."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "guardian_set",
+          "docs": [
+            "The guardian set for this session."
+          ],
+          "writable": true
+        },
+        {
+          "name": "asset",
+          "docs": [
+            "The vault key NFT asset."
+          ],
+          "writable": true
+        },
+        {
+          "name": "collection",
+          "docs": [
+            "The Core collection."
+          ],
+          "writable": true
+        },
+        {
+          "name": "vault_key_program"
+        },
+        {
+          "name": "guardian_multisig_program"
+        },
+        {
+          "name": "mpl_core_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "monad_tx_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "emergency_halt",
+      "docs": [
+        "Emergency halt — operator override for disputed or failed sessions.",
+        "Freezes the NFT and marks session Halted.",
+        "Does not burn — allows manual review before resolution."
+      ],
+      "discriminator": [
+        182,
+        75,
+        142,
+        253,
+        96,
+        137,
+        255,
+        67
+      ],
+      "accounts": [
+        {
+          "name": "protocol_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "protocol_state"
+          ]
+        },
+        {
+          "name": "session_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  115,
+                  115,
+                  105,
+                  111,
+                  110,
+                  95,
+                  114,
+                  101,
+                  99,
+                  111,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "session_record.lease_id",
+                "account": "SessionRecord"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "reason",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "finalize_release",
+      "docs": [
+        "Finalise the release — burn the vault key NFT and close accounts.",
+        "",
+        "Called by the operator/backend after `confirm_settlement`.",
+        "CPIs:",
+        "vault_key::move_out  (thaw + burn NFT, close VaultSession)",
+        "guardian_multisig::close_guardian_set (close GuardianSet)"
+      ],
+      "discriminator": [
+        133,
+        95,
+        4,
+        17,
+        103,
+        213,
+        141,
+        58
+      ],
+      "accounts": [
+        {
+          "name": "operator",
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "protocol_state"
+          ]
+        },
+        {
+          "name": "session_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  115,
+                  115,
+                  105,
+                  111,
+                  110,
+                  95,
+                  114,
+                  101,
+                  99,
+                  111,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "session_record.lease_id",
+                "account": "SessionRecord"
+              }
+            ]
+          }
+        },
+        {
+          "name": "protocol_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_session",
+          "writable": true
+        },
+        {
+          "name": "asset",
+          "writable": true
+        },
+        {
+          "name": "collection",
+          "writable": true
+        },
+        {
+          "name": "guardian_set",
+          "writable": true
+        },
+        {
+          "name": "vault_key_program"
+        },
+        {
+          "name": "guardian_multisig_program"
+        },
+        {
+          "name": "mpl_core_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialise",
+      "docs": [
+        "Initialise the global protocol state.",
+        "Called once at deployment by the upgrade authority."
+      ],
+      "discriminator": [
+        162,
+        198,
+        118,
+        235,
+        215,
+        247,
+        25,
+        118
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_verifier",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  118,
+                  101,
+                  114,
+                  105,
+                  102,
+                  105,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "oracle",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "pledge",
+      "docs": [
+        "Operator signals that guardian shards have been submitted and",
+        "unanimous approval has been reached — drives Active → Pledged.",
+        "",
+        "Verifies:",
+        "1. GuardianSet.status == Approved (all 3 approvers voted)",
+        "2. SessionRecord.state == Active"
+      ],
+      "discriminator": [
+        235,
+        47,
+        156,
+        254,
+        0,
+        88,
+        212,
+        142
+      ],
+      "accounts": [
+        {
+          "name": "operator",
+          "signer": true
+        },
+        {
+          "name": "protocol_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "protocol_state"
+          ]
+        },
+        {
+          "name": "session_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  115,
+                  115,
+                  105,
+                  111,
+                  110,
+                  95,
+                  114,
+                  101,
+                  99,
+                  111,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "session_record.lease_id",
+                "account": "SessionRecord"
+              }
+            ]
+          }
+        },
+        {
+          "name": "guardian_set",
+          "docs": [
+            "GuardianSet — read its status to verify unanimous approval."
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "register_session",
+      "docs": [
+        "Register a new session record.",
+        "",
+        "Called by the backend oracle after `vault_key::move_in` succeeds.",
+        "Ties the Solana-side session to a Monad lease ID and records the",
+        "vault_key VaultSession PDA address for downstream CPI calls."
+      ],
+      "discriminator": [
+        101,
+        116,
+        106,
+        43,
+        152,
+        189,
+        4,
+        110
+      ],
+      "accounts": [
+        {
+          "name": "oracle",
+          "docs": [
+            "Oracle backend signs registration."
+          ],
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_verifier",
+          "docs": [
+            "Validate oracle matches registered oracle pubkey."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  118,
+                  101,
+                  114,
+                  105,
+                  102,
+                  105,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "session_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  115,
+                  115,
+                  105,
+                  111,
+                  110,
+                  95,
+                  114,
+                  101,
+                  99,
+                  111,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "args.lease_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "RegisterSessionArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_paused",
+      "docs": [
+        "Pause / unpause the protocol (emergency use)."
+      ],
+      "discriminator": [
+        91,
+        60,
+        125,
+        192,
+        176,
+        225,
+        166,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "protocol_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "protocol_state"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "paused",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "update_oracle",
+      "docs": [
+        "Update the trusted oracle pubkey.",
+        "Only callable by protocol authority."
+      ],
+      "discriminator": [
+        112,
+        41,
+        209,
+        18,
+        248,
+        226,
+        252,
+        188
+      ],
+      "accounts": [
+        {
+          "name": "protocol_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_verifier",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  118,
+                  101,
+                  114,
+                  105,
+                  102,
+                  105,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "protocol_state"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_oracle",
+          "type": "pubkey"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "GuardianSetMirror",
+      "discriminator": [
+        81,
+        202,
+        229,
+        132,
+        199,
+        248,
+        14,
+        91
+      ]
+    },
+    {
+      "name": "OracleVerifier",
+      "discriminator": [
+        197,
+        149,
+        136,
+        147,
+        199,
+        180,
+        211,
+        55
+      ]
+    },
+    {
+      "name": "ProtocolState",
+      "discriminator": [
+        33,
+        51,
+        173,
+        134,
+        35,
+        140,
+        195,
+        248
+      ]
+    },
+    {
+      "name": "SessionRecord",
+      "discriminator": [
+        145,
+        59,
+        206,
+        119,
+        242,
+        195,
+        20,
+        170
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "SessionClosed",
+      "discriminator": [
+        57,
+        237,
+        11,
+        243,
+        194,
+        34,
+        120,
+        27
+      ]
+    },
+    {
+      "name": "SessionHalted",
+      "discriminator": [
+        52,
+        210,
+        198,
+        49,
+        64,
+        235,
+        123,
+        227
+      ]
+    },
+    {
+      "name": "SessionPledged",
+      "discriminator": [
+        235,
+        125,
+        19,
+        123,
+        97,
+        65,
+        152,
+        144
+      ]
+    },
+    {
+      "name": "SessionRegistered",
+      "discriminator": [
+        96,
+        160,
+        74,
+        170,
+        217,
+        214,
+        115,
+        55
+      ]
+    },
+    {
+      "name": "SessionReleased",
+      "discriminator": [
+        82,
+        254,
+        84,
+        76,
+        117,
+        132,
+        37,
+        68
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "ProtocolPaused",
+      "msg": "Protocol is paused"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidStateTransition",
+      "msg": "Invalid state transition for current session state"
+    },
+    {
+      "code": 6002,
+      "name": "GuardianSetNotApproved",
+      "msg": "Guardian set has not reached unanimous approval"
+    },
+    {
+      "code": 6003,
+      "name": "GuardianSetMismatch",
+      "msg": "Guardian set pubkey does not match session record"
+    },
+    {
+      "code": 6004,
+      "name": "VaultSessionMismatch",
+      "msg": "VaultSession pubkey does not match session record"
+    },
+    {
+      "code": 6005,
+      "name": "OracleNotAuthorised",
+      "msg": "Oracle signer is not the registered oracle"
+    },
+    {
+      "code": 6006,
+      "name": "SessionAlreadyTerminal",
+      "msg": "Session is already in a terminal state"
+    },
+    {
+      "code": 6007,
+      "name": "ReasonTooLong",
+      "msg": "Halt reason must be 128 characters or less"
+    }
+  ],
+  "types": [
+    {
+      "name": "GuardianSetMirror",
+      "docs": [
+        "Minimal mirror of guardian_multisig::GuardianSet — only fields we read.",
+        "Full layout must match the on-chain account exactly for safe deserialization."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "vault_session",
+            "type": "pubkey"
+          },
+          {
+            "name": "members",
+            "type": {
+              "array": [
+                "pubkey",
+                5
+              ]
+            }
+          },
+          {
+            "name": "shards_submitted",
+            "type": "u8"
+          },
+          {
+            "name": "approvals",
+            "type": "u8"
+          },
+          {
+            "name": "approval_mask",
+            "type": "u8"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "GuardianSetStatusMirror"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GuardianSetStatusMirror",
+      "docs": [
+        "Mirror of guardian_multisig::GuardianSetStatus — must stay in sync."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "ShardsComplete"
+          },
+          {
+            "name": "Approved"
+          },
+          {
+            "name": "Settled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleVerifier",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProtocolSessionState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Pledged"
+          },
+          {
+            "name": "Settling"
+          },
+          {
+            "name": "Released"
+          },
+          {
+            "name": "Closed"
+          },
+          {
+            "name": "Halted"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProtocolState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [
+              "Protocol upgrade authority."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle",
+            "docs": [
+              "Trusted oracle pubkey (backend Node.js signer)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "session_count",
+            "docs": [
+              "Total sessions registered."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "paused",
+            "docs": [
+              "Emergency pause flag."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegisterSessionArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "renter",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault_session",
+            "type": "pubkey"
+          },
+          {
+            "name": "guardian_set",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset",
+            "type": "pubkey"
+          },
+          {
+            "name": "collection",
+            "type": "pubkey"
+          },
+          {
+            "name": "monad_tx_ref",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "renter",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionHalted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "renter",
+            "type": "pubkey"
+          },
+          {
+            "name": "reason",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionPledged",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "renter",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "renter",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault_session",
+            "type": "pubkey"
+          },
+          {
+            "name": "guardian_set",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset",
+            "type": "pubkey"
+          },
+          {
+            "name": "collection",
+            "type": "pubkey"
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "ProtocolSessionState"
+              }
+            }
+          },
+          {
+            "name": "monad_tx_ref",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "registered_ts",
+            "type": "i64"
+          },
+          {
+            "name": "pledged_ts",
+            "type": "i64"
+          },
+          {
+            "name": "settling_ts",
+            "type": "i64"
+          },
+          {
+            "name": "released_ts",
+            "type": "i64"
+          },
+          {
+            "name": "closed_ts",
+            "type": "i64"
+          },
+          {
+            "name": "halt_ts",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionRegistered",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "renter",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault_session",
+            "type": "pubkey"
+          },
+          {
+            "name": "guardian_set",
+            "type": "pubkey"
+          },
+          {
+            "name": "monad_tx_ref",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionReleased",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "renter",
+            "type": "pubkey"
+          },
+          {
+            "name": "monad_tx_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}
