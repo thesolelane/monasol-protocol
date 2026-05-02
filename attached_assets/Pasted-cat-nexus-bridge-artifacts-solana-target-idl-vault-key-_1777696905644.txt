@@ -1,0 +1,596 @@
+cat ~/nexus-bridge/artifacts/solana/target/idl/vault_key.json
+{
+  "address": "MSL1yHXY3tn1fXBg52v2GgGA2qNuQofBMoehEf8arjw",
+  "metadata": {
+    "name": "vault_key",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "freeze_key",
+      "docs": [
+        "Freeze the vault key NFT (Active → Pledged transition)."
+      ],
+      "discriminator": [
+        175,
+        172,
+        62,
+        189,
+        73,
+        215,
+        14,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "asset",
+          "writable": true
+        },
+        {
+          "name": "collection",
+          "writable": true
+        },
+        {
+          "name": "mpl_core_program",
+          "address": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "move_in",
+      "docs": [
+        "Called at move-in time.",
+        "Mints a Core NFT, attaches FreezeDelegate plugin (frozen=true),",
+        "and initialises the VaultSession PDA."
+      ],
+      "discriminator": [
+        5,
+        162,
+        123,
+        224,
+        67,
+        215,
+        160,
+        42
+      ],
+      "accounts": [
+        {
+          "name": "renter",
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_session",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  101,
+                  115,
+                  115,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "renter"
+              },
+              {
+                "kind": "account",
+                "path": "collection"
+              }
+            ]
+          }
+        },
+        {
+          "name": "asset",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "collection",
+          "writable": true
+        },
+        {
+          "name": "mpl_core_program",
+          "address": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "MoveInArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "move_out",
+      "docs": [
+        "Thaws and burns the NFT. Called when session reaches Released state."
+      ],
+      "discriminator": [
+        70,
+        225,
+        254,
+        16,
+        221,
+        233,
+        233,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_session",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  101,
+                  115,
+                  115,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault_session.renter",
+                "account": "VaultSession"
+              },
+              {
+                "kind": "account",
+                "path": "vault_session.collection",
+                "account": "VaultSession"
+              }
+            ]
+          }
+        },
+        {
+          "name": "asset",
+          "writable": true,
+          "relations": [
+            "vault_session"
+          ]
+        },
+        {
+          "name": "collection",
+          "writable": true,
+          "relations": [
+            "vault_session"
+          ]
+        },
+        {
+          "name": "mpl_core_program",
+          "address": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "thaw_key",
+      "docs": [
+        "Thaw the vault key NFT (Pledged → Settling transition)."
+      ],
+      "discriminator": [
+        243,
+        23,
+        48,
+        110,
+        210,
+        208,
+        208,
+        157
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "asset",
+          "writable": true
+        },
+        {
+          "name": "collection",
+          "writable": true
+        },
+        {
+          "name": "mpl_core_program",
+          "address": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "VaultSession",
+      "discriminator": [
+        108,
+        66,
+        206,
+        83,
+        210,
+        53,
+        16,
+        159
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "MoveInEvent",
+      "discriminator": [
+        105,
+        88,
+        78,
+        238,
+        110,
+        198,
+        177,
+        53
+      ]
+    },
+    {
+      "name": "MoveOutEvent",
+      "discriminator": [
+        240,
+        145,
+        74,
+        236,
+        199,
+        146,
+        208,
+        109
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "SessionNotReleased",
+      "msg": "Session must be in Released state before move_out"
+    },
+    {
+      "code": 6001,
+      "name": "SessionAlreadyClosed",
+      "msg": "Session is already closed"
+    },
+    {
+      "code": 6002,
+      "name": "UnauthorizedCaller",
+      "msg": "Caller is not the protocol authority"
+    },
+    {
+      "code": 6003,
+      "name": "MplCoreCpiFailed",
+      "msg": "MPL Core CPI call failed"
+    }
+  ],
+  "types": [
+    {
+      "name": "MoveInArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "monad_tx_ref",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "MoveInEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "renter",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset",
+            "type": "pubkey"
+          },
+          {
+            "name": "collection",
+            "type": "pubkey"
+          },
+          {
+            "name": "monad_tx_ref",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MoveOutEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "renter",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Pledged"
+          },
+          {
+            "name": "Settling"
+          },
+          {
+            "name": "Released"
+          },
+          {
+            "name": "Closed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultSession",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "renter",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset",
+            "type": "pubkey"
+          },
+          {
+            "name": "collection",
+            "type": "pubkey"
+          },
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "monad_tx_ref",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "SessionState"
+              }
+            }
+          },
+          {
+            "name": "move_in_ts",
+            "type": "i64"
+          },
+          {
+            "name": "move_out_ts",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

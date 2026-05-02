@@ -1,0 +1,1009 @@
+cat ~/nexus-bridge/artifacts/solana/target/idl/guardian_multisig.json
+{
+  "address": "MSLLafYHvuDb1kkukoEijtnERRScQn2n6x7YyH2mMhX",
+  "metadata": {
+    "name": "guardian_multisig",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "approve_settlement",
+      "docs": [
+        "Approver casts their unanimous consent vote.",
+        "",
+        "All three approvers must vote before `guardian_set.status` advances",
+        "to `Approved`.  When approved, `monasol_protocol` may drive the",
+        "session from `Pledged → Settling`."
+      ],
+      "discriminator": [
+        186,
+        5,
+        15,
+        163,
+        23,
+        10,
+        142,
+        12
+      ],
+      "accounts": [
+        {
+          "name": "approver",
+          "docs": [
+            "Must be one of the three approvers registered in guardian_set."
+          ],
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "guardian_set",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  117,
+                  97,
+                  114,
+                  100,
+                  105,
+                  97,
+                  110,
+                  95,
+                  115,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "guardian_set.lease_id",
+                "account": "GuardianSet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "approval",
+          "docs": [
+            "One Approval record per approver per session."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  112,
+                  112,
+                  114,
+                  111,
+                  118,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "guardian_set.lease_id",
+                "account": "GuardianSet"
+              },
+              {
+                "kind": "account",
+                "path": "approver"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_guardian_set",
+      "docs": [
+        "Close the guardian set after a session ends.",
+        "",
+        "Rent is returned to the fee payer.  Only callable once the",
+        "guardian set is in Settled status (monasol_protocol sets this",
+        "before the session is Released)."
+      ],
+      "discriminator": [
+        52,
+        45,
+        157,
+        101,
+        56,
+        86,
+        120,
+        179
+      ],
+      "accounts": [
+        {
+          "name": "fee_payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "guardian_set",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  117,
+                  97,
+                  114,
+                  100,
+                  105,
+                  97,
+                  110,
+                  95,
+                  115,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "guardian_set.lease_id",
+                "account": "GuardianSet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "init_guardian_set",
+      "docs": [
+        "Register the guardian council for a vault session.",
+        "",
+        "Called once per session by the protocol operator immediately after",
+        "`vault_key::move_in`.  The five guardian pubkeys are fixed for the",
+        "lifetime of the session — no rotation after init.",
+        "",
+        "Layout of `members` array (enforced by instruction):",
+        "[0] shard_member_0",
+        "[1] shard_member_1",
+        "[2] approver_0",
+        "[3] approver_1",
+        "[4] approver_2"
+      ],
+      "discriminator": [
+        103,
+        241,
+        176,
+        201,
+        94,
+        34,
+        252,
+        107
+      ],
+      "accounts": [
+        {
+          "name": "operator",
+          "docs": [
+            "Protocol operator — pays for the guardian set account."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "guardian_set",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  117,
+                  97,
+                  114,
+                  100,
+                  105,
+                  97,
+                  110,
+                  95,
+                  115,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "args.lease_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitGuardianSetArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "mark_settled",
+      "docs": [
+        "Called by monasol_protocol to mark the guardian set as settled.",
+        "Transitions status Approved → Settled so close_guardian_set can run.",
+        "",
+        "TODO: Enforce that caller is monasol_protocol's program authority PDA",
+        "once the CPI pattern is wired in monasol_protocol."
+      ],
+      "discriminator": [
+        85,
+        36,
+        192,
+        146,
+        83,
+        42,
+        49,
+        60
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Only monasol_protocol's program authority should call this.",
+            "Full CPI-caller restriction wired in monasol_protocol."
+          ],
+          "signer": true
+        },
+        {
+          "name": "guardian_set",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  117,
+                  97,
+                  114,
+                  100,
+                  105,
+                  97,
+                  110,
+                  95,
+                  115,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "guardian_set.lease_id",
+                "account": "GuardianSet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "revoke_approval",
+      "docs": [
+        "Approver withdraws their vote.",
+        "",
+        "Only permitted before unanimous consent is reached.",
+        "Once `Approved` or `Settled`, the set is locked — no revocation."
+      ],
+      "discriminator": [
+        44,
+        51,
+        184,
+        108,
+        182,
+        202,
+        20,
+        53
+      ],
+      "accounts": [
+        {
+          "name": "approver",
+          "signer": true,
+          "relations": [
+            "approval"
+          ]
+        },
+        {
+          "name": "guardian_set",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  117,
+                  97,
+                  114,
+                  100,
+                  105,
+                  97,
+                  110,
+                  95,
+                  115,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "guardian_set.lease_id",
+                "account": "GuardianSet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "approval",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  112,
+                  112,
+                  114,
+                  111,
+                  118,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "guardian_set.lease_id",
+                "account": "GuardianSet"
+              },
+              {
+                "kind": "account",
+                "path": "approver"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "submit_shard",
+      "docs": [
+        "Shard member submits their commitment hash.",
+        "",
+        "`commitment` is SHA-256(fragment_bytes || lease_id_le_bytes).",
+        "Mixing in the lease_id prevents cross-session replay of commitments.",
+        "",
+        "Both shard members must submit before approvers can vote."
+      ],
+      "discriminator": [
+        169,
+        113,
+        29,
+        108,
+        198,
+        163,
+        155,
+        212
+      ],
+      "accounts": [
+        {
+          "name": "shard_member",
+          "docs": [
+            "Must be one of the two shard members registered in guardian_set."
+          ],
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "guardian_set",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  117,
+                  97,
+                  114,
+                  100,
+                  105,
+                  97,
+                  110,
+                  95,
+                  115,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "guardian_set.lease_id",
+                "account": "GuardianSet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "shard_record",
+          "docs": [
+            "One ShardRecord per shard member per session."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  104,
+                  97,
+                  114,
+                  100,
+                  95,
+                  114,
+                  101,
+                  99,
+                  111,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "guardian_set.lease_id",
+                "account": "GuardianSet"
+              },
+              {
+                "kind": "account",
+                "path": "shard_member"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "commitment",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ApprovalRecord",
+      "discriminator": [
+        201,
+        139,
+        178,
+        150,
+        83,
+        187,
+        182,
+        213
+      ]
+    },
+    {
+      "name": "GuardianSet",
+      "discriminator": [
+        120,
+        77,
+        74,
+        98,
+        34,
+        83,
+        96,
+        125
+      ]
+    },
+    {
+      "name": "ShardRecord",
+      "discriminator": [
+        18,
+        203,
+        234,
+        23,
+        24,
+        120,
+        200,
+        121
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "ApprovalCast",
+      "discriminator": [
+        102,
+        207,
+        44,
+        215,
+        156,
+        245,
+        150,
+        226
+      ]
+    },
+    {
+      "name": "ApprovalRevoked",
+      "discriminator": [
+        0,
+        143,
+        189,
+        167,
+        179,
+        12,
+        235,
+        123
+      ]
+    },
+    {
+      "name": "GuardianSetInitialised",
+      "discriminator": [
+        154,
+        8,
+        4,
+        153,
+        183,
+        163,
+        143,
+        53
+      ]
+    },
+    {
+      "name": "ShardSubmitted",
+      "discriminator": [
+        171,
+        4,
+        94,
+        168,
+        10,
+        211,
+        71,
+        133
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidMemberCount",
+      "msg": "Guardian set must have exactly 5 members"
+    },
+    {
+      "code": 6001,
+      "name": "DuplicateMember",
+      "msg": "Duplicate member address in guardian set"
+    },
+    {
+      "code": 6002,
+      "name": "SetNotPending",
+      "msg": "Guardian set is not in Pending status"
+    },
+    {
+      "code": 6003,
+      "name": "NotAShardMember",
+      "msg": "Caller is not a registered shard member"
+    },
+    {
+      "code": 6004,
+      "name": "ShardAlreadySubmitted",
+      "msg": "Shard commitment already submitted by this member"
+    },
+    {
+      "code": 6005,
+      "name": "ShardsNotComplete",
+      "msg": "Both shards must be submitted before approvers can vote"
+    },
+    {
+      "code": 6006,
+      "name": "NotAnApprover",
+      "msg": "Caller is not a registered approver"
+    },
+    {
+      "code": 6007,
+      "name": "AlreadyApproved",
+      "msg": "This approver has already cast their vote"
+    },
+    {
+      "code": 6008,
+      "name": "AlreadyApprovedCannotRevoke",
+      "msg": "Cannot revoke — unanimous consent already reached or session settled"
+    },
+    {
+      "code": 6009,
+      "name": "NotYetApproved",
+      "msg": "Approver has not yet cast a vote"
+    },
+    {
+      "code": 6010,
+      "name": "SetNotApproved",
+      "msg": "Guardian set must be in Approved status to mark settled"
+    },
+    {
+      "code": 6011,
+      "name": "SetNotSettled",
+      "msg": "Guardian set must be in Settled status to close"
+    }
+  ],
+  "types": [
+    {
+      "name": "ApprovalCast",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "approver",
+            "type": "pubkey"
+          },
+          {
+            "name": "approver_index",
+            "type": "u8"
+          },
+          {
+            "name": "approvals_so_far",
+            "type": "u8"
+          },
+          {
+            "name": "unanimous",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ApprovalRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "approver",
+            "type": "pubkey"
+          },
+          {
+            "name": "approver_index",
+            "type": "u8"
+          },
+          {
+            "name": "approved",
+            "type": "bool"
+          },
+          {
+            "name": "approved_ts",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ApprovalRevoked",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "approver",
+            "type": "pubkey"
+          },
+          {
+            "name": "approver_index",
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GuardianSet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "docs": [
+              "Lease ID from Monad — ties this set to a VaultSession."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "vault_session",
+            "docs": [
+              "The VaultSession PDA this guardian set protects."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "members",
+            "docs": [
+              "All 5 members: [shard_0, shard_1, approver_0, approver_1, approver_2]"
+            ],
+            "type": {
+              "array": [
+                "pubkey",
+                5
+              ]
+            }
+          },
+          {
+            "name": "shards_submitted",
+            "docs": [
+              "How many shard commitments have been submitted (0, 1, or 2)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "approvals",
+            "docs": [
+              "How many approvers have voted (0..3)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "approval_mask",
+            "docs": [
+              "Bitmask of approver votes — bit N = approver index N has voted."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "status",
+            "docs": [
+              "Current status of this guardian set."
+            ],
+            "type": {
+              "defined": {
+                "name": "GuardianSetStatus"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GuardianSetInitialised",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "vault_session",
+            "type": "pubkey"
+          },
+          {
+            "name": "members",
+            "type": {
+              "array": [
+                "pubkey",
+                5
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "GuardianSetStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "ShardsComplete"
+          },
+          {
+            "name": "Approved"
+          },
+          {
+            "name": "Settled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitGuardianSetArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "vault_session",
+            "type": "pubkey"
+          },
+          {
+            "name": "members",
+            "docs": [
+              "Exactly 5 pubkeys: [shard_0, shard_1, approver_0, approver_1, approver_2]"
+            ],
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShardRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "docs": [
+              "Lease ID — for cross-reference."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "shard_index",
+            "docs": [
+              "Which shard index (0 or 1)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "member",
+            "docs": [
+              "The shard member's pubkey."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "commitment",
+            "docs": [
+              "SHA-256(fragment_bytes || lease_id_le_bytes)"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "submitted",
+            "docs": [
+              "Whether this record has been submitted."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "submitted_ts",
+            "docs": [
+              "Submission timestamp."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShardSubmitted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lease_id",
+            "type": "u64"
+          },
+          {
+            "name": "shard_index",
+            "type": "u8"
+          },
+          {
+            "name": "member",
+            "type": "pubkey"
+          },
+          {
+            "name": "commitment",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}
