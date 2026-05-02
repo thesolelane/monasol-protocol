@@ -1,0 +1,45 @@
+cd ~/nexus-bridge/artifacts/solana
+
+# Deploy with oracle key as authority
+anchor deploy --provider.cluster devnet --provider.wallet ~/.config/solana/oracle-real.json
+
+# Run init (only needed once — sets up protocol_state + oracle_verifier on-chain)
+node scripts/init.mjs
+Deploying cluster: https://api.devnet.solana.com
+Upgrade authority: /home/cooperanth/.config/solana/oracle-real.json
+Deploying program "vault_key"...
+Program path: /home/cooperanth/nexus-bridge/artifacts/solana/target/deploy/vault_key.so...
+Program Id: 3K4trP738zH8AnLstw3aMRhLVr2bUPXbhGuFBoTFVMfu
+
+Signature: 2rHABjbeRWLWisLqsE8afXjg7Vs3m7VBD4Ch8mzD5gzK5mci6vPy37ZsCR69xXmnKV1fSQuZuF3T11G51WaGqiXg
+
+Deploying program "monasol_protocol"...
+Program path: /home/cooperanth/nexus-bridge/artifacts/solana/target/deploy/monasol_protocol.so...
+Program Id: F6tpGzZqxCeESXDTquUrTZyMpv8WVZ5Aiem1mfiPQftY
+
+Signature: 35x3m2qp25a4Ac7G8BH1KA22jUAURCpUhERNNsieefbrgbgoj8pz4AxZikeKFAU8SUKJUDiiA6HHY7uG6dDHmyQE
+
+Deploying program "guardian_multisig"...
+Program path: /home/cooperanth/nexus-bridge/artifacts/solana/target/deploy/guardian_multisig.so...
+Program Id: F2Rfbcq5jRPtvqs9E746P5dJ19LruD7htYwohVNTXFuf
+
+Signature: 46eQz1mFFUYhM56XivkoRdGfw8Aarmx4c67RQdzGfk4KvAxAT6dRd5rsCskJLiDTsoadkQ6Sjp46VJzXbfA2FSr9
+
+Deploy success
+node:internal/modules/esm/resolve:873
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@solana/web3.js' imported from /home/cooperanth/nexus-bridge/artifacts/solana/scripts/init.mjs
+    at packageResolve (node:internal/modules/esm/resolve:873:9)
+    at moduleResolve (node:internal/modules/esm/resolve:946:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:708:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:657:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:640:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:168:49) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.20.2
