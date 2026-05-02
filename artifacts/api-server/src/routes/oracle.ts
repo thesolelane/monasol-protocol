@@ -13,10 +13,12 @@
 
 import { Router }    from "express";
 import { z }         from "zod";
+import { ethers }    from "ethers";
 import { PublicKey } from "@solana/web3.js";
 import { BN }        from "@coral-xyz/anchor";
 import { logger }    from "../lib/logger";
 import { oracleKeypair } from "../lib/solana";
+import { ethersSigner }  from "../lib/monad";
 import {
   registerSession,
   confirmSettlement,
@@ -291,6 +293,83 @@ oracleRouter.post("/finalize-release", async (req, res) => {
       error:   err?.message ?? "finalize_release failed",
       leaseId: leaseId.toString(),
     });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// POST /api/oracle/sign-proof
+//
+// Signs an oracle proof for the Monad OracleVerifier contract.
+// The deployer EVM key is an approved signer on OracleVerifier (threshold=1).
+//
+// Body: {
+//   nftMint: string   — Solana NFT mint address (plain string, max 44 chars)
+//   owner:   string   — Monad wallet address (0x...)
+//   expiry:  number   — Unix timestamp in seconds (must be within 5 minutes)
+// }
+//
+// Returns: { signature: "0x..." } — 65-byte ECDSA signature
+//
+// The signed digest matches OracleVerifier.verifyAccess:
+//   keccak256(abi.encodePacked(nftMint as bytes32, owner, expiry, chainId=10143))
+// -----------------------------------------------------------------------------
+
+const MONAD_CHAIN_ID = 10143n;
+
+const signProofBody = z.object({
+  nftMint: z.string().min(1).max(44),
+  owner:   z.string().regex(/^0x[0-9a-fA-F]{40}$/, "owner must be a valid EVM address"),
+  expiry:  z.number().int().positive(),
+});
+
+oracleRouter.post("/sign-proof", async (req, res) => {
+  const parsed = signProofBody.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      error:   "Invalid request body",
+      details: parsed.error.flatten(),
+    });
+  }
+
+  const { nftMint, owner, expiry } = parsed.data;
+
+  const now = Math.floor(Date.now() / 1000);
+  if (expiry <= now) {
+    return res.status(400).json({ success: false, error: "expiry must be in the future" });
+  }
+  if (expiry > now + 300) {
+    return res.status(400).json({ success: false, error: "expiry must be within 5 minutes from now" });
+  }
+
+  try {
+    const nftMintBytes32 = ethers.hexlify(new PublicKey(nftMint).toBytes());
+
+    const digest = ethers.keccak256(
+      ethers.solidityPacked(
+        ["bytes32", "address", "uint256", "uint256"],
+        [nftMintBytes32, owner, expiry, MONAD_CHAIN_ID]
+      )
+    );
+
+    const signature = await ethersSigner.signMessage(ethers.getBytes(digest));
+
+    const signerAddress = await ethersSigner.getAddress();
+
+    logger.info({ nftMint, owner, expiry, signer: signerAddress }, "oracle: sign-proof produced");
+
+    return res.status(200).json({
+      success:   true,
+      signature,
+      nftMint,
+      owner,
+      expiry,
+      signer:    signerAddress,
+      chainId:   Number(MONAD_CHAIN_ID),
+    });
+  } catch (err: any) {
+    logger.error({ err }, "oracle: sign-proof failed");
+    return res.status(500).json({ success: false, error: err?.message ?? "sign-proof failed" });
   }
 });
 
