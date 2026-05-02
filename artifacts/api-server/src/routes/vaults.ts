@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { ethers } from "ethers";
+import { PublicKey } from "@solana/web3.js";
 import { storage } from "../storage";
 import { logger } from "../lib/logger";
 import {
@@ -124,9 +125,9 @@ router.post("/deploy", async (req: Request, res: Response) => {
       return res.status(409).json({ error: "Slot is already occupied" });
     }
 
-    // Deploy — VaultFactory expects nftMint as bytes32 (used as part of the
-    // deterministic salt); Locker expects the raw string (String[64]).
-    const nftMintBytes32 = ethers.encodeBytes32String(nftMint);
+    // Deploy — VaultFactory expects nftMint as bytes32 (raw 32 bytes of the
+    // Solana public key); Locker expects the raw base58 string (String[64]).
+    const nftMintBytes32 = ethers.hexlify(new PublicKey(nftMint).toBytes());
     const factory = getVaultFactoryWriter();
     const tx = await sendWithNonce(
       (overrides) =>
@@ -167,7 +168,7 @@ router.post("/deploy", async (req: Request, res: Response) => {
     if (!vaultAddress) {
       // VaultFactory returned early — vault already exists at this slot.
       // Recover the address via predictVaultAddress and continue to move_in.
-      vaultAddress = await factory.predictVaultAddress(lockerAddress, slotIndex, nftMintBytes32, signingWallet) as string;
+      vaultAddress = await factory.predictVaultAddress(lockerAddress, slotIndex, ethers.hexlify(new PublicKey(nftMint).toBytes()), signingWallet) as string;
       logger.warn({ vaultAddress }, "VaultDeployed event missing — recovered via predictVaultAddress");
     }
 
