@@ -1,0 +1,374 @@
+cat ~/nexus-bridge/artifacts/contracts/contracts/Vault.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import "@account-abstraction/contracts/core/BaseAccount.sol";
+import "@account-abstraction/contracts/core/Helpers.sol";
+import "@account-abstraction/contracts/interfaces/PackedUserOperation.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "./interfaces/IVaultVerifier.sol";
+
+/**
+ * @title Vault
+ * @notice MonaSol vault — one apartment in a Locker building.
+ *
+ * Inherits BaseAccount (ERC-4337). Every action requires:
+ *   1. An active session (opened by backend after Solana multisig)
+ *   2. A valid proof in userOp.signature (oracle or ZK)
+ *
+ * Signature field layout (ABI-encoded):
+ *   bytes32  nftMint        — Solana NFT mint address
+ *   uint256  sessionExpiry  — when this session expires
+ *   bytes    proof          — guardian sigs or ZK proof
+ */
+contract Vault is BaseAccount, Initializable, UUPSUpgradeable {
+
+    // ── Constants ─────────────────────────────────────────
+
+    uint8 public constant SYSTEM_MODE = 1;
+    uint8 public constant SELF_MODE   = 2;
+
+    // Sub-vault purposes
+    uint8 public constant PURPOSE_FUNDS    = 1;
+    uint8 public constant PURPOSE_SWAP     = 2;
+    uint8 public constant PURPOSE_DOCS     = 3;
+    uint8 public constant PURPOSE_PAYMENTS = 4;
+    uint8 public constant PURPOSE_LEDGER   = 5;
+
+    // ── Storage ───────────────────────────────────────────
+
+    IEntryPoint  private immutable _entryPoint;
+    IVaultVerifier public verifier;
+
+    // Vault identity — set at initialize, never changed
+    address public lockerAddress;
+    uint256 public slotIndex;
+    bytes32 public nftMint;          // Solana NFT mint (base58 as bytes32)
+    address public signingWallet;    // Monad wallet authorized to act
+
+    // Security state
+    uint8   public securityMode;
+    bool    public isReadOnly;
+
+    // Session state — managed by backend after Solana multisig
+    bool    public sessionActive;
+    uint256 public sessionExpiry;
+
+    // Sub-vaults: address => assigned purpose
+    mapping(address => uint8) public subVaultPurpose;
+
+    // ── Events ────────────────────────────────────────────
+
+    event VaultInitialized(
+        address indexed locker,
+        uint256 slotIndex,
+        bytes32 nftMint,
+        address signingWallet
+    );
+    event SessionOpened(uint256 expiry);
+    event SessionClosed();
+    event ReadOnlySet(string reason);
+    event ReadOnlyLifted();
+    event SubVaultAssigned(address indexed subVault, uint8 purpose);
+    event Executed(address indexed target, uint256 value);
+    event SigningWalletUpdated(address indexed newSigner);
+
+    // ── Errors ────────────────────────────────────────────
+
+    error NotSigningWallet();
+    error NotLockerOrOwner();
+    error SessionNotActive();
+    error SessionExpired();
+    error VaultReadOnly();
+    error InvalidProof();
+    error InvalidPurpose();
+    error PurposeDenied(address target, uint8 purpose);
+    error ExecutionFailed(bytes reason);
+
+    // ── Constructor ───────────────────────────────────────
+
+    /// @dev entryPoint is immutable — set once at deploy time
+    constructor(IEntryPoint ep) {
+        _entryPoint = ep;
+        _disableInitializers();
+    }
+
+    // ── Initializer (called by VaultFactory) ──────────────
+
+    function initialize(
+        address  _locker,
+        uint256  _slotIndex,
+        bytes32  _nftMint,
+        address  _signingWallet,
+        uint8    _securityMode,
+        address  _verifier
+    ) external initializer {
+        require(_locker        != address(0), "Invalid locker");
+        require(_signingWallet != address(0), "Invalid signer");
+        require(_verifier      != address(0), "Invalid verifier");
+        require(
+            _securityMode == SYSTEM_MODE || _securityMode == SELF_MODE,
+            "Invalid mode"
+        );
+
+        lockerAddress = _locker;
+        slotIndex     = _slotIndex;
+        nftMint       = _nftMint;
+        signingWallet = _signingWallet;
+        securityMode  = _securityMode;
+        verifier      = IVaultVerifier(_verifier);
+
+        emit VaultInitialized(_locker, _slotIndex, _nftMint, _signingWallet);
+    }
+
+    // ── BaseAccount overrides ─────────────────────────────
+
+    function entryPoint() public view override returns (IEntryPoint) {
+        return _entryPoint;
+    }
+
+    /**
+     * @dev Core ERC-4337 validation.
+     *
+     * Decodes userOp.signature into (nftMint, sessionExpiry, proof).
+     * Calls IVaultVerifier.verifyAccess — oracle in Phase 1, ZK in Phase 2.
+     * Returns SIG_VALIDATION_SUCCESS (0) or SIG_VALIDATION_FAILED (1).
+     *
+     * ERC-7562 note: reads only own storage. No external storage reads.
+     */
+    function _validateSignature(
+        PackedUserOperation calldata userOp,
+        bytes32 /* userOpHash */
+    ) internal override returns (uint256 validationData) {
+
+        // Decode the packed signature field
+        (
+            bytes32 _nftMint,
+            uint256 _sessionExpiry,
+            bytes memory proof
+        ) = abi.decode(userOp.signature, (bytes32, uint256, bytes));
+
+        // Must match this vault's registered NFT
+        if (_nftMint != nftMint) return SIG_VALIDATION_FAILED;
+
+        // Must not be read-only
+        if (isReadOnly) return SIG_VALIDATION_FAILED;
+
+        // Delegate to verifier — oracle or ZK
+        bool valid = verifier.verifyAccess(
+            _nftMint,
+            signingWallet,
+            _sessionExpiry,
+            proof
+        );
+
+        if (!valid) return SIG_VALIDATION_FAILED;
+
+        // Store session state for execute() to check
+        sessionActive = true;
+        sessionExpiry = _sessionExpiry;
+
+        emit SessionOpened(_sessionExpiry);
+
+        return SIG_VALIDATION_SUCCESS;
+    }
+
+    // ── Execution ─────────────────────────────────────────
+
+    /**
+     * @notice Execute an arbitrary call.
+     *         Only callable by the EntryPoint after validateUserOp passes.
+     *         Enforces sub-vault purpose if target is a registered sub-vault.
+     *
+     * @param target   Contract to call
+     * @param value    MON value to send
+     * @param data     Calldata
+     */
+    function execute(
+        address target,
+        uint256 value,
+        bytes calldata data
+    ) external {
+        _requireFromEntryPoint();
+        _requireSessionActive();
+        _requireNotReadOnly();
+
+        // Purpose enforcement — sub-vaults are restricted
+        uint8 purpose = subVaultPurpose[target];
+        if (purpose != 0) {
+            _enforcePurpose(target, purpose, data);
+        }
+
+        (bool success, bytes memory result) = target.call{value: value}(data);
+        if (!success) revert ExecutionFailed(result);
+
+        emit Executed(target, value);
+    }
+
+    /**
+     * @notice Batch execute multiple calls atomically.
+     */
+    function executeBatch(
+        address[] calldata targets,
+        uint256[] calldata values,
+        bytes[]   calldata datas
+    ) external {
+        _requireFromEntryPoint();
+        _requireSessionActive();
+        _requireNotReadOnly();
+        require(
+            targets.length == values.length &&
+            targets.length == datas.length,
+            "Length mismatch"
+        );
+
+        for (uint256 i = 0; i < targets.length; i++) {
+            uint8 purpose = subVaultPurpose[targets[i]];
+            if (purpose != 0) {
+                _enforcePurpose(targets[i], purpose, datas[i]);
+            }
+            (bool success, bytes memory result) = targets[i].call{
+                value: values[i]
+            }(datas[i]);
+            if (!success) revert ExecutionFailed(result);
+            emit Executed(targets[i], values[i]);
+        }
+    }
+
+    // ── Session management ────────────────────────────────
+
+    /**
+     * @notice Explicitly close session.
+     *         Callable by signing wallet or EntryPoint (backend).
+     */
+    function closeSession() external {
+        if (
+            msg.sender != signingWallet &&
+            msg.sender != address(_entryPoint)
+        ) revert NotSigningWallet();
+
+        sessionActive = false;
+        sessionExpiry = 0;
+        emit SessionClosed();
+    }
+
+    // ── Read-only state ───────────────────────────────────
+
+    /**
+     * @notice Set vault to read-only.
+     *         Only callable by the Locker contract that owns this vault.
+     */
+    function setReadOnly(string calldata reason) external {
+        if (msg.sender != lockerAddress) revert NotLockerOrOwner();
+        isReadOnly    = true;
+        sessionActive = false;
+        emit ReadOnlySet(reason);
+    }
+
+    /**
+     * @notice Lift read-only.
+     *         Locker calls this after verifying NFT + wallet signature on Solana.
+     */
+    function liftReadOnly() external {
+        if (msg.sender != lockerAddress) revert NotLockerOrOwner();
+        require(isReadOnly, "Not in read-only mode");
+        isReadOnly = false;
+        emit ReadOnlyLifted();
+    }
+
+    // ── Sub-vault management ──────────────────────────────
+
+    /**
+     * @notice Assign a purpose to a sub-vault address.
+     *         Only callable via UserOp (through EntryPoint) with active session.
+     */
+    function assignSubVault(
+        address subVault,
+        uint8   purpose
+    ) external {
+        _requireFromEntryPoint();
+        _requireSessionActive();
+        require(subVault != address(0), "Invalid address");
+        require(
+            purpose >= PURPOSE_FUNDS && purpose <= PURPOSE_LEDGER,
+            "Invalid purpose"
+        );
+        subVaultPurpose[subVault] = purpose;
+        emit SubVaultAssigned(subVault, purpose);
+    }
+
+    // ── Signing wallet update (lease transfer) ────────────
+
+    /**
+     * @notice Update signing wallet after a lease transfer.
+     *         Only callable by the Locker contract.
+     */
+    function updateSigningWallet(address newSigner) external {
+        if (msg.sender != lockerAddress) revert NotLockerOrOwner();
+        require(newSigner != address(0), "Invalid signer");
+        signingWallet = newSigner;
+        sessionActive = false;
+        sessionExpiry = 0;
+        emit SigningWalletUpdated(newSigner);
+    }
+
+    // ── Internal helpers ──────────────────────────────────
+
+    function _requireSessionActive() internal view {
+        if (!sessionActive)                    revert SessionNotActive();
+        if (block.timestamp >= sessionExpiry)  revert SessionExpired();
+    }
+
+    function _requireNotReadOnly() internal view {
+        if (isReadOnly) revert VaultReadOnly();
+    }
+
+    /**
+     * @notice Purpose enforcement rules.
+     *         Docs sub-vaults cannot call DEXes.
+     *         Funds sub-vaults cannot write documents.
+     *         Extend this as sub-vault use cases grow.
+     */
+    function _enforcePurpose(
+        address target,
+        uint8   purpose,
+        bytes calldata data
+    ) internal pure {
+        // Docs sub-vaults: only allowed to call storage-type contracts
+        // Identified by selector — extendable via governance
+        if (purpose == PURPOSE_DOCS) {
+            // Block known swap/transfer selectors
+            if (data.length >= 4) {
+                bytes4 sel = bytes4(data[:4]);
+                // ERC-20 transfer / transferFrom
+                require(
+                    sel != bytes4(keccak256("transfer(address,uint256)")) &&
+                    sel != bytes4(keccak256("transferFrom(address,address,uint256)")),
+                    "Docs vault: transfers blocked"
+                );
+            }
+        }
+        // Ledger sub-vaults: read-only, no value transfer allowed
+        if (purpose == PURPOSE_LEDGER) {
+            require(
+                data.length == 0 ||
+                bytes4(data[:4]) == bytes4(keccak256("balanceOf(address)")) ||
+                bytes4(data[:4]) == bytes4(keccak256("totalSupply()")),
+                "Ledger vault: writes blocked"
+            );
+        }
+        // Suppress unused variable warning
+        target;
+    }
+
+    // ── UUPS upgrade guard ────────────────────────────────
+
+    function _authorizeUpgrade(address) internal view override {
+        if (msg.sender != lockerAddress) revert NotLockerOrOwner();
+    }
+
+    // ── Receive ETH ───────────────────────────────────────
+
+    receive() external payable {}
+}
