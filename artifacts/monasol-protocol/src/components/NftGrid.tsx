@@ -70,7 +70,7 @@ export function NftGrid({ selectedId, onSelect, nfts: propNfts }: NftGridProps) 
             <Plus className="h-5 w-5 text-solana-green" />
           </div>
           <p className="font-display text-sm font-bold text-white">Mint New</p>
-          <p className="text-[10px] text-gray-400">Vault Key</p>
+          <p className="text-xs text-gray-400">Vault Key</p>
         </motion.div>
 
         {displayNfts.map((nft) => {
@@ -93,7 +93,7 @@ export function NftGrid({ selectedId, onSelect, nfts: propNfts }: NftGridProps) 
 
               <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent p-3 flex flex-col justify-end">
                 <p className="font-display text-xs font-bold text-white truncate">{nft.name}</p>
-                <p className="text-[10px] text-gray-400">{nft.rarity}</p>
+                <p className="text-xs text-gray-400">{nft.rarity}</p>
               </div>
 
               {isSelected && (

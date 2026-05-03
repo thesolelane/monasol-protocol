@@ -57,7 +57,7 @@ export function VaultExplorer() {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="font-display text-2xl font-bold text-white">Private Explorer</h2>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-white/60 border border-white/5 uppercase">
+            <span className="px-2 py-0.5 rounded text-xs font-bold bg-white/10 text-white/60 border border-white/5 uppercase">
               On-Chain Opacity
             </span>
           </div>
@@ -85,7 +85,7 @@ export function VaultExplorer() {
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-wider text-gray-400 flex items-center justify-between">
               <span>Access Key</span>
-              <span className="text-[10px] text-gray-600">Provided by vault owner</span>
+              <span className="text-xs text-gray-600">Provided by vault owner</span>
             </Label>
             <div className="relative">
               <Input

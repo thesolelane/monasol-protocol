@@ -245,19 +245,19 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                         </div>
                         <div className="text-right shrink-0 ml-3">
                           <p className="font-mono font-bold text-solana-green text-sm">{tier.oneTimeFeeSOL} SOL</p>
-                          <p className="text-[10px] text-gray-500 uppercase">one-time, lifetime</p>
+                          <p className="text-xs text-gray-500 uppercase">one-time, lifetime</p>
                         </div>
                       </div>
 
                       <div className="mt-3 pt-3 border-t border-white/5 flex flex-wrap gap-x-6 gap-y-2">
                         <div>
-                          <p className="text-[10px] text-gray-500 uppercase">Slots</p>
+                          <p className="text-xs text-gray-500 uppercase">Slots</p>
                           <p className="text-xs text-white">
                             {isFull ? "Full" : `${tier.slotsAvailable} / ${tier.slotsTotal} open`}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-gray-500 uppercase">Security</p>
+                          <p className="text-xs text-gray-500 uppercase">Security</p>
                           <p className="text-xs text-white flex items-center gap-1">
                             <Shield className="h-3 w-3 text-blue-400" />
                             {tier.securityLevel}
@@ -267,7 +267,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
 
                       <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
                         {tier.features.map((f) => (
-                          <li key={f} className="text-[11px] text-gray-400 flex items-center gap-1">
+                          <li key={f} className="text-xs text-gray-400 flex items-center gap-1">
                             <Check className="h-3 w-3 text-solana-green shrink-0" />
                             {f}
                           </li>
@@ -399,11 +399,11 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                 </div>
                 <div>
                   <p className="text-xs font-bold text-white">First Move-In</p>
-                  <p className="text-[11px] text-gray-500">
+                  <p className="text-xs text-gray-500">
                     Initializing a fresh slot via <span className="font-mono">move_in</span> — no prior occupant
                   </p>
                 </div>
-                <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-monad-purple/20 text-monad-purple border border-monad-purple/30 uppercase tracking-wider shrink-0">
+                <span className="ml-auto px-1.5 py-0.5 rounded text-xs font-bold bg-monad-purple/20 text-monad-purple border border-monad-purple/30 uppercase tracking-wider shrink-0">
                   New Slot
                 </span>
               </div>
@@ -414,9 +414,9 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                   <Key className="h-4 w-4 text-solana-green" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] text-gray-500">NFT key in wallet</p>
+                  <p className="text-xs text-gray-500">NFT key in wallet</p>
                   <p className="text-sm font-medium text-white truncate">{mintedNft.name}</p>
-                  <p className="text-[11px] font-mono text-gray-600 truncate">{mintedNft.lockerRef}</p>
+                  <p className="text-xs font-mono text-gray-600 truncate">{mintedNft.lockerRef}</p>
                 </div>
               </div>
 
@@ -635,7 +635,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                 data-testid="card-movein-result"
                 className="p-4 rounded-xl bg-white/5 border border-monad-purple/20 text-left space-y-3"
               >
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider">Vault record</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wider">Vault record</p>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-500">Locker</span>
                   <span className="text-white font-mono">{mintedNft.lockerRef}</span>

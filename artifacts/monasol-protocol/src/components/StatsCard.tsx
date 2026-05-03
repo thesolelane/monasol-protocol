@@ -23,7 +23,7 @@ export function StatsCard({ label, value, icon: Icon, trend, color }: StatsCardP
       <div>
         <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">{label}</p>
         <p className="font-display text-2xl font-bold text-white mt-1">{value}</p>
-        {trend && <p className="text-[10px] text-gray-500 mt-1">{trend}</p>}
+        {trend && <p className="text-xs text-gray-500 mt-1">{trend}</p>}
       </div>
     </div>
   );

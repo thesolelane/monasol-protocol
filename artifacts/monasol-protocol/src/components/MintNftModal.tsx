@@ -188,7 +188,7 @@ export function MintNftModal({ isOpen, onClose, onSuccess }: MintNftModalProps) 
                           <Label htmlFor="image-upload" className="flex flex-col items-center justify-center cursor-pointer w-full h-full">
                             <Upload className="h-8 w-8 mb-3" />
                             <span className="text-sm font-medium">Click to upload custom art</span>
-                            <span className="text-[10px] mt-1 text-gray-500">JPG, PNG, GIF up to 5MB</span>
+                            <span className="text-xs mt-1 text-gray-500">JPG, PNG, GIF up to 5MB</span>
                           </Label>
                         </div>
                       )}
@@ -210,7 +210,7 @@ export function MintNftModal({ isOpen, onClose, onSuccess }: MintNftModalProps) 
                  </div>
                  <div>
                    <p className="text-xs font-bold text-solana-green">No Sign-in Required</p>
-                   <p className="text-[10px] text-solana-green/70 leading-tight mt-1">
+                   <p className="text-xs text-solana-green/70 leading-tight mt-1">
                      Keys are minted directly to your connected wallet. The asset itself is the only authentication needed to unlock funds.
                    </p>
                  </div>
@@ -233,7 +233,7 @@ export function MintNftModal({ isOpen, onClose, onSuccess }: MintNftModalProps) 
               exit={{ opacity: 0, scale: 0.95 }}
               className="py-6"
             >
-              <div className="bg-black border border-white/10 rounded-lg p-4 font-mono text-[11px] sm:text-xs h-64 overflow-y-auto shadow-inner relative flex flex-col">
+              <div className="bg-black border border-white/10 rounded-lg p-4 font-mono text-xs sm:text-xs h-64 overflow-y-auto shadow-inner relative flex flex-col">
                 <div className="absolute top-0 left-0 w-full h-6 bg-linear-to-b from-black to-transparent z-10" />
                 <div className="flex-1 space-y-1 mt-2">
                   {logs.map((log, i) => (

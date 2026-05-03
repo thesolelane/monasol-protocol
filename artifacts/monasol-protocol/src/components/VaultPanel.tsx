@@ -185,7 +185,7 @@ function SecretRow({
         {editing ? (
           <>
             <button onClick={handleSave} disabled={saving} className="p-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-colors" title="Save">
-              {saving ? <span className="text-[10px]">…</span> : <Check className="h-3.5 w-3.5" />}
+              {saving ? <span className="text-xs">…</span> : <Check className="h-3.5 w-3.5" />}
             </button>
             <button onClick={handleCancelEdit} className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 transition-colors" title="Cancel">
               <X className="h-3.5 w-3.5" />
@@ -366,11 +366,11 @@ export function VaultPanel() {
           <div>
             <h2 className="text-base font-bold text-white flex items-center gap-2">
               Secrets Vault
-              <span className="text-[10px] font-mono bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded-md">
+              <span className="text-xs font-mono bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded-md">
                 {secrets.length} stored
               </span>
             </h2>
-            <p className="text-[11px] text-gray-500">AES-256-GCM encrypted · Owner access only</p>
+            <p className="text-xs text-gray-500">AES-256-GCM encrypted · Owner access only</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -424,7 +424,7 @@ export function VaultPanel() {
           <span className="text-sm font-semibold text-white flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-gray-500" />
             Environment Variables
-            <span className="text-[10px] font-mono bg-white/5 border border-white/10 text-gray-500 px-1.5 py-0.5 rounded-md">
+            <span className="text-xs font-mono bg-white/5 border border-white/10 text-gray-500 px-1.5 py-0.5 rounded-md">
               {envKeys.length} detected
             </span>
           </span>
@@ -435,7 +435,7 @@ export function VaultPanel() {
             {envKeys.map(e => (
               <div key={e.key} className="flex items-center justify-between px-4 py-2.5">
                 <span className="font-mono text-xs text-gray-400">{e.key}</span>
-                <span className="text-[10px] text-gray-600 font-mono">
+                <span className="text-xs text-gray-600 font-mono">
                   {e.set ? "•••••••" : "not set"}
                 </span>
               </div>
@@ -444,7 +444,7 @@ export function VaultPanel() {
         )}
         {!envExpanded && (
           <div className="px-4 py-2.5">
-            <p className="text-[11px] text-gray-600">Click to view injected environment variable keys (values are masked)</p>
+            <p className="text-xs text-gray-600">Click to view injected environment variable keys (values are masked)</p>
           </div>
         )}
       </div>

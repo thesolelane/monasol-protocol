@@ -178,12 +178,12 @@ function VaultAlertPanel({ alerts, loading }: { alerts: LockerAlert[]; loading: 
         </h3>
         <div className="flex gap-2">
           {criticals > 0 && (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 animate-pulse">
+            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 animate-pulse">
               {criticals} CRITICAL
             </span>
           )}
           {warnings > 0 && (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-400/30 text-yellow-400">
+            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-400/30 text-yellow-400">
               {warnings} WARNING
             </span>
           )}
@@ -197,7 +197,7 @@ function VaultAlertPanel({ alerts, loading }: { alerts: LockerAlert[]; loading: 
           {/* All chip */}
           <button
             onClick={() => setActiveCategories(null)}
-            className={`text-[10px] font-mono px-2.5 py-1 rounded-full border transition-colors ${
+            className={`text-xs font-mono px-2.5 py-1 rounded-full border transition-colors ${
               isAllActive
                 ? "bg-white/15 border-white/30 text-white"
                 : "bg-white/5 border-white/10 text-gray-500 hover:border-white/20 hover:text-gray-400"
@@ -213,7 +213,7 @@ function VaultAlertPanel({ alerts, loading }: { alerts: LockerAlert[]; loading: 
               <button
                 key={cat}
                 onClick={() => toggleCategory(cat)}
-                className={`text-[10px] font-mono px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1.5 ${
+                className={`text-xs font-mono px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1.5 ${
                   isActive
                     ? `${meta.activeBg} ${meta.activeBorder} ${meta.textColor}`
                     : "bg-white/5 border-white/10 text-gray-500 hover:border-white/20 hover:text-gray-400"
@@ -250,7 +250,7 @@ function VaultAlertPanel({ alerts, loading }: { alerts: LockerAlert[]; loading: 
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       {/* Category label */}
-                      <span className={`text-[9px] font-semibold uppercase tracking-wider ${catMeta.textColor}`}>
+                      <span className={`text-xs font-semibold uppercase tracking-wider ${catMeta.textColor}`}>
                         {cat}
                       </span>
                       <span className="text-gray-700">·</span>
@@ -261,16 +261,16 @@ function VaultAlertPanel({ alerts, loading }: { alerts: LockerAlert[]; loading: 
                         </span>
                       )}
                       {/* Alert type */}
-                      <Badge variant="outline" className={`text-[10px] border ${typeCls}`}>
+                      <Badge variant="outline" className={`text-xs border ${typeCls}`}>
                         {ALERT_TYPE_LABEL[alert.alertType] ?? alert.alertType.replace(/_/g, " ").toUpperCase()}
                       </Badge>
                       {/* Time */}
-                      <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
+                      <span className="text-xs text-gray-500 font-mono flex items-center gap-1">
                         <Clock className="h-2.5 w-2.5" />{fmtRelative(alert.createdAt)}
                       </span>
                     </div>
                     {/* Vault address */}
-                    <p className="text-[10px] text-gray-500 font-mono mb-1.5">
+                    <p className="text-xs text-gray-500 font-mono mb-1.5">
                       Vault: {fmtAddr(alert.vaultAddress)}
                     </p>
                     {/* Message */}
@@ -278,7 +278,7 @@ function VaultAlertPanel({ alerts, loading }: { alerts: LockerAlert[]; loading: 
                       <p className="text-xs text-gray-300 mb-2 leading-relaxed">{alert.message}</p>
                     )}
                     {/* Next step */}
-                    <div className={`text-[11px] leading-relaxed rounded-lg px-3 py-2 border ${
+                    <div className={`text-xs leading-relaxed rounded-lg px-3 py-2 border ${
                       isCrit
                         ? "bg-red-950/20 border-red-500/20 text-red-300"
                         : "bg-yellow-950/15 border-yellow-400/20 text-yellow-200"
@@ -294,7 +294,7 @@ function VaultAlertPanel({ alerts, loading }: { alerts: LockerAlert[]; loading: 
                 <Button
                   size="sm"
                   variant="outline"
-                  className={`shrink-0 text-[10px] h-7 px-2.5 ${
+                  className={`shrink-0 text-xs h-7 px-2.5 ${
                     isCrit
                       ? "border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
                       : "border-yellow-400/30 text-yellow-400 hover:bg-yellow-500/10 hover:border-yellow-400/50"
@@ -338,7 +338,7 @@ function VaultMatrix({
         <Server className="h-4 w-4 text-gray-400" />
         Vault Matrix (Index 0–{capacity - 1})
         {alertSlots.size > 0 && (
-          <span className="text-[10px] font-mono text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full ml-1">
+          <span className="text-xs font-mono text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full ml-1">
             {alertSlots.size} slot{alertSlots.size > 1 ? "s" : ""} flagged
           </span>
         )}
@@ -381,14 +381,14 @@ function VaultMatrix({
               >
                 {(isCritAlert || isWarnAlert) && (
                   <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-52 p-2 bg-gray-900 border ${isCritAlert ? "border-red-500/50" : "border-yellow-400/40"} rounded-lg shadow-xl z-50 text-left pointer-events-none`}>
-                    <p className={`text-[10px] font-bold mb-1 ${isCritAlert ? "text-red-400" : "text-yellow-400"}`}>
+                    <p className={`text-xs font-bold mb-1 ${isCritAlert ? "text-red-400" : "text-yellow-400"}`}>
                       VAULT #{i} — {isCritAlert ? "CRITICAL" : "WARNING"}
                     </p>
-                    <p className="text-[10px] text-gray-300 font-mono">
+                    <p className="text-xs text-gray-300 font-mono">
                       {ALERT_TYPE_LABEL[alertInfo!.alertType] ?? alertInfo!.alertType.toUpperCase()}
                     </p>
                     {alertInfo!.message && (
-                      <p className="text-[10px] text-gray-400 mt-1">{alertInfo!.message}</p>
+                      <p className="text-xs text-gray-400 mt-1">{alertInfo!.message}</p>
                     )}
                   </div>
                 )}
@@ -487,16 +487,16 @@ export function LockerZoomModal({ isOpen, onClose, locker }: LockerZoomModalProp
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg font-bold text-white font-mono">{locker.externalId}</h2>
-                <Badge variant="outline" className={`text-[10px] border ${statusMeta.badgeClass} ${statusMeta.pulse ? "animate-pulse" : ""}`}>
+                <Badge variant="outline" className={`text-xs border ${statusMeta.badgeClass} ${statusMeta.pulse ? "animate-pulse" : ""}`}>
                   {statusMeta.label.toUpperCase()}
                 </Badge>
                 {locker.alertLevel === "critical" && (
-                  <Badge variant="outline" className="text-[10px] border border-red-500/50 text-red-400 bg-red-500/10 animate-pulse">
+                  <Badge variant="outline" className="text-xs border border-red-500/50 text-red-400 bg-red-500/10 animate-pulse">
                     {locker.alertCount} CRITICAL ALERT{(locker.alertCount ?? 0) > 1 ? "S" : ""}
                   </Badge>
                 )}
                 {locker.alertLevel === "warning" && (
-                  <Badge variant="outline" className="text-[10px] border border-yellow-400/50 text-yellow-400 bg-yellow-500/10">
+                  <Badge variant="outline" className="text-xs border border-yellow-400/50 text-yellow-400 bg-yellow-500/10">
                     {locker.alertCount} FAULT{(locker.alertCount ?? 0) > 1 ? "S" : ""}
                   </Badge>
                 )}
@@ -520,19 +520,19 @@ export function LockerZoomModal({ isOpen, onClose, locker }: LockerZoomModalProp
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
               <p className="text-xs text-gray-500 mb-1">Capacity</p>
               <p className="text-2xl font-mono text-white">{locker.capacity.toLocaleString()}</p>
-              <p className="text-[10px] text-gray-600 mt-1">total vault slots</p>
+              <p className="text-xs text-gray-600 mt-1">total vault slots</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
               <p className="text-xs text-gray-500 mb-1">Occupied</p>
               <p className={`text-2xl font-mono ${isDistressed ? "text-red-400" : tierMeta.textColor}`}>
                 {locker.usedSlots.toLocaleString()}
               </p>
-              <p className="text-[10px] text-gray-600 mt-1">{fillPct}% utilization</p>
+              <p className="text-xs text-gray-600 mt-1">{fillPct}% utilization</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
               <p className="text-xs text-gray-500 mb-1">Available</p>
               <p className="text-2xl font-mono text-white">{freeSlots.toLocaleString()}</p>
-              <p className="text-[10px] text-gray-600 mt-1">open slots</p>
+              <p className="text-xs text-gray-600 mt-1">open slots</p>
             </div>
             <div className={`border rounded-xl p-4 ${
               hasAlerts
@@ -549,7 +549,7 @@ export function LockerZoomModal({ isOpen, onClose, locker }: LockerZoomModalProp
               }`}>
                 {locker.alertCount ?? 0}
               </p>
-              <p className="text-[10px] text-gray-600 mt-1">
+              <p className="text-xs text-gray-600 mt-1">
                 {locker.alertLevel === "critical" ? "requires immediate action"
                 : locker.alertLevel === "warning"  ? "review recommended"
                 : "no active alerts"}

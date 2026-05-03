@@ -219,11 +219,11 @@ export function ClaimVaultModal({
 
                 <div className="border-t border-white/5 pt-3 grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-[10px] text-gray-500 uppercase mb-0.5">Locker</p>
+                    <p className="text-xs text-gray-500 uppercase mb-0.5">Locker</p>
                     <p className="text-xs font-mono text-white">{lockerRef}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-500 uppercase mb-0.5">Slot</p>
+                    <p className="text-xs text-gray-500 uppercase mb-0.5">Slot</p>
                     <p className="text-xs font-mono text-white">#{slotNumber}</p>
                   </div>
                 </div>
@@ -443,7 +443,7 @@ export function ClaimVaultModal({
                 data-testid="card-claim-result"
                 className="p-4 rounded-xl bg-white/5 border border-monad-purple/20 text-left space-y-3"
               >
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider">Updated vault record</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wider">Updated vault record</p>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-500">Locker</span>
                   <span className="text-white font-mono">{lockerRef}</span>

@@ -483,7 +483,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                   )}
                 </AnimatePresence>
 
-                <p className="text-[11px] text-gray-600 text-center leading-relaxed">
+                <p className="text-xs text-gray-600 text-center leading-relaxed">
                   Calls <span className="font-mono text-gray-500">open_session</span> on the Monad Locker contract.
                   Sessions persist across page refreshes.
                 </p>
@@ -531,7 +531,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                         <Shield className="h-4 w-4 text-monad-purple shrink-0" />
                         <div>
                           <p className="text-xs font-semibold text-white">Share aggregate data with the protocol</p>
-                          <p className="text-[11px] text-gray-500">Optional — see below for details</p>
+                          <p className="text-xs text-gray-500">Optional — see below for details</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -571,8 +571,8 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                           className="overflow-hidden"
                         >
                           <div className="px-4 pb-4 border-t border-white/5 pt-3 space-y-3">
-                            <p className="text-[11px] font-semibold text-monad-purple uppercase tracking-wider">What gets shared</p>
-                            <ul className="space-y-1.5 text-[11px] text-gray-400 leading-relaxed">
+                            <p className="text-xs font-semibold text-monad-purple uppercase tracking-wider">What gets shared</p>
+                            <ul className="space-y-1.5 text-xs text-gray-400 leading-relaxed">
                               <li className="flex gap-2">
                                 <span className="text-monad-purple shrink-0 mt-0.5">•</span>
                                 <span><span className="text-white font-medium">Total session count</span> — how many sessions this vault has had</span>
@@ -587,16 +587,16 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                               </li>
                             </ul>
 
-                            <p className="text-[11px] font-semibold text-monad-purple uppercase tracking-wider pt-1">What is never shared</p>
-                            <ul className="space-y-1.5 text-[11px] text-gray-400 leading-relaxed">
+                            <p className="text-xs font-semibold text-monad-purple uppercase tracking-wider pt-1">What is never shared</p>
+                            <ul className="space-y-1.5 text-xs text-gray-400 leading-relaxed">
                               <li className="flex gap-2"><span className="text-red-400 shrink-0 mt-0.5">✕</span><span>Authorized wallet addresses</span></li>
                               <li className="flex gap-2"><span className="text-red-400 shrink-0 mt-0.5">✕</span><span>Session labels or descriptions</span></li>
                               <li className="flex gap-2"><span className="text-red-400 shrink-0 mt-0.5">✕</span><span>Individual session IDs or timestamps</span></li>
                               <li className="flex gap-2"><span className="text-red-400 shrink-0 mt-0.5">✕</span><span>Any information that could identify you or a counterparty</span></li>
                             </ul>
 
-                            <p className="text-[11px] font-semibold text-monad-purple uppercase tracking-wider pt-1">How it's used</p>
-                            <p className="text-[11px] text-gray-400 leading-relaxed">
+                            <p className="text-xs font-semibold text-monad-purple uppercase tracking-wider pt-1">How it's used</p>
+                            <p className="text-xs text-gray-400 leading-relaxed">
                               Aggregate data helps the protocol monitor locker health, detect unusual utilization patterns,
                               and harden the system against abuse — entirely within the Monasol Protocol.
                               <span className="text-white font-medium"> This data is never sold, never shared with third parties,
@@ -627,7 +627,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
 
                   {!historyLoading && !historyError && history.length > 0 && (
                     <div className="rounded-xl border border-white/10 overflow-hidden">
-                      <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 px-4 py-2 bg-white/5 text-[10px] uppercase tracking-wider text-gray-600 border-b border-white/5">
+                      <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 px-4 py-2 bg-white/5 text-xs uppercase tracking-wider text-gray-600 border-b border-white/5">
                         <span>Session</span>
                         <span>Authorized</span>
                         <span>Opened</span>

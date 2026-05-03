@@ -101,7 +101,7 @@ export function DeployLockerModal({ isOpen, onClose, onSuccess }: DeployLockerMo
                         <Layers className="h-4 w-4 text-gray-400" />
                         <div>
                           <p className="font-bold text-sm text-white">Public Pool (20,000 Vaults)</p>
-                          <p className="text-[10px] text-gray-500">Shared contract, subsidized deployment.</p>
+                          <p className="text-xs text-gray-500">Shared contract, subsidized deployment.</p>
                         </div>
                       </div>
                     </SelectItem>
@@ -110,7 +110,7 @@ export function DeployLockerModal({ isOpen, onClose, onSuccess }: DeployLockerMo
                         <Box className="h-4 w-4 text-monad-purple" />
                         <div>
                           <p className="font-bold text-sm text-monad-purple">VIP Isolation (10 Vaults)</p>
-                          <p className="text-[10px] text-gray-500">Dedicated contract, maximum security.</p>
+                          <p className="text-xs text-gray-500">Dedicated contract, maximum security.</p>
                         </div>
                       </div>
                     </SelectItem>
@@ -164,7 +164,7 @@ export function DeployLockerModal({ isOpen, onClose, onSuccess }: DeployLockerMo
               exit={{ opacity: 0, scale: 0.95 }}
               className="py-6"
             >
-              <div className="bg-black border border-white/10 rounded-lg p-4 font-mono text-[11px] sm:text-xs h-64 overflow-y-auto shadow-inner relative flex flex-col">
+              <div className="bg-black border border-white/10 rounded-lg p-4 font-mono text-xs sm:text-xs h-64 overflow-y-auto shadow-inner relative flex flex-col">
                 <div className="absolute top-0 left-0 w-full h-6 bg-linear-to-b from-black to-transparent z-10" />
                 <div className="flex-1 space-y-1 mt-2">
                   {logs.map((log, i) => (

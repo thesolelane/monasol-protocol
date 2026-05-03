@@ -130,11 +130,11 @@ const AUDIT_EVENT_META: Record<string, { label: string; color: string; Icon: Rea
 };
 
 function statusBadge(status: string) {
-  if (status === "ACTIVE")      return <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-400 bg-green-500/10">Active</Badge>;
-  if (status === "PENDING")     return <Badge variant="outline" className="text-[10px] border-yellow-500/30 text-yellow-400 bg-yellow-500/10">Pending</Badge>;
-  if (status === "REJECTED")    return <Badge variant="outline" className="text-[10px] border-red-500/30 text-red-400 bg-red-500/10">Rejected</Badge>;
-  if (status === "DEACTIVATED") return <Badge variant="outline" className="text-[10px] border-gray-500/30 text-gray-400 bg-gray-500/10">Deactivated</Badge>;
-  return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
+  if (status === "ACTIVE")      return <Badge variant="outline" className="text-xs border-green-500/30 text-green-400 bg-green-500/10">Active</Badge>;
+  if (status === "PENDING")     return <Badge variant="outline" className="text-xs border-yellow-500/30 text-yellow-400 bg-yellow-500/10">Pending</Badge>;
+  if (status === "REJECTED")    return <Badge variant="outline" className="text-xs border-red-500/30 text-red-400 bg-red-500/10">Rejected</Badge>;
+  if (status === "DEACTIVATED") return <Badge variant="outline" className="text-xs border-gray-500/30 text-gray-400 bg-gray-500/10">Deactivated</Badge>;
+  return <Badge variant="outline" className="text-xs">{status}</Badge>;
 }
 
 function formatUptime(seconds: number) {
@@ -319,17 +319,17 @@ function WatcherSecurityPanel({ onLogin }: { onLogin?: (token: string) => void }
                     <div className="flex items-center gap-2">
                       <span className={`font-medium text-xs ${meta.color}`}>{meta.label}</span>
                       {e.walletAddress && (
-                        <span className="text-[10px] text-gray-500 font-mono">
+                        <span className="text-xs text-gray-500 font-mono">
                           {e.walletAddress.slice(0, 6)}…{e.walletAddress.slice(-4)}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-0.5">
-                      <span className="text-[10px] text-gray-600 font-mono">{e.ip}</span>
-                      {e.detail && <span className="text-[10px] text-gray-500 truncate">{e.detail}</span>}
+                      <span className="text-xs text-gray-600 font-mono">{e.ip}</span>
+                      {e.detail && <span className="text-xs text-gray-500 truncate">{e.detail}</span>}
                     </div>
                   </div>
-                  <span className="text-[10px] text-gray-600 shrink-0">
+                  <span className="text-xs text-gray-600 shrink-0">
                     {new Date(e.createdAt).toLocaleTimeString()}
                   </span>
                 </div>
@@ -545,7 +545,7 @@ export default function AdminDashboard() {
                   {tab.icon}
                   {tab.label}
                   {tab.id === "vault" && (
-                    <span className="text-[9px] font-mono bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-1 py-0.5 rounded">
+                    <span className="text-xs font-mono bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-1 py-0.5 rounded">
                       OWNER
                     </span>
                   )}
@@ -583,29 +583,29 @@ export default function AdminDashboard() {
           <h2 className="text-lg font-bold flex items-center gap-2 text-white mb-4">
             <Activity className="h-5 w-5 text-teal-400" />
             Vault Activity
-            <span className="text-[10px] font-mono bg-teal-500/10 border border-teal-500/20 text-teal-400 px-1.5 py-0.5 rounded ml-1">OPTED-IN ONLY</span>
+            <span className="text-xs font-mono bg-teal-500/10 border border-teal-500/20 text-teal-400 px-1.5 py-0.5 rounded ml-1">OPTED-IN ONLY</span>
           </h2>
           <p className="text-xs text-gray-500 mb-4">Anonymized aggregate statistics from vaults that have enabled protocol sharing. No identifying information is stored or displayed.</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
               <p className="text-xs text-gray-500 mb-1">Opted-In Vaults</p>
               <p className="text-2xl font-mono text-teal-400">{vaultActivity?.optedInVaults ?? "—"}</p>
-              <p className="text-[10px] text-gray-600 mt-2">shareWithProtocol = true</p>
+              <p className="text-xs text-gray-600 mt-2">shareWithProtocol = true</p>
             </div>
             <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
               <p className="text-xs text-gray-500 mb-1">Total Sessions</p>
               <p className="text-2xl font-mono text-white">{vaultActivity?.totalSessions ?? "—"}</p>
-              <p className="text-[10px] text-gray-600 mt-2">Across all opted-in vaults</p>
+              <p className="text-xs text-gray-600 mt-2">Across all opted-in vaults</p>
             </div>
             <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
               <p className="text-xs text-gray-500 mb-1">Combined Duration</p>
               <p className="text-2xl font-mono text-white">{vaultActivity ? formatDurationMs(vaultActivity.totalDurationMs) : "—"}</p>
-              <p className="text-[10px] text-gray-600 mt-2">All sessions combined</p>
+              <p className="text-xs text-gray-600 mt-2">All sessions combined</p>
             </div>
             <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
               <p className="text-xs text-gray-500 mb-1">Last Activity</p>
               <p className="text-2xl font-mono text-white">{formatRelativeTime(vaultActivity?.lastActivityAt ?? null)}</p>
-              <p className="text-[10px] text-gray-600 mt-2">Most recent opted-in session</p>
+              <p className="text-xs text-gray-600 mt-2">Most recent opted-in session</p>
             </div>
           </div>
         </div>
@@ -621,7 +621,7 @@ export default function AdminDashboard() {
                 <div className="flex justify-between items-end mb-3">
                   <div>
                     <h3 className="text-sm font-bold text-monad-purple flex items-center gap-2">
-                      Tier 1: High Capacity <Badge variant="outline" className="border-green-500/30 text-green-400 bg-green-500/10 text-[10px] ml-2">Healthy</Badge>
+                      Tier 1: High Capacity <Badge variant="outline" className="border-green-500/30 text-green-400 bg-green-500/10 text-xs ml-2">Healthy</Badge>
                     </h3>
                     <p className="text-xs text-gray-500">{tier1Lockers[0] ? `${tier1Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier1Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
                   </div>
@@ -646,7 +646,7 @@ export default function AdminDashboard() {
                 <div className="flex justify-between items-end mb-3">
                   <div>
                     <h3 className="text-sm font-bold text-solana-green flex items-center gap-2">
-                      Tier 2: Standard {tier2HasDistressed && <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10 text-[10px] ml-2 animate-pulse">Critical Alert</Badge>}
+                      Tier 2: Standard {tier2HasDistressed && <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10 text-xs ml-2 animate-pulse">Critical Alert</Badge>}
                     </h3>
                     <p className="text-xs text-gray-500">{tier2Lockers[0] ? `${tier2Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier2Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
                   </div>
@@ -671,7 +671,7 @@ export default function AdminDashboard() {
                 <div className="flex justify-between items-end mb-3">
                   <div>
                     <h3 className="text-sm font-bold text-blue-400 flex items-center gap-2">
-                      Tier 3: Institutional <Badge variant="outline" className="border-blue-400/30 text-blue-400 bg-blue-400/10 text-[10px] ml-2">Scaling</Badge>
+                      Tier 3: Institutional <Badge variant="outline" className="border-blue-400/30 text-blue-400 bg-blue-400/10 text-xs ml-2">Scaling</Badge>
                     </h3>
                     <p className="text-xs text-gray-500">{tier3Lockers[0] ? `${tier3Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier3Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
                   </div>
@@ -943,7 +943,7 @@ export default function AdminDashboard() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-white">Neighborhood Watch</span>
-                    <Badge variant="outline" className="text-[10px] border-yellow-500/30 text-yellow-400 bg-yellow-500/10">Contract Ready</Badge>
+                    <Badge variant="outline" className="text-xs border-yellow-500/30 text-yellow-400 bg-yellow-500/10">Contract Ready</Badge>
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5">
                     Community watcher network — alert reporting, collective locks, health scoring. Requires MSL token to activate staking rewards.
@@ -971,7 +971,7 @@ export default function AdminDashboard() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-white">@mprotocol Follow Check</span>
-                    <Badge variant="outline" className="text-[10px] border-blue-400/30 text-blue-400 bg-blue-400/10">Neighborhood Watch</Badge>
+                    <Badge variant="outline" className="text-xs border-blue-400/30 text-blue-400 bg-blue-400/10">Neighborhood Watch</Badge>
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5">
                     When enabled, the 48h verification also checks that applicants follow @mprotocol on X in addition to @cooperanthllc. Requires Twitter API v2 bearer token.
@@ -1000,7 +1000,7 @@ export default function AdminDashboard() {
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <p className="text-xs text-gray-400 font-medium">MSL Token — Solana</p>
-                      <Badge variant="outline" className="text-[10px] border-solana-green/30 text-solana-green bg-solana-green/10">Launch Chain</Badge>
+                      <Badge variant="outline" className="text-xs border-solana-green/30 text-solana-green bg-solana-green/10">Launch Chain</Badge>
                     </div>
                     <div className="flex gap-2">
                       <input
@@ -1018,7 +1018,7 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                     {mslTokenAddressSolana && (
-                      <p className="text-[10px] text-solana-green/60 mt-1.5">
+                      <p className="text-xs text-solana-green/60 mt-1.5">
                         Solana SPL mint stored — used for staking, rewards, and Neighborhood Watch on Solana.
                       </p>
                     )}
@@ -1027,7 +1027,7 @@ export default function AdminDashboard() {
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <p className="text-xs text-gray-400 font-medium">MSL Token — Monad</p>
-                      <Badge variant="outline" className="text-[10px] border-white/20 text-gray-500 bg-white/5">Bridged Later</Badge>
+                      <Badge variant="outline" className="text-xs border-white/20 text-gray-500 bg-white/5">Bridged Later</Badge>
                     </div>
                     <div className="flex gap-2">
                       <input
@@ -1045,12 +1045,12 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                     {mslTokenAddressMonad && (
-                      <p className="text-[10px] text-monad-purple/60 mt-1.5">
+                      <p className="text-xs text-monad-purple/60 mt-1.5">
                         Monad ERC-20 stored — wired into NeighborhoodWatch.vy on activation.
                       </p>
                     )}
                     {!mslTokenAddressMonad && (
-                      <p className="text-[10px] text-gray-600 mt-1.5">
+                      <p className="text-xs text-gray-600 mt-1.5">
                         Leave blank until bridge is live. NeighborhoodWatch.vy staking on Monad requires this.
                       </p>
                     )}

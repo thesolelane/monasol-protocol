@@ -54,7 +54,7 @@ export function LockerForm({ isConnected, hasNftKey, activeVault }: LockerFormPr
           <div className="flex items-center gap-2">
             <h2 className="font-display text-2xl font-bold text-white">Vault Controls</h2>
             {activeVault && (
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-white/60 border border-white/5 font-mono truncate max-w-[100px]" title={activeVault.id}>
+              <span className="px-2 py-0.5 rounded text-xs font-bold bg-white/10 text-white/60 border border-white/5 font-mono truncate max-w-[100px]" title={activeVault.id}>
                 {activeVault.id.slice(0, 10)}
               </span>
             )}

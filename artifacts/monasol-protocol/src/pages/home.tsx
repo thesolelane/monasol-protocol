@@ -301,7 +301,7 @@ export default function Home() {
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-[auto_1fr_auto_auto_auto] text-[11px] uppercase tracking-wider text-gray-600 px-4 py-2 border-b border-white/5 gap-4">
+                    <div className="grid grid-cols-[auto_1fr_auto_auto_auto] text-xs uppercase tracking-wider text-gray-600 px-4 py-2 border-b border-white/5 gap-4">
                       <span>Tier</span>
                       <span>Locker ID</span>
                       <span className="text-right">Capacity</span>
@@ -314,13 +314,13 @@ export default function Home() {
                         const pct = Math.round((l.usedSlots / l.capacity) * 100);
                         return (
                           <div key={l.id} className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center px-4 py-2.5 gap-4 hover:bg-white/[0.02] transition-colors">
-                            <span className={`text-[10px] font-bold font-mono border rounded px-1.5 py-0.5 ${t.color}`}>
+                            <span className={`text-xs font-bold font-mono border rounded px-1.5 py-0.5 ${t.color}`}>
                               {t.label}
                             </span>
                             <div>
                               <span className="font-mono text-xs text-white">{l.externalId}</span>
                               {l.monadAddress && (
-                                <span className="ml-2 text-[10px] text-gray-600 font-mono">{l.monadAddress.slice(0, 10)}…</span>
+                                <span className="ml-2 text-xs text-gray-600 font-mono">{l.monadAddress.slice(0, 10)}…</span>
                               )}
                             </div>
                             <div className="text-right min-w-[80px]">
@@ -332,14 +332,14 @@ export default function Home() {
                             <span className="text-xs text-gray-400 font-mono text-right min-w-[70px]">
                               {parseFloat(l.minDepositSol).toFixed(3)} MON
                             </span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColor(l.status)}`}>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColor(l.status)}`}>
                               {l.status}
                             </span>
                           </div>
                         );
                       })}
                     </div>
-                    <div className="px-4 py-2 border-t border-white/5 flex gap-4 text-[10px] text-gray-600">
+                    <div className="px-4 py-2 border-t border-white/5 flex gap-4 text-xs text-gray-600">
                       <span>{allLockers.filter(l => l.status === "full").length} full</span>
                       <span>{allLockers.filter(l => l.status === "filling").length} filling</span>
                       <span>{allLockers.filter(l => l.status === "healthy").length} available</span>
@@ -471,7 +471,7 @@ export default function Home() {
                   "Deposit MON, set security rules, or share a proof with Private Explorer",
                 ].map((step, i) => (
                   <div key={i} className="relative flex items-start gap-4">
-                    <div className="h-5 w-5 rounded-full bg-black border border-white/20 flex items-center justify-center text-[10px] text-white font-bold relative z-10 shrink-0">
+                    <div className="h-5 w-5 rounded-full bg-black border border-white/20 flex items-center justify-center text-xs text-white font-bold relative z-10 shrink-0">
                       {i + 1}
                     </div>
                     <p className="text-sm text-gray-400 leading-tight pt-0.5">{step}</p>
