@@ -18,8 +18,11 @@ const router = Router();
 
 // ─── Server-side feature flags ────────────────────────────────────────────────
 const serverFlags = {
-  mprotocolFollowCheckEnabled:
-    process.env.MPROTOCOL_FOLLOW_CHECK === "true",
+  monadWalletEnabled:          process.env.FLAG_MONAD_WALLET === "true",
+  neighborhoodWatchEnabled:    process.env.FLAG_NEIGHBORHOOD_WATCH === "true",
+  mslTokenAddressSolana:       process.env.MSL_TOKEN_SOLANA ?? "",
+  mslTokenAddressMonad:        process.env.MSL_TOKEN_MONAD ?? "",
+  mprotocolFollowCheckEnabled: process.env.MPROTOCOL_FOLLOW_CHECK === "true",
 };
 
 // Admin secret
@@ -719,9 +722,26 @@ router.put("/flags", (req, res) => {
   const auth = checkAdminAuth(req);
   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
   const body = req.body as Partial<typeof serverFlags>;
+  const ip = getClientIp(req);
+  if (typeof body.monadWalletEnabled === "boolean") {
+    serverFlags.monadWalletEnabled = body.monadWalletEnabled;
+    audit("admin_flag_updated", ip, undefined, `monadWalletEnabled=${body.monadWalletEnabled}`);
+  }
+  if (typeof body.neighborhoodWatchEnabled === "boolean") {
+    serverFlags.neighborhoodWatchEnabled = body.neighborhoodWatchEnabled;
+    audit("admin_flag_updated", ip, undefined, `neighborhoodWatchEnabled=${body.neighborhoodWatchEnabled}`);
+  }
+  if (typeof body.mslTokenAddressSolana === "string") {
+    serverFlags.mslTokenAddressSolana = body.mslTokenAddressSolana;
+    audit("admin_flag_updated", ip, undefined, `mslTokenAddressSolana updated`);
+  }
+  if (typeof body.mslTokenAddressMonad === "string") {
+    serverFlags.mslTokenAddressMonad = body.mslTokenAddressMonad;
+    audit("admin_flag_updated", ip, undefined, `mslTokenAddressMonad updated`);
+  }
   if (typeof body.mprotocolFollowCheckEnabled === "boolean") {
     serverFlags.mprotocolFollowCheckEnabled = body.mprotocolFollowCheckEnabled;
-    audit("admin_flag_updated", getClientIp(req), undefined, `mprotocolFollowCheckEnabled=${body.mprotocolFollowCheckEnabled}`);
+    audit("admin_flag_updated", ip, undefined, `mprotocolFollowCheckEnabled=${body.mprotocolFollowCheckEnabled}`);
   }
   return res.json({ success: true, flags: { ...serverFlags } });
 });
@@ -730,6 +750,15 @@ router.get("/flags", (req, res) => {
   const auth = checkAdminAuth(req);
   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
   return res.json({ flags: { ...serverFlags } });
+});
+
+router.get("/public-flags", (_req, res) => {
+  return res.json({
+    monadWalletEnabled:       serverFlags.monadWalletEnabled,
+    neighborhoodWatchEnabled: serverFlags.neighborhoodWatchEnabled,
+    mslTokenAddressSolana:    serverFlags.mslTokenAddressSolana,
+    mslTokenAddressMonad:     serverFlags.mslTokenAddressMonad,
+  });
 });
 
 /**

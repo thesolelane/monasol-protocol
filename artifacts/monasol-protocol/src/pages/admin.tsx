@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DeployLockerModal } from "@/components/DeployLockerModal";
 import { LockerZoomModal } from "@/components/LockerZoomModal";
 import { Shield, Server, Users, ArrowLeft, ShieldAlert, KeyRound, Link as LinkIcon, EyeOff, FileCode2, FlaskConical, Eye, AlertTriangle, CheckCircle, XCircle, Clock, Radio } from "lucide-react";
-import { getFeatureFlags, setFeatureFlag } from "@/lib/featureFlags";
+import { getFeatureFlags, setFeatureFlag, pushFlagToServer } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
@@ -116,7 +116,7 @@ function formatUptime(seconds: number) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-function WatcherSecurityPanel() {
+function WatcherSecurityPanel({ onLogin }: { onLogin?: (token: string) => void }) {
   const [token, setToken] = useState<string | null>(getStoredToken);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -140,6 +140,7 @@ function WatcherSecurityPanel() {
       storeToken(data.token, data.expiresAt);
       setToken(data.token);
       setPassword("");
+      onLogin?.(data.token);
     } catch {
       setLoginError("Network error — try again");
     } finally {
@@ -325,53 +326,59 @@ export default function AdminDashboard() {
   const [mslMonadSaved, setMslMonadSaved] = useState(false);
   const [mprotocolFollowCheckEnabled, setMprotocolFollowCheckEnabled] = useState(() => getFeatureFlags().mprotocolFollowCheckEnabled);
 
-  function saveMslSolana(value: string) {
+  async function handleAdminLogin(token: string) {
+    try {
+      const res = await fetch("/api/watch/flags", {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json() as { flags: Record<string, unknown> };
+      const f = data.flags;
+      if (typeof f.monadWalletEnabled === "boolean") { setFeatureFlag("monadWalletEnabled", f.monadWalletEnabled); setMonadWalletEnabled(f.monadWalletEnabled); }
+      if (typeof f.neighborhoodWatchEnabled === "boolean") { setFeatureFlag("neighborhoodWatchEnabled", f.neighborhoodWatchEnabled); setNeighborhoodWatchEnabled(f.neighborhoodWatchEnabled); }
+      if (typeof f.mslTokenAddressSolana === "string") { setFeatureFlag("mslTokenAddressSolana", f.mslTokenAddressSolana); setMslTokenAddressSolana(f.mslTokenAddressSolana); }
+      if (typeof f.mslTokenAddressMonad === "string") { setFeatureFlag("mslTokenAddressMonad", f.mslTokenAddressMonad); setMslTokenAddressMonad(f.mslTokenAddressMonad); }
+      if (typeof f.mprotocolFollowCheckEnabled === "boolean") { setFeatureFlag("mprotocolFollowCheckEnabled", f.mprotocolFollowCheckEnabled); setMprotocolFollowCheckEnabled(f.mprotocolFollowCheckEnabled); }
+    } catch {
+      // Non-critical — flags already loaded from localStorage
+    }
+  }
+
+  async function saveMslSolana(value: string) {
     setFeatureFlag("mslTokenAddressSolana", value);
     setMslTokenAddressSolana(value);
+    await pushFlagToServer({ mslTokenAddressSolana: value });
     setMslSolanaSaved(true);
     setTimeout(() => setMslSolanaSaved(false), 2000);
   }
 
-  function saveMslMonad(value: string) {
+  async function saveMslMonad(value: string) {
     setFeatureFlag("mslTokenAddressMonad", value);
     setMslTokenAddressMonad(value);
+    await pushFlagToServer({ mslTokenAddressMonad: value });
     setMslMonadSaved(true);
     setTimeout(() => setMslMonadSaved(false), 2000);
   }
 
-  function toggleMonadWallet() {
+  async function toggleMonadWallet() {
     const next = !monadWalletEnabled;
     setFeatureFlag("monadWalletEnabled", next);
     setMonadWalletEnabled(next);
+    await pushFlagToServer({ monadWalletEnabled: next });
   }
 
-  function toggleNeighborhoodWatch() {
+  async function toggleNeighborhoodWatch() {
     const next = !neighborhoodWatchEnabled;
     setFeatureFlag("neighborhoodWatchEnabled", next);
     setNeighborhoodWatchEnabled(next);
+    await pushFlagToServer({ neighborhoodWatchEnabled: next });
   }
 
   async function toggleMprotocolFollowCheck() {
     const next = !mprotocolFollowCheckEnabled;
     setFeatureFlag("mprotocolFollowCheckEnabled", next);
     setMprotocolFollowCheckEnabled(next);
-    // Propagate flag to API server (no-op if WATCH_ADMIN_SECRET is not set in env)
-    try {
-      // Read the session token from sessionStorage (set by WatcherSecurityPanel login).
-      // The raw admin secret is never bundled in browser code — only the short-lived
-      // HMAC token produced at runtime is used for authenticated requests.
-      const adminToken = getStoredToken();
-      await fetch("/api/watch/flags", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(adminToken ? { "Authorization": `Bearer ${adminToken}` } : {}),
-        },
-        body: JSON.stringify({ mprotocolFollowCheckEnabled: next }),
-      });
-    } catch {
-      // Non-critical: token not available — flag stored locally only
-    }
+    await pushFlagToServer({ mprotocolFollowCheckEnabled: next });
   }
 
   const { data: stats } = useQuery<ProtocolStats>({
@@ -701,7 +708,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <WatcherSecurityPanel />
+        <WatcherSecurityPanel onLogin={handleAdminLogin} />
 
         <div className="mt-8">
           <h2 className="text-lg font-bold flex items-center gap-2 text-white mb-4">
