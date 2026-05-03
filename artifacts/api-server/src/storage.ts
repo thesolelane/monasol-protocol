@@ -61,6 +61,7 @@ export interface IStorage {
   createSessionHistoryEntry(data: InsertSessionHistory): Promise<SessionHistoryEntry>;
   setVaultHistorySharing(vaultId: string, ownerWallet: string, share: boolean): Promise<boolean>;
   getSystemSessionAggregate(vaultId: string): Promise<{ totalSessions: number; totalDurationMs: number; lastActivityAt: Date | null } | null>;
+  getProtocolVaultActivityAggregate(): Promise<{ optedInVaults: number; totalSessions: number; totalDurationMs: number; lastActivityAt: Date | null }>;
 }
 
 export class DrizzleStorage implements IStorage {
@@ -411,6 +412,21 @@ export class DrizzleStorage implements IStorage {
       return !latest || e.closedAt > latest ? e.closedAt : latest;
     }, null);
     return { totalSessions: entries.length, totalDurationMs, lastActivityAt };
+  }
+
+  async getProtocolVaultActivityAggregate(): Promise<{ optedInVaults: number; totalSessions: number; totalDurationMs: number; lastActivityAt: Date | null }> {
+    await this.ensureSeeded();
+    const entries = await db
+      .select()
+      .from(sessionHistory)
+      .then(rows => rows.filter(r => r.shareWithProtocol));
+    const optedInVaults = new Set(entries.map(e => e.vaultId)).size;
+    const totalSessions = entries.length;
+    const totalDurationMs = entries.reduce((sum, e) => sum + e.durationMs, 0);
+    const lastActivityAt = entries.reduce<Date | null>((latest, e) => {
+      return !latest || e.closedAt > latest ? e.closedAt : latest;
+    }, null);
+    return { optedInVaults, totalSessions, totalDurationMs, lastActivityAt };
   }
 }
 

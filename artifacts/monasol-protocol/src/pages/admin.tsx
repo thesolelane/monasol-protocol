@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DeployLockerModal } from "@/components/DeployLockerModal";
 import { LockerZoomModal } from "@/components/LockerZoomModal";
-import { Shield, Server, Users, ArrowLeft, ShieldAlert, KeyRound, Link as LinkIcon, EyeOff, FileCode2, FlaskConical, Eye, AlertTriangle, CheckCircle, XCircle, Clock, Radio } from "lucide-react";
+import { Shield, Server, Users, ArrowLeft, ShieldAlert, KeyRound, Link as LinkIcon, EyeOff, FileCode2, FlaskConical, Eye, AlertTriangle, CheckCircle, XCircle, Clock, Radio, Activity } from "lucide-react";
 import { getFeatureFlags, setFeatureFlag, pushFlagToServer } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -36,6 +36,24 @@ function formatTvl(tvlUsd: string): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
   return `$${n.toFixed(2)}`;
+}
+
+function formatDurationMs(ms: number): string {
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+  const minutes = Math.floor((ms % 3_600_000) / 60_000);
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
+function formatRelativeTime(dateStr: string | null): string {
+  if (!dateStr) return "No activity yet";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(diff / 86_400_000);
+  const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+  if (days > 0) return `${days}d ago`;
+  if (hours > 0) return `${hours}h ago`;
+  const mins = Math.floor(diff / 60_000);
+  return mins > 0 ? `${mins}m ago` : "Just now";
 }
 
 const ADMIN_SESSION_KEY = "nw_admin_session";
@@ -319,7 +337,7 @@ function WatcherSecurityPanel({ onLogin }: { onLogin?: (token: string) => void }
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<"protocol" | "chain-ops" | "oracle" | "flags" | "vault">("protocol");
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
-  const [zoomedLockerId, setZoomedLockerId] = useState<string | null>(null);
+  const [zoomedLocker, setZoomedLocker] = useState<Locker | null>(null);
   const [monadWalletEnabled, setMonadWalletEnabled] = useState(() => getFeatureFlags().monadWalletEnabled);
   const [neighborhoodWatchEnabled, setNeighborhoodWatchEnabled] = useState(() => getFeatureFlags().neighborhoodWatchEnabled);
   const [mslTokenAddressSolana, setMslTokenAddressSolana] = useState(() => getFeatureFlags().mslTokenAddressSolana);
@@ -386,6 +404,17 @@ export default function AdminDashboard() {
   const { data: stats } = useQuery<ProtocolStats>({
     queryKey: ["/api/stats"],
     staleTime: 30_000,
+  });
+
+  const { data: vaultActivity } = useQuery<{
+    optedInVaults: number;
+    totalSessions: number;
+    totalDurationMs: number;
+    lastActivityAt: string | null;
+  }>({
+    queryKey: ["/api/sessions/aggregate"],
+    staleTime: 60_000,
+    refetchInterval: 60_000,
   });
 
   const { data: lockers = [] } = useQuery<Locker[]>({
@@ -526,6 +555,37 @@ export default function AdminDashboard() {
 
         <div className="mb-8">
           <h2 className="text-lg font-bold flex items-center gap-2 text-white mb-4">
+            <Activity className="h-5 w-5 text-teal-400" />
+            Vault Activity
+            <span className="text-[10px] font-mono bg-teal-500/10 border border-teal-500/20 text-teal-400 px-1.5 py-0.5 rounded ml-1">OPTED-IN ONLY</span>
+          </h2>
+          <p className="text-xs text-gray-500 mb-4">Anonymized aggregate statistics from vaults that have enabled protocol sharing. No identifying information is stored or displayed.</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
+              <p className="text-xs text-gray-500 mb-1">Opted-In Vaults</p>
+              <p className="text-2xl font-mono text-teal-400">{vaultActivity?.optedInVaults ?? "—"}</p>
+              <p className="text-[10px] text-gray-600 mt-2">shareWithProtocol = true</p>
+            </div>
+            <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
+              <p className="text-xs text-gray-500 mb-1">Total Sessions</p>
+              <p className="text-2xl font-mono text-white">{vaultActivity?.totalSessions ?? "—"}</p>
+              <p className="text-[10px] text-gray-600 mt-2">Across all opted-in vaults</p>
+            </div>
+            <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
+              <p className="text-xs text-gray-500 mb-1">Combined Duration</p>
+              <p className="text-2xl font-mono text-white">{vaultActivity ? formatDurationMs(vaultActivity.totalDurationMs) : "—"}</p>
+              <p className="text-[10px] text-gray-600 mt-2">All sessions combined</p>
+            </div>
+            <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
+              <p className="text-xs text-gray-500 mb-1">Last Activity</p>
+              <p className="text-2xl font-mono text-white">{formatRelativeTime(vaultActivity?.lastActivityAt ?? null)}</p>
+              <p className="text-[10px] text-gray-600 mt-2">Most recent opted-in session</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-lg font-bold flex items-center gap-2 text-white mb-4">
             <Server className="h-5 w-5 text-gray-400" />
             Locker Landscape
           </h2>
@@ -545,11 +605,12 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {(tier1Lockers.length > 0 ? tier1Lockers : Array.from({ length: 82 }, (_, i) => ({ id: `t1-${i}`, externalId: `LCK-T1-${i}`, status: i < 62 ? "full" : i < 75 ? "filling" : "healthy", tier: 1, capacity: 100, usedSlots: 0, minDepositSol: "10" }))).map((l, i) => (
+                  {(tier1Lockers.length > 0 ? tier1Lockers : Array.from({ length: 82 }, (_, i) => ({ id: `t1-${i}`, externalId: `LCK-T1-${i}`, status: i < 62 ? "full" : i < 75 ? "filling" : "healthy", tier: 1, capacity: 100, usedSlots: i < 62 ? 100 : i < 75 ? 60 : 0, minDepositSol: "10" }))).map((l, i) => (
                     <div
                       key={l.id}
-                      className={`h-6 w-6 rounded-sm border ${lockerColor(l, i)}`}
-                      title={`${l.externalId} (${l.status})`}
+                      onClick={() => setZoomedLocker(l)}
+                      className={`h-6 w-6 rounded-sm border cursor-pointer hover:ring-1 hover:ring-white/40 transition-all ${lockerColor(l, i)}`}
+                      title={`${l.externalId} (${l.status}) — click to inspect`}
                     />
                   ))}
                 </div>
@@ -569,12 +630,12 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {(tier2Lockers.length > 0 ? tier2Lockers : Array.from({ length: 34 }, (_, i) => ({ id: `t2-${i}`, externalId: `LCK-T2-${i}`, status: (i === 12 || i === 18) ? "distressed" : i < 31 ? "full" : "filling", tier: 2, capacity: 500, usedSlots: 0, minDepositSol: "1" }))).map((l, i) => (
+                  {(tier2Lockers.length > 0 ? tier2Lockers : Array.from({ length: 34 }, (_, i) => ({ id: `t2-${i}`, externalId: `LCK-T2-${i}`, status: (i === 12 || i === 18) ? "distressed" : i < 31 ? "full" : "filling", tier: 2, capacity: 500, usedSlots: (i === 12 || i === 18) ? 500 : i < 31 ? 500 : 300, minDepositSol: "1" }))).map((l, i) => (
                     <div
                       key={l.id}
-                      onClick={() => l.status === "distressed" && setZoomedLockerId(l.externalId)}
-                      className={`h-6 w-6 rounded-sm border ${l.status !== "distressed" ? "cursor-default" : ""} ${lockerColor(l, i)}`}
-                      title={`${l.externalId} ${l.status === "distressed" ? "(DISTRESSED - CLICK TO VIEW)" : `(${l.status})`}`}
+                      onClick={() => setZoomedLocker(l)}
+                      className={`h-6 w-6 rounded-sm border cursor-pointer hover:ring-1 hover:ring-white/40 transition-all ${lockerColor(l, i)}`}
+                      title={`${l.externalId} (${l.status}) — click to inspect`}
                     />
                   ))}
                 </div>
@@ -594,11 +655,12 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {(tier3Lockers.length > 0 ? tier3Lockers : Array.from({ length: 12 }, (_, i) => ({ id: `t3-${i}`, externalId: `LCK-T3-${i}`, status: i < 5 ? "full" : i < 9 ? "filling" : "healthy", tier: 3, capacity: 10, usedSlots: 0, minDepositSol: "1000" }))).map((l, i) => (
+                  {(tier3Lockers.length > 0 ? tier3Lockers : Array.from({ length: 12 }, (_, i) => ({ id: `t3-${i}`, externalId: `LCK-T3-${i}`, status: i < 5 ? "full" : i < 9 ? "filling" : "healthy", tier: 3, capacity: 10, usedSlots: i < 5 ? 10 : i < 9 ? 6 : 0, minDepositSol: "1000" }))).map((l, i) => (
                     <div
                       key={l.id}
-                      className={`h-8 w-12 rounded-sm border cursor-default ${lockerColor(l, i)}`}
-                      title={`${l.externalId} (${l.status})`}
+                      onClick={() => setZoomedLocker(l)}
+                      className={`h-8 w-12 rounded-sm border cursor-pointer hover:ring-1 hover:ring-white/40 transition-all ${lockerColor(l, i)}`}
+                      title={`${l.externalId} (${l.status}) — click to inspect`}
                     />
                   ))}
                 </div>
@@ -922,9 +984,9 @@ export default function AdminDashboard() {
       />
 
       <LockerZoomModal
-        isOpen={!!zoomedLockerId}
-        onClose={() => setZoomedLockerId(null)}
-        lockerId={zoomedLockerId || ""}
+        isOpen={!!zoomedLocker}
+        onClose={() => setZoomedLocker(null)}
+        locker={zoomedLocker}
       />
 
       <Footer />

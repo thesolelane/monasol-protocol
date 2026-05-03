@@ -167,6 +167,15 @@ router.patch("/swaps/:token/confirm", async (req, res) => {
 
 // ── Vault Sessions ──────────────────────────────────────────────────────────
 
+router.get("/sessions/aggregate", async (_req, res) => {
+  try {
+    const aggregate = await storage.getProtocolVaultActivityAggregate();
+    return res.json(aggregate);
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to fetch protocol vault activity" });
+  }
+});
+
 router.get("/sessions/:vaultId", async (req, res) => {
   try {
     const nftMint = req.query.nftMint as string;
