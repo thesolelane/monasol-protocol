@@ -317,7 +317,7 @@ function WatcherSecurityPanel({ onLogin }: { onLogin?: (token: string) => void }
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"protocol" | "vault">("protocol");
+  const [activeTab, setActiveTab] = useState<"protocol" | "chain-ops" | "oracle" | "flags" | "vault">("protocol");
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   const [zoomedLockerId, setZoomedLockerId] = useState<string | null>(null);
   const [monadWalletEnabled, setMonadWalletEnabled] = useState(() => getFeatureFlags().monadWalletEnabled);
@@ -464,37 +464,44 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="flex gap-1 border-b border-white/10">
-            {([ 
-              { id: "protocol", label: "Protocol", icon: <Shield className="h-4 w-4" /> },
-              { id: "vault",    label: "Secrets Vault", icon: <KeyRound className="h-4 w-4" /> },
-            ] as const).map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                  activeTab === tab.id
-                    ? tab.id === "vault"
-                      ? "border-yellow-400 text-yellow-300"
-                      : "border-monad-purple text-white"
-                    : "border-transparent text-gray-500 hover:text-gray-300"
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-                {tab.id === "vault" && (
-                  <span className="text-[9px] font-mono bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-1 py-0.5 rounded">
-                    OWNER
-                  </span>
-                )}
-              </button>
-            ))}
+          <div className="flex gap-0.5 border-b border-white/10 overflow-x-auto">
+            {([
+              { id: "protocol",   label: "Protocol",      icon: <Shield className="h-4 w-4" />,      color: "monad-purple" },
+              { id: "chain-ops",  label: "Chain Ops",     icon: <Server className="h-4 w-4" />,      color: "solana-green" },
+              { id: "oracle",     label: "Watcher Oracle", icon: <Radio className="h-4 w-4" />,      color: "blue-400" },
+              { id: "flags",      label: "Feature Flags", icon: <FlaskConical className="h-4 w-4" />, color: "gray-400" },
+              { id: "vault",      label: "Secrets Vault", icon: <KeyRound className="h-4 w-4" />,    color: "yellow-400" },
+            ] as const).map(tab => {
+              const active = activeTab === tab.id;
+              const borderColor =
+                tab.id === "vault"      ? "border-yellow-400 text-yellow-300" :
+                tab.id === "oracle"     ? "border-blue-400 text-blue-300" :
+                tab.id === "chain-ops"  ? "border-solana-green text-solana-green" :
+                tab.id === "flags"      ? "border-gray-400 text-gray-200" :
+                                          "border-monad-purple text-white";
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
+                    active ? borderColor : "border-transparent text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  {tab.icon}
+                  {tab.label}
+                  {tab.id === "vault" && (
+                    <span className="text-[9px] font-mono bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-1 py-0.5 rounded">
+                      OWNER
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {activeTab === "vault" && <VaultPanel />}
-
-        <div className={activeTab !== "protocol" ? "hidden" : ""}><div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className={activeTab !== "protocol" ? "hidden" : ""}>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
             <p className="text-sm text-gray-500 mb-1">Total Value Locked (EVM)</p>
             <p className="text-2xl font-mono text-white">{tvl}</p>
@@ -610,6 +617,8 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        </div>
+        <div className={activeTab !== "chain-ops" ? "hidden" : ""}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-6">
             <h2 className="text-lg font-bold flex items-center gap-2 text-monad-purple">
@@ -738,10 +747,14 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+        </div>
 
-        <WatcherSecurityPanel onLogin={handleAdminLogin} />
+        <div className={activeTab !== "oracle" ? "hidden" : ""}>
+          <WatcherSecurityPanel onLogin={handleAdminLogin} />
+        </div>
 
-        <div className="mt-8">
+        <div className={activeTab !== "flags" ? "hidden" : ""}>
+        <div className="mt-2">
           <h2 className="text-lg font-bold flex items-center gap-2 text-white mb-4">
             <FlaskConical className="h-5 w-5 text-gray-400" />
             Feature Flags
@@ -895,6 +908,10 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+        </div>
+
+        <div className={activeTab !== "vault" ? "hidden" : ""}>
+          <VaultPanel />
         </div>
       </div>
 
