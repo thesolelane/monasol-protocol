@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Footer } from "@/components/Footer";
+import { VaultPanel } from "@/components/VaultPanel";
 
 interface ProtocolStats {
   tvlUsd: string;
@@ -316,6 +317,7 @@ function WatcherSecurityPanel({ onLogin }: { onLogin?: (token: string) => void }
 }
 
 export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState<"protocol" | "vault">("protocol");
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   const [zoomedLockerId, setZoomedLockerId] = useState<string | null>(null);
   const [monadWalletEnabled, setMonadWalletEnabled] = useState(() => getFeatureFlags().monadWalletEnabled);
@@ -444,7 +446,7 @@ export default function AdminDashboard() {
             </Button>
           </Link>
 
-          <div className="flex items-center justify-between border-b border-white/10 pb-6">
+          <div className="flex items-center justify-between pb-6">
             <div>
               <h1 className="text-3xl font-bold font-display flex items-center gap-3">
                 <Shield className="h-8 w-8 text-monad-purple" />
@@ -461,9 +463,38 @@ export default function AdminDashboard() {
               </Badge>
             </div>
           </div>
+
+          <div className="flex gap-1 border-b border-white/10">
+            {([ 
+              { id: "protocol", label: "Protocol", icon: <Shield className="h-4 w-4" /> },
+              { id: "vault",    label: "Secrets Vault", icon: <KeyRound className="h-4 w-4" /> },
+            ] as const).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                  activeTab === tab.id
+                    ? tab.id === "vault"
+                      ? "border-yellow-400 text-yellow-300"
+                      : "border-monad-purple text-white"
+                    : "border-transparent text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+                {tab.id === "vault" && (
+                  <span className="text-[9px] font-mono bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-1 py-0.5 rounded">
+                    OWNER
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        {activeTab === "vault" && <VaultPanel />}
+
+        <div className={activeTab !== "protocol" ? "hidden" : ""}><div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
             <p className="text-sm text-gray-500 mb-1">Total Value Locked (EVM)</p>
             <p className="text-2xl font-mono text-white">{tvl}</p>
@@ -863,6 +894,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
 
