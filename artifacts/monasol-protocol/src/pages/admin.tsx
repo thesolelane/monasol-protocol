@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DeployLockerModal } from "@/components/DeployLockerModal";
 import { LockerZoomModal } from "@/components/LockerZoomModal";
@@ -149,6 +149,12 @@ function WatcherSecurityPanel({ onLogin }: { onLogin?: (token: string) => void }
   const [loginError, setLoginError] = useState<string | null>(null);
   const [logging, setLogging] = useState(false);
 
+  function clearToken() {
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    setToken(null);
+    setLoginError(null);
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLogging(true);
@@ -177,26 +183,41 @@ function WatcherSecurityPanel({ onLogin }: { onLogin?: (token: string) => void }
 
   const authHeader: Record<string, string> = token ? { "Authorization": `Bearer ${token}` } : {};
 
-  const { data: nodesData, isLoading: nodesLoading } = useQuery<{
+  const { data: nodesData, isLoading: nodesLoading, error: nodesError } = useQuery<{
     total: number; active: number; pending: number; rejected: number;
     nodes: WatchNodeSummary[];
   }>({
     queryKey: ["/api/watch/nodes", token],
-    queryFn: () =>
-      fetch("/api/watch/nodes", { headers: authHeader })
-        .then(r => r.json()),
+    queryFn: async () => {
+      const r = await fetch("/api/watch/nodes", { headers: authHeader });
+      if (r.status === 401) throw new Error("unauthorized");
+      if (!r.ok) throw new Error("fetch_failed");
+      return r.json();
+    },
     refetchInterval: 15_000,
     enabled: !!token,
+    retry: false,
   });
 
-  const { data: auditData, isLoading: auditLoading } = useQuery<{ entries: AuditEntry[] }>({
+  const { data: auditData, isLoading: auditLoading, error: auditError } = useQuery<{ entries: AuditEntry[] }>({
     queryKey: ["/api/watch/audit", token],
-    queryFn: () =>
-      fetch("/api/watch/audit?limit=40", { headers: authHeader })
-        .then(r => r.json()),
+    queryFn: async () => {
+      const r = await fetch("/api/watch/audit?limit=40", { headers: authHeader });
+      if (r.status === 401) throw new Error("unauthorized");
+      if (!r.ok) throw new Error("fetch_failed");
+      return r.json();
+    },
     refetchInterval: 10_000,
     enabled: !!token,
+    retry: false,
   });
+
+  // If either query rejects the token, clear it and fall back to login
+  useEffect(() => {
+    if (nodesError?.message === "unauthorized" || auditError?.message === "unauthorized") {
+      clearToken();
+    }
+  }, [nodesError, auditError]);
 
   if (!token) {
     return (
