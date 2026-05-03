@@ -1,0 +1,382 @@
+"""
+MonaSol Dashboard GraphQL API Schema
+For indexing on-chain security state and serving read-only dashboard data
+"""
+
+# Types
+type Locker {
+  id: ID!                          # Contract address
+  tier: String!                    # Public, Standard, VIP, Dedicated
+  vaultCapacity: Int!
+  vaultCount: Int!
+  tvl: String!                     # In wei
+  tvlUSD: Float
+  healthScore: Int!                # 0-1000
+  collectiveLockActive: Boolean!
+  lockTimestamp: Int
+  lockReason: String
+  createdAt: Int!
+  neighborhoodWatch: NeighborhoodWatch
+  vaults(skip: Int, first: Int): [Vault!]
+  alerts(skip: Int, first: Int, severity: Int, resolved: Boolean): [Alert!]
+  watchers: [Watcher!]
+}
+
+type Vault {
+  id: ID!                          # locker_address + vault_id
+  vaultId: Int!
+  locker: Locker!
+  owner: String!                   # NFT holder address on Solana
+  mode: VaultMode!
+  locked: Boolean!
+  lastAuth: Int
+  authFailures: Int!
+  subVaultCount: Int!
+  subVaults: [SubVault!]
+  deposits: [Deposit!]
+  withdrawals: [Withdrawal!]
+  swaps: [Swap!]
+  createdAt: Int!
+  mslReward: String                # Locked MSL amount
+  mslUnlockDate: Int
+}
+
+type SubVault {
+  id: ID!
+  name: String!                    # "Payroll", "Treasury", "Trading"
+  purpose: SubVaultPurpose!
+  authorizedAddresses: [String!]!
+  balance: String!
+  lastAccessed: Int
+  accessHistory: [AccessLog!]
+}
+
+type AccessLog {
+  id: ID!
+  accessor: String!
+  action: String!
+  timestamp: Int!
+  success: Boolean!
+  ipHash: String                   # Hashed for privacy
+}
+
+type NeighborhoodWatch {
+  activeWatcherCount: Int!
+  totalStakedMSL: String!
+  averageReputation: Int!
+  totalAlerts24h: Int!
+  falsePositiveRate: Float!
+  lastCollectiveLock: Int
+  collectiveLockCount: Int!
+}
+
+type Watcher {
+  id: ID!                          # Address
+  isActive: Boolean!
+  stake: String!                    # MSL amount
+  reputationScore: Int!            # 0-1000
+  falsePositives: Int!
+  successfulAlerts: Int!
+  lastActivity: Int!
+  backupNode: String!
+  alerts(skip: Int, first: Int): [Alert!]
+  rewards: [Reward!]
+  slashes: [Slash!]
+}
+
+type Alert {
+  id: ID!                          # bytes32
+  reporter: Watcher!
+  locker: Locker!
+  vault: Vault
+  alertType: String!
+  severity: Int!                    # 1-5
+  timestamp: Int!
+  resolved: Boolean!
+  valid: Boolean
+  resolutionTimestamp: Int
+  slashAmount: String
+  rewardAmount: String
+}
+
+type Reward {
+  id: ID!
+  watcher: Watcher!
+  amount: String!
+  reason: String!
+  newReputation: Int!
+  timestamp: Int!
+}
+
+type Slash {
+  id: ID!
+  watcher: Watcher!
+  amount: String!
+  reason: String!
+  newReputation: Int!
+  timestamp: Int!
+}
+
+type NodeHealth {
+  id: ID!                          # node_address
+  role: NodeRole!
+  healthScore: Int!                # 0-1000
+  status: HealthStatus!
+  lastSignature: Int
+  uptime: Float!                   # Percentage
+  sigSuccessRate: Float!
+  backupNode: String!
+  backupStatus: BackupStatus!
+  lastRotation: Int
+  nextMandatoryRotation: Int!
+  consecutiveFailures: Int!
+}
+
+type Proposal {
+  id: ID!
+  proposer: String!
+  proposalType: ProposalType!
+  target: String!                  # Contract or locker address
+  description: String!
+  calldata: String                 # Encoded function call
+  signatures: [String!]!           # Signer addresses
+  threshold: Int!                   # Required signatures
+  status: ProposalStatus!
+  createdAt: Int!
+  timelockEnd: Int!
+  executedAt: Int
+  executionHash: String
+}
+
+type Notification {
+  id: ID!
+  userAddress: String!
+  type: NotificationType!
+  title: String!
+  body: String!
+  locker: Locker
+  vault: Vault
+  alert: Alert
+  read: Boolean!
+  channels: [String!]!             # email, sms, push, discord
+  sentAt: Int!
+  readAt: Int
+}
+
+type SecurityBadge {
+  id: ID!
+  locker: Locker!
+  badgeType: BadgeType!
+  earnedAt: Int!
+  expiresAt: Int
+  criteria: String!
+  verified: Boolean!
+}
+
+# Enums
+enum VaultMode {
+  SYSTEM
+  SELF
+}
+
+enum SubVaultPurpose {
+  FUNDS
+  SWAPS
+  YIELD
+  PAYMENTS
+  LEDGER
+  COMMUNITY_POOL
+}
+
+enum NodeRole {
+  ACTIVE_WALLET
+  APPROVER
+  BACKUP
+}
+
+enum HealthStatus {
+  HEALTHY       # >= 95%
+  WARNING       # 90-94%
+  DEGRADED      # 85-89%
+  CRITICAL      # < 85%
+  FAILED
+}
+
+enum BackupStatus {
+  DORMANT
+  ACTIVE
+  ROTATING
+}
+
+enum ProposalType {
+  PAUSE_LOCKER
+  RELEASE_COLLECTIVE_LOCK
+  SLASH_WATCHER
+  ROTATE_NODE
+  UPGRADE_CONTRACT
+  EMERGENCY_ACTION
+}
+
+enum ProposalStatus {
+  PENDING
+  ACTIVE          # Voting/signing period
+  TIMELocked      # Passed, waiting for timelock
+  EXECUTED
+  EXPIRED
+  REJECTED
+}
+
+enum NotificationType {
+  COLLECTIVE_LOCK
+  UNUSUAL_ACTIVITY
+  NFT_TRANSFER
+  SUB_VAULT_ACCESS
+  TIMELOCK_PROPOSAL
+  WATCHER_SLASH
+  HEALTH_ALERT
+  ROTATION_DUE
+  MSL_UNLOCK
+  SECURITY_BADGE
+}
+
+enum BadgeType {
+  VERIFIED_LOCK
+  NEIGHBORHOOD_WATCH
+  HIGH_AVAILABILITY
+  GOVERNANCE_ACTIVE
+  LIGHT_CLIENT_VERIFIED
+}
+
+# Queries
+type Query {
+  # Locker queries
+  lockers(skip: Int, first: Int, tier: String): [Locker!]
+  locker(id: ID!): Locker
+  lockerByAddress(address: String!): Locker
+
+  # Vault queries
+  vault(id: ID!): Vault
+  vaultsByOwner(owner: String!, skip: Int, first: Int): [Vault!]
+  vaultsByLocker(lockerId: ID!, skip: Int, first: Int): [Vault!]
+
+  # Security queries
+  alert(id: ID!): Alert
+  alerts(
+    lockerId: ID
+    reporter: String
+    severity: Int
+    resolved: Boolean
+    skip: Int
+    first: Int
+  ): [Alert!]
+
+  watcher(id: ID!): Watcher
+  watchers(activeOnly: Boolean, minReputation: Int): [Watcher!]
+
+  # Node health
+  nodeHealth(nodeId: ID!): NodeHealth
+  allNodes(role: NodeRole, status: HealthStatus): [NodeHealth!]
+  nodesNeedingRotation(withinHours: Int): [NodeHealth!]
+
+  # Governance
+  proposal(id: ID!): Proposal
+  proposals(
+    status: ProposalStatus
+    proposer: String
+    skip: Int
+    first: Int
+  ): [Proposal!]
+  pendingProposals: [Proposal!]
+
+  # Notifications
+  notifications(
+    userAddress: String!
+    unreadOnly: Boolean
+    type: NotificationType
+    skip: Int
+    first: Int
+  ): [Notification!]
+  unreadCount(userAddress: String!): Int!
+
+  # Badges
+  badges(lockerId: ID!): [SecurityBadge!]
+
+  # Protocol stats
+  protocolStats: ProtocolStats!
+}
+
+type ProtocolStats {
+  totalLockers: Int!
+  totalVaults: Int!
+  totalTVL: String!
+  totalTVLUSD: Float
+  activeWatchers: Int!
+  totalStakedMSL: String!
+  totalAlerts24h: Int!
+  collectiveLocksActive: Int!
+  averageHealthScore: Int!
+  pendingProposals: Int!
+  nodesHealthy: Int!
+  nodesWarning: Int!
+  nodesCritical: Int!
+}
+
+# Mutations (All require wallet signature, no admin keys)
+type Mutation {
+  # Watcher actions
+  registerWatcher(stakeAmount: String!, backupNode: String!): Watcher!
+  unregisterWatcher: Boolean!
+  rotateBackupNode(newBackup: String!): Watcher!
+
+  # Alert actions (Watcher only)
+  reportAlert(
+    lockerAddress: String!
+    vaultId: Int!
+    alertType: String!
+  ): Alert!
+
+  # Vault owner actions (requires NFT signature)
+  setVaultMode(vaultId: ID!, mode: VaultMode!): Vault!
+  selfLockVault(vaultId: ID!): Vault!
+  selfUnlockVault(vaultId: ID!): Vault!
+  createSubVault(
+    vaultId: ID!
+    name: String!
+    purpose: SubVaultPurpose!
+    authorizedAddresses: [String!]!
+  ): SubVault!
+
+  # Governance (Multi-sig)
+  createProposal(
+    proposalType: ProposalType!
+    target: String!
+    description: String!
+    calldata: String
+  ): Proposal!
+  signProposal(proposalId: ID!): Proposal!
+  executeProposal(proposalId: ID!): Proposal!
+
+  # Notifications
+  markNotificationRead(notificationId: ID!): Notification!
+  updateNotificationPreferences(
+    email: Boolean
+    sms: Boolean
+    push: Boolean
+    discord: Boolean
+    minSeverity: Int
+  ): Boolean!
+}
+
+# Subscriptions (Real-time updates)
+type Subscription {
+  newAlert(lockerId: ID): Alert!
+  lockerHealthUpdate(lockerId: ID!): Locker!
+  nodeHealthUpdate(nodeId: ID!): NodeHealth!
+  newProposal: Proposal!
+  proposalStatusChange(proposalId: ID!): Proposal!
+  newNotification(userAddress: String!): Notification!
+  vaultLocked(vaultId: ID!): Vault!
+  vaultUnlocked(vaultId: ID!): Vault!
+  collectiveLockTriggered(lockerId: ID!): Locker!
+  collectiveLockReleased(lockerId: ID!): Locker!
+}

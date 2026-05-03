@@ -1,0 +1,393 @@
+# @version ^0.3.0
+"""
+MonaSol Neighborhood Watch Contract
+Deployed per Locker on Monad (EVM)
+Handles watcher staking, alert reporting, collective locks, and slashing.
+"""
+
+# Structs
+struct Watcher:
+    is_active: bool
+    stake: uint256
+    reputation_score: uint256  # 0-1000, starts at 500
+    false_positives: uint256
+    successful_alerts: uint256
+    last_activity: uint256
+    backup_node: address
+
+struct Alert:
+    reporter: address
+    locker: address
+    vault_id: uint256
+    alert_type: String[16]
+    severity: uint8  # 1-5
+    timestamp: uint256
+    resolved: bool
+    valid: bool  # True = real threat, False = false positive
+
+struct LockerState:
+    vault_count: uint256
+    collective_lock_active: bool
+    lock_timestamp: uint256
+    lock_reason: String[64]
+    health_score: uint256  # 0-1000
+
+struct VaultSecurity:
+    mode: uint8  # 1=System, 2=Self
+    locked: bool
+    last_auth: uint256
+    auth_failures: uint256
+    sub_vault_count: uint256
+
+# Constants
+MIN_STAKE: constant(uint256) = 10000 * 10**18  # 10,000 MSL
+MAX_VAULTS: constant(uint256) = 20000
+MODE_SYSTEM: constant(uint8) = 1
+MODE_SELF: constant(uint8) = 2
+SEVERITY_CRITICAL: constant(uint8) = 4
+HEALTH_THRESHOLD: constant(uint256) = 950  # 95.0%
+
+# State Variables
+owner: public(address)
+multisig: public(address)
+timelock: public(address)
+msl_token: public(address)
+
+watchers: public(HashMap[address, Watcher])
+active_watchers: public(DynArray[address, 100])
+
+alerts: public(HashMap[bytes32, Alert])
+alert_count: public(uint256)
+
+locker_states: public(HashMap[address, LockerState])
+vault_security: public(HashMap[address, HashMap[uint256, VaultSecurity]])
+
+# Events
+event SecurityAlert:
+    alert_id: indexed(bytes32)
+    locker: indexed(address)
+    vault_id: indexed(uint256)
+    reporter: address
+    alert_type: String[16]
+    severity: uint8
+    timestamp: uint256
+
+event CollectiveLockTriggered:
+    locker: indexed(address)
+    triggered_by: indexed(address)
+    vault_count: uint256
+    reason: String[64]
+    timestamp: uint256
+
+event CollectiveLockReleased:
+    locker: indexed(address)
+    released_by: address
+    timestamp: uint256
+
+event WatcherRegistered:
+    watcher: indexed(address)
+    stake: uint256
+    timestamp: uint256
+
+event WatcherSlashed:
+    watcher: indexed(address)
+    amount: uint256
+    reason: String[64]
+    new_reputation: uint256
+    timestamp: uint256
+
+event WatcherRewarded:
+    watcher: indexed(address)
+    amount: uint256
+    reason: String[64]
+    new_reputation: uint256
+    timestamp: uint256
+
+event VaultLocked:
+    locker: indexed(address)
+    vault_id: indexed(uint256)
+    by_collective: bool
+    reason: String[64]
+    timestamp: uint256
+
+event VaultUnlocked:
+    locker: indexed(address)
+    vault_id: indexed(uint256)
+    by_owner: bool
+    timestamp: uint256
+
+event HealthScoreUpdated:
+    locker: indexed(address)
+    old_score: uint256
+    new_score: uint256
+    timestamp: uint256
+
+# Initialization
+@external
+def __init__(_multisig: address, _timelock: address, _msl_token: address):
+    self.owner = msg.sender
+    self.multisig = _multisig
+    self.timelock = _timelock
+    self.msl_token = _msl_token
+
+# Watcher Management
+@external
+def register_watcher(_backup_node: address):
+    assert not self.watchers[msg.sender].is_active, "Already registered"
+
+    # Transfer MSL stake from watcher to contract
+    # (In production, use ERC20 transferFrom)
+
+    self.watchers[msg.sender] = Watcher({
+        is_active: True,
+        stake: MIN_STAKE,
+        reputation_score: 500,
+        false_positives: 0,
+        successful_alerts: 0,
+        last_activity: block.timestamp,
+        backup_node: _backup_node
+    })
+
+    self.active_watchers.append(msg.sender)
+
+    log WatcherRegistered(msg.sender, MIN_STAKE, block.timestamp)
+
+@external
+def unregister_watcher():
+    assert self.watchers[msg.sender].is_active, "Not registered"
+
+    # Return stake if no pending alerts
+    # (In production, check for unresolved alerts)
+
+    self.watchers[msg.sender].is_active = False
+
+    # Remove from active_watchers array (simplified)
+
+    # Return stake
+    # (In production, use ERC20 transfer)
+
+@external
+def rotate_backup_node(_new_backup: address):
+    assert self.watchers[msg.sender].is_active, "Not registered"
+    self.watchers[msg.sender].backup_node = _new_backup
+
+# Alert System
+@external
+def report_alert(_locker: address, _vault_id: uint256, _alert_type: String[16]):
+    watcher: Watcher = self.watchers[msg.sender]
+    assert watcher.is_active, "Not an active watcher"
+    assert watcher.stake >= MIN_STAKE, "Insufficient stake"
+    assert watcher.reputation_score >= 200, "Reputation too low"
+
+    # Generate unique alert ID
+    alert_id: bytes32 = keccak256(concat(
+        convert(_locker, bytes20),
+        convert(_vault_id, bytes32),
+        convert(block.timestamp, bytes32),
+        convert(msg.sender, bytes20)
+    ))
+
+    severity: uint8 = self._get_severity(_alert_type)
+
+    self.alerts[alert_id] = Alert({
+        reporter: msg.sender,
+        locker: _locker,
+        vault_id: _vault_id,
+        alert_type: _alert_type,
+        severity: severity,
+        timestamp: block.timestamp,
+        resolved: False,
+        valid: False  # Pending resolution
+    })
+
+    self.alert_count += 1
+    self.watchers[msg.sender].last_activity = block.timestamp
+
+    log SecurityAlert(alert_id, _locker, _vault_id, msg.sender, _alert_type, severity, block.timestamp)
+
+    # Auto-trigger collective lock for critical alerts on System-mode vaults
+    if severity >= SEVERITY_CRITICAL:
+        vault_sec: VaultSecurity = self.vault_security[_locker][_vault_id]
+        if vault_sec.mode == MODE_SYSTEM:
+            self._initiate_collective_lock(_locker, msg.sender, _alert_type)
+
+@internal
+def _get_severity(_alert_type: String[16]) -> uint8:
+    if _alert_type == "LARGE_OUTFLOW":
+        return 5
+    elif _alert_type == "UNUSUAL_PATTERN":
+        return 4
+    elif _alert_type == "AUTH_FAILURES":
+        return 3
+    elif _alert_type == "NFT_TRANSFER":
+        return 3
+    elif _alert_type == "SUB_VAULT_BREACH":
+        return 5
+    elif _alert_type == "NODE_HEALTH_LOW":
+        return 4
+    elif _alert_type == "PLEDGE_VIOLATION":
+        return 5
+    else:
+        return 2
+
+# Collective Lock Mechanism
+@internal
+def _initiate_collective_lock(_locker: address, _triggered_by: address, _reason: String[64]):
+    state: LockerState = self.locker_states[_locker]
+
+    if state.collective_lock_active:
+        return  # Already locked
+
+    state.collective_lock_active = True
+    state.lock_timestamp = block.timestamp
+    state.lock_reason = _reason
+
+    # Lock all System-mode vaults
+    locked_count: uint256 = 0
+    for i in range(MAX_VAULTS):
+        if i >= state.vault_count:
+            break
+        vault_sec: VaultSecurity = self.vault_security[_locker][i]
+        if vault_sec.mode == MODE_SYSTEM and not vault_sec.locked:
+            vault_sec.locked = True
+            locked_count += 1
+            log VaultLocked(_locker, i, True, _reason, block.timestamp)
+
+    log CollectiveLockTriggered(_locker, _triggered_by, locked_count, _reason, block.timestamp)
+
+@external
+def release_collective_lock(_locker: address):
+    assert msg.sender == self.multisig, "Only multisig can release"
+
+    state: LockerState = self.locker_states[_locker]
+    assert state.collective_lock_active, "Not locked"
+
+    state.collective_lock_active = False
+    state.lock_timestamp = 0
+    state.lock_reason = ""
+
+    # Unlock all System-mode vaults
+    for i in range(MAX_VAULTS):
+        if i >= state.vault_count:
+            break
+        vault_sec: VaultSecurity = self.vault_security[_locker][i]
+        if vault_sec.mode == MODE_SYSTEM:
+            vault_sec.locked = False
+            log VaultUnlocked(_locker, i, False, block.timestamp)
+
+    log CollectiveLockReleased(_locker, msg.sender, block.timestamp)
+
+# Self-Mode Vault Control (Owner Only)
+@external
+def self_lock_vault(_locker: address, _vault_id: uint256):
+    # In production, verify NFT ownership via light client
+    vault_sec: VaultSecurity = self.vault_security[_locker][_vault_id]
+    assert vault_sec.mode == MODE_SELF, "Only Self-mode vaults"
+
+    vault_sec.locked = True
+    log VaultLocked(_locker, _vault_id, False, "Owner initiated", block.timestamp)
+
+@external
+def self_unlock_vault(_locker: address, _vault_id: uint256):
+    # In production, verify NFT ownership via light client
+    vault_sec: VaultSecurity = self.vault_security[_locker][_vault_id]
+    assert vault_sec.mode == MODE_SELF, "Only Self-mode vaults"
+    assert vault_sec.locked, "Not locked"
+
+    vault_sec.locked = False
+    log VaultUnlocked(_locker, _vault_id, True, block.timestamp)
+
+# Alert Resolution & Slashing
+@external
+def resolve_alert(_alert_id: bytes32, _valid: bool):
+    assert msg.sender == self.multisig, "Only multisig"
+
+    alert: Alert = self.alerts[_alert_id]
+    assert not alert.resolved, "Already resolved"
+
+    alert.resolved = True
+    alert.valid = _valid
+
+    reporter: address = alert.reporter
+    watcher: Watcher = self.watchers[reporter]
+
+    if _valid:
+        # Reward watcher
+        watcher.successful_alerts += 1
+        reward: uint256 = self._calculate_reward(watcher)
+        watcher.reputation_score = min(watcher.reputation_score + 50, 1000)
+
+        log WatcherRewarded(reporter, reward, "Valid alert", watcher.reputation_score, block.timestamp)
+    else:
+        # Slash watcher
+        watcher.false_positives += 1
+        slash_amount: uint256 = self._calculate_slash(watcher)
+        watcher.stake -= slash_amount
+        watcher.reputation_score = max(watcher.reputation_score - 100, 0)
+
+        if watcher.reputation_score < 200:
+            watcher.is_active = False
+
+        log WatcherSlashed(reporter, slash_amount, "False positive", watcher.reputation_score, block.timestamp)
+
+    self.watchers[reporter] = watcher
+
+@internal
+def _calculate_reward(_watcher: Watcher) -> uint256:
+    base: uint256 = 100 * 10**18  # 100 MSL
+    multiplier: uint256 = _watcher.reputation_score / 500
+    return base * multiplier
+
+@internal
+def _calculate_slash(_watcher: Watcher) -> uint256:
+    base: uint256 = 500 * 10**18  # 500 MSL
+    fp_multiplier: uint256 = _watcher.false_positives
+    return base * (1 + fp_multiplier)
+
+# Health Score Management
+@external
+def update_locker_health(_locker: address, _uptime: uint256, _sig_success: uint256):
+    # Called by authorized oracle/node monitoring service
+    assert msg.sender == self.multisig or self._is_watcher(msg.sender), "Unauthorized"
+
+    old_score: uint256 = self.locker_states[_locker].health_score
+    # health_score = (uptime + signature_success) / 2, scaled to 0-1000
+    new_score: uint256 = ((_uptime + _sig_success) * 1000) / 200
+
+    self.locker_states[_locker].health_score = new_score
+
+    log HealthScoreUpdated(_locker, old_score, new_score, block.timestamp)
+
+    # Auto-trigger if health drops below threshold
+    if new_score < HEALTH_THRESHOLD and not self.locker_states[_locker].collective_lock_active:
+        self._initiate_collective_lock(_locker, msg.sender, "Health below threshold")
+
+@internal
+def _is_watcher(_addr: address) -> bool:
+    return self.watchers[_addr].is_active and self.watchers[_addr].stake >= MIN_STAKE
+
+# View Functions
+@view
+@external
+def get_watcher_info(_watcher: address) -> Watcher:
+    return self.watchers[_watcher]
+
+@view
+@external
+def get_alert(_alert_id: bytes32) -> Alert:
+    return self.alerts[_alert_id]
+
+@view
+@external
+def get_locker_state(_locker: address) -> LockerState:
+    return self.locker_states[_locker]
+
+@view
+@external
+def get_vault_security(_locker: address, _vault_id: uint256) -> VaultSecurity:
+    return self.vault_security[_locker][_vault_id]
+
+@view
+@external
+def is_collective_locked(_locker: address) -> bool:
+    return self.locker_states[_locker].collective_lock_active
