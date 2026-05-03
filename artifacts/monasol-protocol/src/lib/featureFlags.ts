@@ -2,10 +2,12 @@ const FLAGS_KEY = "monasol_feature_flags";
 
 interface FeatureFlags {
   monadWalletEnabled: boolean;
+  neighborhoodWatchEnabled: boolean;
 }
 
 const DEFAULTS: FeatureFlags = {
   monadWalletEnabled: false,
+  neighborhoodWatchEnabled: false,
 };
 
 export function getFeatureFlags(): FeatureFlags {

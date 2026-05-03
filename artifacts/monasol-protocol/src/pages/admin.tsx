@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DeployLockerModal } from "@/components/DeployLockerModal";
 import { LockerZoomModal } from "@/components/LockerZoomModal";
-import { Shield, Server, Activity, Users, Settings, ArrowLeft, ShieldAlert, KeyRound, Link as LinkIcon, EyeOff, FileCode2, FlaskConical } from "lucide-react";
+import { Shield, Server, Activity, Users, Settings, ArrowLeft, ShieldAlert, KeyRound, Link as LinkIcon, EyeOff, FileCode2, FlaskConical, Eye } from "lucide-react";
 import { getFeatureFlags, setFeatureFlag } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -41,11 +41,18 @@ export default function AdminDashboard() {
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   const [zoomedLockerId, setZoomedLockerId] = useState<string | null>(null);
   const [monadWalletEnabled, setMonadWalletEnabled] = useState(() => getFeatureFlags().monadWalletEnabled);
+  const [neighborhoodWatchEnabled, setNeighborhoodWatchEnabled] = useState(() => getFeatureFlags().neighborhoodWatchEnabled);
 
   function toggleMonadWallet() {
     const next = !monadWalletEnabled;
     setFeatureFlag("monadWalletEnabled", next);
     setMonadWalletEnabled(next);
+  }
+
+  function toggleNeighborhoodWatch() {
+    const next = !neighborhoodWatchEnabled;
+    setFeatureFlag("neighborhoodWatchEnabled", next);
+    setNeighborhoodWatchEnabled(next);
   }
 
   const { data: stats } = useQuery<ProtocolStats>({
@@ -401,6 +408,34 @@ export default function AdminDashboard() {
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
                     monadWalletEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between py-4 border-b border-white/5">
+              <div className="flex items-start gap-3">
+                <Eye className="h-4 w-4 text-yellow-400 mt-0.5 shrink-0" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-white">Neighborhood Watch</span>
+                    <Badge variant="outline" className="text-[10px] border-yellow-500/30 text-yellow-400 bg-yellow-500/10">Contract Ready</Badge>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Community watcher network — alert reporting, collective locks, health scoring. Requires MSL token to activate staking rewards.
+                  </p>
+                </div>
+              </div>
+              <button
+                data-testid="toggle-neighborhood-watch"
+                onClick={toggleNeighborhoodWatch}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0 ml-4 ${
+                  neighborhoodWatchEnabled ? "bg-yellow-500" : "bg-white/10"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                    neighborhoodWatchEnabled ? "translate-x-6" : "translate-x-1"
                   }`}
                 />
               </button>
