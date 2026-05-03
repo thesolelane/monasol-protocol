@@ -459,18 +459,21 @@ export default function AdminDashboard() {
     if (locker.status === "distressed") {
       return "bg-red-500 border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse z-10 relative cursor-pointer";
     }
+    const t1 = locker.tier === 1, t3 = locker.tier === 3;
     if (locker.status === "healthy") {
-      return "bg-green-500/15 border-green-500/35" + alertRing;
+      return (t1 ? "bg-monad-purple/15 border-monad-purple/35"
+               : t3 ? "bg-blue-500/15 border-blue-500/35"
+               :      "bg-solana-green/15 border-solana-green/35") + alertRing;
     }
     if (locker.status === "filling") {
-      return "bg-green-500/45 border-green-500/65" + alertRing;
+      return (t1 ? "bg-monad-purple/45 border-monad-purple/65"
+               : t3 ? "bg-blue-500/45 border-blue-500/65"
+               :      "bg-solana-green/45 border-solana-green/65") + alertRing;
     }
-    // full — use tier accent
-    const tierFill =
-      locker.tier === 1 ? "bg-monad-purple/80 border-monad-purple" :
-      locker.tier === 2 ? "bg-solana-green/80 border-solana-green" :
-                          "bg-blue-500/80 border-blue-500";
-    return tierFill + alertRing;
+    // full
+    return (t1 ? "bg-monad-purple/80 border-monad-purple"
+              : t3 ? "bg-blue-500/80 border-blue-500"
+              :      "bg-solana-green/80 border-solana-green") + alertRing;
   }
 
   const tier1Full = tier1Lockers.filter(l => l.status === "full").length;
@@ -682,7 +685,7 @@ export default function AdminDashboard() {
                     <div
                       key={l.id}
                       onClick={() => setZoomedLocker(l)}
-                      className={`h-8 w-12 rounded-sm border cursor-pointer hover:ring-1 hover:ring-white/40 transition-all ${lockerColor(l, i)}`}
+                      className={`h-6 w-6 rounded-sm border cursor-pointer hover:ring-1 hover:ring-white/40 transition-all ${lockerColor(l, i)}`}
                       title={`${l.externalId} (${l.status}) — click to inspect`}
                     />
                   ))}
@@ -702,11 +705,19 @@ export default function AdminDashboard() {
                   Full Capacity
                 </span>
                 <span className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-green-500/45 border border-green-500/65" />
+                  <div className="flex rounded-sm overflow-hidden border border-white/20" style={{ width: 26, height: 12 }}>
+                    <div className="flex-1 bg-monad-purple/45" title="Tier 1" />
+                    <div className="flex-1 bg-solana-green/45" title="Tier 2" />
+                    <div className="flex-1 bg-blue-500/45" title="Tier 3" />
+                  </div>
                   Accepting Deposits
                 </span>
                 <span className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-green-500/15 border border-green-500/35" />
+                  <div className="flex rounded-sm overflow-hidden border border-white/20" style={{ width: 26, height: 12 }}>
+                    <div className="flex-1 bg-monad-purple/15" title="Tier 1" />
+                    <div className="flex-1 bg-solana-green/15" title="Tier 2" />
+                    <div className="flex-1 bg-blue-500/15" title="Tier 3" />
+                  </div>
                   Live / Empty
                 </span>
                 <span className="flex items-center gap-2 text-red-400">
