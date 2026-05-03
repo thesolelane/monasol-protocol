@@ -1014,69 +1014,64 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            <div className="py-4">
-              <div className="flex items-start gap-3">
-                <div className="h-4 w-4 mt-0.5 shrink-0" />
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <p className="text-xs text-gray-400 font-medium">MSL Token — Solana</p>
-                      <Badge variant="outline" className="text-xs border-solana-green/30 text-solana-green bg-solana-green/10">Launch Chain</Badge>
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={mslTokenAddressSolana}
-                        onChange={e => setMslTokenAddressSolana(e.target.value)}
-                        placeholder="Base58 mint address… paste when deployed"
-                        className="flex-1 bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-gray-600 focus:outline-none focus:border-solana-green/40 transition-colors"
-                      />
-                      <button
-                        onClick={() => saveMslSolana(mslTokenAddressSolana)}
-                        className="px-3 py-2 rounded-lg text-xs font-semibold bg-solana-green/10 border border-solana-green/20 text-solana-green hover:bg-solana-green/20 transition-colors shrink-0"
-                      >
-                        {mslSolanaSaved ? "Saved" : "Save"}
-                      </button>
-                    </div>
-                    {mslTokenAddressSolana && (
-                      <p className="text-xs text-solana-green/80 mt-1.5">
-                        Solana SPL mint stored — used for staking, rewards, and Neighborhood Watch on Solana.
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <p className="text-xs text-gray-400 font-medium">MSL Token — Monad</p>
-                      <Badge variant="outline" className="text-xs border-white/20 text-gray-500 bg-white/5">Bridged Later</Badge>
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={mslTokenAddressMonad}
-                        onChange={e => setMslTokenAddressMonad(e.target.value)}
-                        placeholder="0x… paste bridged ERC-20 address when live"
-                        className="flex-1 bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-gray-600 focus:outline-none focus:border-monad-purple/40 transition-colors"
-                      />
-                      <button
-                        onClick={() => saveMslMonad(mslTokenAddressMonad)}
-                        className="px-3 py-2 rounded-lg text-xs font-semibold bg-monad-purple/10 border border-monad-purple/20 text-monad-purple hover:bg-monad-purple/20 transition-colors shrink-0"
-                      >
-                        {mslMonadSaved ? "Saved" : "Save"}
-                      </button>
-                    </div>
-                    {mslTokenAddressMonad && (
-                      <p className="text-xs text-monad-purple/80 mt-1.5">
-                        Monad ERC-20 stored — wired into NeighborhoodWatch.vy on activation.
-                      </p>
-                    )}
-                    {!mslTokenAddressMonad && (
-                      <p className="text-xs text-gray-400 mt-1.5">
-                        Leave blank until bridge is live. NeighborhoodWatch.vy staking on Monad requires this.
-                      </p>
-                    )}
-                  </div>
+            <div className="pt-5 space-y-5">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="text-sm font-semibold text-gray-200">MSL Token — Solana</p>
+                  <Badge variant="outline" className="text-xs border-solana-green/30 text-solana-green bg-solana-green/10">Launch Chain</Badge>
                 </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={mslTokenAddressSolana}
+                    onChange={e => setMslTokenAddressSolana(e.target.value)}
+                    placeholder="Base58 mint address… paste when deployed"
+                    className="flex-1 bg-black/60 border border-white/15 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-gray-500 focus:outline-none focus:border-solana-green/50 transition-colors"
+                  />
+                  <button
+                    onClick={() => saveMslSolana(mslTokenAddressSolana)}
+                    className="px-3 py-2 rounded-lg text-xs font-semibold bg-solana-green/10 border border-solana-green/20 text-solana-green hover:bg-solana-green/20 transition-colors shrink-0"
+                  >
+                    {mslSolanaSaved ? "Saved" : "Save"}
+                  </button>
+                </div>
+                {mslTokenAddressSolana && (
+                  <p className="text-xs text-solana-green/80 mt-1.5">
+                    Solana SPL mint stored — used for staking, rewards, and Neighborhood Watch on Solana.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="text-sm font-semibold text-gray-200">MSL Token — Monad</p>
+                  <Badge variant="outline" className="text-xs border-white/20 text-gray-400 bg-white/5">Bridged Later</Badge>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={mslTokenAddressMonad}
+                    onChange={e => setMslTokenAddressMonad(e.target.value)}
+                    placeholder="0x… paste bridged ERC-20 address when live"
+                    className="flex-1 bg-black/60 border border-white/15 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-gray-500 focus:outline-none focus:border-monad-purple/50 transition-colors"
+                  />
+                  <button
+                    onClick={() => saveMslMonad(mslTokenAddressMonad)}
+                    className="px-3 py-2 rounded-lg text-xs font-semibold bg-monad-purple/10 border border-monad-purple/20 text-monad-purple hover:bg-monad-purple/20 transition-colors shrink-0"
+                  >
+                    {mslMonadSaved ? "Saved" : "Save"}
+                  </button>
+                </div>
+                {mslTokenAddressMonad && (
+                  <p className="text-xs text-monad-purple/80 mt-1.5">
+                    Monad ERC-20 stored — wired into NeighborhoodWatch.vy on activation.
+                  </p>
+                )}
+                {!mslTokenAddressMonad && (
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    Leave blank until bridge is live. NeighborhoodWatch.vy staking on Monad requires this.
+                  </p>
+                )}
               </div>
             </div>
           </div>
