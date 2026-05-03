@@ -729,14 +729,11 @@ export default function AdminDashboard() {
                   <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-blue-400/90" /> T3</span>
                 </span>
 
-                <span className="text-[10px] text-gray-700 mx-1">·</span>
-
+                <span className="text-[10px] uppercase tracking-widest text-gray-600 font-semibold mx-1">Alert Ring</span>
                 <span className="flex items-center gap-2 text-red-400">
                   <div className="w-3 h-3 rounded-sm bg-red-500 border border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" />
                   Distressed / Frozen
                 </span>
-
-                <span className="text-[10px] uppercase tracking-widest text-gray-600 font-semibold mx-1">Alert Ring</span>
                 <span className="flex items-center gap-2 text-yellow-400">
                   <div className="w-3 h-3 rounded-sm border border-white/20 ring-2 ring-yellow-400 shadow-[0_0_5px_rgba(234,179,8,0.4)]" />
                   Fault Warning
