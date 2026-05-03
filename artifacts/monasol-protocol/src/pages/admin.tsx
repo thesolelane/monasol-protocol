@@ -760,7 +760,7 @@ export default function AdminDashboard() {
                 </div>
 
               </div>
-              <p className="text-[10px] text-gray-600 mt-4">
+              <p className="text-xs text-gray-500 mt-4">
                 {lastSyncedAt
                   ? `Chain sync: ${new Date(lastSyncedAt).toLocaleTimeString()} · refreshes every 12s`
                   : "Syncing from chain…"}
