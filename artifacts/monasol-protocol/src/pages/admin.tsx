@@ -29,6 +29,12 @@ interface Locker {
   usedSlots: number;
   status: string;
   minDepositSol: string | null;
+  monadAddress: string | null;
+}
+
+interface LockersResponse {
+  lastSyncedAt: string | null;
+  lockers: Locker[];
 }
 
 function formatTvl(tvlUsd: string): string {
@@ -417,10 +423,17 @@ export default function AdminDashboard() {
     refetchInterval: 60_000,
   });
 
-  const { data: lockers = [] } = useQuery<Locker[]>({
+  const { data: lockersResponse } = useQuery<LockersResponse>({
     queryKey: ["/api/lockers"],
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchInterval: 12_000,
+    select: (raw) => {
+      if (Array.isArray(raw)) return { lastSyncedAt: null, lockers: raw as Locker[] };
+      return raw as LockersResponse;
+    },
   });
+  const lockers: Locker[] = lockersResponse?.lockers ?? [];
+  const lastSyncedAt = lockersResponse?.lastSyncedAt ?? null;
 
   const tier1Lockers = lockers.filter(l => l.tier === 1);
   const tier2Lockers = lockers.filter(l => l.tier === 2);
@@ -674,7 +687,11 @@ export default function AdminDashboard() {
                 <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-white/5 border border-white/10" /> Empty / Ready</span>
                 <span className="flex items-center gap-2 text-red-400"><div className="w-3 h-3 rounded-sm bg-red-500 border border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" /> Distressed / Frozen</span>
               </div>
-              <p>Landscape auto-updates every 12s</p>
+              <p>
+                {lastSyncedAt
+                  ? `Chain sync: ${new Date(lastSyncedAt).toLocaleTimeString()} · refreshes every 12s`
+                  : "Syncing from chain…"}
+              </p>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { startVerificationWorker, startPingBatchWorker } from "./routes/watch";
+import { startLockerSyncWorker } from "./lib/locker-sync";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -37,5 +38,8 @@ startVerificationWorker();
 
 // Start oracle ping batch worker (flushes Tier 1 node pings to NeighborhoodWatch.vy every 5 min)
 startPingBatchWorker();
+
+// Sync locker state from Monad chain every 12 s
+startLockerSyncWorker(12_000);
 
 export default app;

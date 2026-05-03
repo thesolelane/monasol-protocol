@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { storage } from "../storage";
+import { syncLockers, getLastSyncedAt } from "../lib/locker-sync";
 import vaultsRouter from "./vaults";
 
 const router: IRouter = Router();
@@ -26,20 +27,31 @@ router.get("/stats", async (_req, res) => {
 
 router.get("/lockers", async (req, res) => {
   try {
+    // Fire a fresh sync from chain; we give it up to 8 s before returning
+    // whatever is already in the DB so the request never hangs.
+    await Promise.race([
+      syncLockers(),
+      new Promise<void>((resolve) => setTimeout(resolve, 8_000)),
+    ]);
+
     const tier = req.query.tier ? Number(req.query.tier) : undefined;
-    const lockers = tier
+    const rows = tier
       ? await storage.getLockersByTier(tier)
       : await storage.getLockers();
 
-    res.json(lockers.map((l) => ({
-      id: l.id,
-      externalId: l.externalId,
-      tier: l.tier,
-      capacity: l.capacity,
-      usedSlots: l.usedSlots,
-      status: l.status,
-      minDepositSol: l.minDepositSol,
-    })));
+    res.json({
+      lastSyncedAt: getLastSyncedAt()?.toISOString() ?? null,
+      lockers: rows.map((l) => ({
+        id: l.id,
+        externalId: l.externalId,
+        tier: l.tier,
+        capacity: l.capacity,
+        usedSlots: l.usedSlots,
+        status: l.status,
+        minDepositSol: l.minDepositSol,
+        monadAddress: l.monadAddress,
+      })),
+    });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch lockers" });
   }

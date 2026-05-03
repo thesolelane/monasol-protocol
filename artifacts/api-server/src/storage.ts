@@ -29,6 +29,7 @@ export interface IStorage {
 
   getLockers(): Promise<Locker[]>;
   getLockersByTier(tier: number): Promise<Locker[]>;
+  updateLockerState(monadAddress: string, state: { usedSlots: number; status: string; minDepositSol: string }): Promise<Locker | undefined>;
 
   getNftsByWallet(wallet: string): Promise<NftKey[]>;
 
@@ -163,6 +164,18 @@ export class DrizzleStorage implements IStorage {
       .update(lockers)
       .set({ monadAddress })
       .where(eq(lockers.id, lockerId))
+      .returning();
+    return locker;
+  }
+
+  async updateLockerState(
+    monadAddress: string,
+    state: { usedSlots: number; status: string; minDepositSol: string }
+  ): Promise<Locker | undefined> {
+    const [locker] = await db
+      .update(lockers)
+      .set({ usedSlots: state.usedSlots, status: state.status, minDepositSol: state.minDepositSol })
+      .where(eq(lockers.monadAddress, monadAddress))
       .returning();
     return locker;
   }
