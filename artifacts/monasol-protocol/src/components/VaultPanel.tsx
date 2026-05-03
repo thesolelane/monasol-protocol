@@ -99,7 +99,7 @@ function VaultLogin({ onSuccess }: { onSuccess: (token: string) => void }) {
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-600">
+        <p className="text-center text-xs text-gray-400">
           Session expires after 4 hours · 3 attempts before lockout
         </p>
       </div>
@@ -160,7 +160,7 @@ function SecretRow({
 
   return (
     <div className="group flex items-center gap-3 px-4 py-3 border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-      <KeyRound className="h-3.5 w-3.5 text-gray-600 shrink-0" />
+      <KeyRound className="h-3.5 w-3.5 text-gray-400 shrink-0" />
 
       <span className="font-mono text-xs text-gray-300 w-56 shrink-0 truncate">{secret.key}</span>
 
@@ -435,7 +435,7 @@ export function VaultPanel() {
             {envKeys.map(e => (
               <div key={e.key} className="flex items-center justify-between px-4 py-2.5">
                 <span className="font-mono text-xs text-gray-400">{e.key}</span>
-                <span className="text-xs text-gray-600 font-mono">
+                <span className="text-xs text-gray-400 font-mono">
                   {e.set ? "•••••••" : "not set"}
                 </span>
               </div>
@@ -444,7 +444,7 @@ export function VaultPanel() {
         )}
         {!envExpanded && (
           <div className="px-4 py-2.5">
-            <p className="text-xs text-gray-600">Click to view injected environment variable keys (values are masked)</p>
+            <p className="text-xs text-gray-400">Click to view injected environment variable keys (values are masked)</p>
           </div>
         )}
       </div>
@@ -452,7 +452,7 @@ export function VaultPanel() {
       <div className="flex justify-end">
         <button
           onClick={() => { sessionStorage.removeItem(VAULT_SESSION_KEY); setToken(null); setSecrets([]); setEnvKeys([]); }}
-          className="text-xs text-gray-600 hover:text-red-400 transition-colors"
+          className="text-xs text-gray-400 hover:text-red-400 transition-colors"
         >
           Lock vault
         </button>

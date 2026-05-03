@@ -376,7 +376,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
               <button
                 data-testid="button-movein-later"
                 onClick={handleClose}
-                className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+                className="text-xs text-gray-400 hover:text-gray-400 transition-colors"
               >
                 Do it later from your vault dashboard
               </button>
@@ -416,7 +416,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                 <div className="min-w-0">
                   <p className="text-xs text-gray-500">NFT key in wallet</p>
                   <p className="text-sm font-medium text-white truncate">{mintedNft.name}</p>
-                  <p className="text-xs font-mono text-gray-600 truncate">{mintedNft.lockerRef}</p>
+                  <p className="text-xs font-mono text-gray-400 truncate">{mintedNft.lockerRef}</p>
                 </div>
               </div>
 
@@ -424,7 +424,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
               <div>
                 <label className="text-xs text-gray-500 mb-2 block">
                   Slot number <span className="text-monad-purple">*</span>
-                  <span className="text-gray-600 ml-1">(1 – {mintedNft.maxSlots})</span>
+                  <span className="text-gray-400 ml-1">(1 – {mintedNft.maxSlots})</span>
                 </label>
                 <input
                   data-testid="input-slot-number"
@@ -441,7 +441,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                   }`}
                 />
                 {slotError && <p className="text-xs text-red-400 mt-1">{slotError}</p>}
-                <p className="text-xs text-gray-600 mt-1">Each slot is independent with its own balance and signer.</p>
+                <p className="text-xs text-gray-400 mt-1">Each slot is independent with its own balance and signer.</p>
               </div>
 
               {/* Occupant (read-only) */}
@@ -450,7 +450,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                 <div className="px-4 py-3 rounded-lg bg-white/5 border border-white/10 font-mono text-xs text-white break-all">
                   {connectedWallet}
                 </div>
-                <p className="text-xs text-gray-600 mt-1">Passed as <span className="font-mono">occupant</span> in move_in.</p>
+                <p className="text-xs text-gray-400 mt-1">Passed as <span className="font-mono">occupant</span> in move_in.</p>
               </div>
 
               {/* Signing wallet */}
@@ -471,7 +471,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                   }`}
                 />
                 {signingWalletError && <p className="text-xs text-red-400 mt-1">{signingWalletError}</p>}
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-gray-400 mt-1">
                   This wallet authorizes future vault transactions. Can match your occupant wallet or be a separate cold-storage key.
                 </p>
               </div>
@@ -553,8 +553,8 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                           done ? "border-monad-purple/30 bg-monad-purple/5" : "border-white/5 bg-black/20"
                         }`}
                       >
-                        <span className={done ? "text-white" : "text-gray-600"}>{label}</span>
-                        <span className={done ? "text-monad-purple font-semibold" : "text-gray-600"}>{done ? "✓" : "…"}</span>
+                        <span className={done ? "text-white" : "text-gray-400"}>{label}</span>
+                        <span className={done ? "text-monad-purple font-semibold" : "text-gray-400"}>{done ? "✓" : "…"}</span>
                       </div>
                     );
                   })}
@@ -601,7 +601,7 @@ export function RentVaultModal({ isOpen, onClose, onSuccess, connectedWallet, on
                 </Button>
               )}
               {!initDone && (
-                <div className="flex items-center justify-center gap-2 py-1 text-xs text-gray-600">
+                <div className="flex items-center justify-center gap-2 py-1 text-xs text-gray-400">
                   <Loader2 className="h-3 w-3 animate-spin" />
                   Waiting for Monad confirmation…
                 </div>

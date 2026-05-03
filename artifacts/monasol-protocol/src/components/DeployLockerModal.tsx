@@ -169,7 +169,7 @@ export function DeployLockerModal({ isOpen, onClose, onSuccess }: DeployLockerMo
                 <div className="flex-1 space-y-1 mt-2">
                   {logs.map((log, i) => (
                     <div key={i} className="flex gap-2">
-                      <span className="text-gray-600 shrink-0">{new Date().toISOString().split('T')[1].substring(0, 8)}</span>
+                      <span className="text-gray-400 shrink-0">{new Date().toISOString().split('T')[1].substring(0, 8)}</span>
                       <span className={
                         log.startsWith(">") ? "text-purple-400 font-bold" :
                         log.includes("✅") ? "text-green-400 font-bold" :

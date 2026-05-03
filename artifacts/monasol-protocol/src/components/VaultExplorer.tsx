@@ -85,7 +85,7 @@ export function VaultExplorer() {
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-wider text-gray-400 flex items-center justify-between">
               <span>Access Key</span>
-              <span className="text-xs text-gray-600">Provided by vault owner</span>
+              <span className="text-xs text-gray-400">Provided by vault owner</span>
             </Label>
             <div className="relative">
               <Input

@@ -284,7 +284,7 @@ export default function Home() {
                 {allLockers.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 px-6 text-center gap-4">
                     <div className="h-12 w-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                      <Server className="h-6 w-6 text-gray-600" />
+                      <Server className="h-6 w-6 text-gray-400" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-white mb-1">No lockers deployed yet</p>
@@ -301,7 +301,7 @@ export default function Home() {
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-[auto_1fr_auto_auto_auto] text-xs uppercase tracking-wider text-gray-600 px-4 py-2 border-b border-white/5 gap-4">
+                    <div className="grid grid-cols-[auto_1fr_auto_auto_auto] text-xs uppercase tracking-wider text-gray-400 px-4 py-2 border-b border-white/5 gap-4">
                       <span>Tier</span>
                       <span>Locker ID</span>
                       <span className="text-right">Capacity</span>
@@ -320,7 +320,7 @@ export default function Home() {
                             <div>
                               <span className="font-mono text-xs text-white">{l.externalId}</span>
                               {l.monadAddress && (
-                                <span className="ml-2 text-xs text-gray-600 font-mono">{l.monadAddress.slice(0, 10)}…</span>
+                                <span className="ml-2 text-xs text-gray-400 font-mono">{l.monadAddress.slice(0, 10)}…</span>
                               )}
                             </div>
                             <div className="text-right min-w-[80px]">
@@ -339,7 +339,7 @@ export default function Home() {
                         );
                       })}
                     </div>
-                    <div className="px-4 py-2 border-t border-white/5 flex gap-4 text-xs text-gray-600">
+                    <div className="px-4 py-2 border-t border-white/5 flex gap-4 text-xs text-gray-400">
                       <span>{allLockers.filter(l => l.status === "full").length} full</span>
                       <span>{allLockers.filter(l => l.status === "filling").length} filling</span>
                       <span>{allLockers.filter(l => l.status === "healthy").length} available</span>
@@ -441,7 +441,7 @@ export default function Home() {
             {!selectedNft ? (
               <div className="glass-panel rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-6 min-h-[260px]">
                 <div className="h-14 w-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                  <Key className="h-7 w-7 text-gray-600" />
+                  <Key className="h-7 w-7 text-gray-400" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-white mb-2">Present your NFT key to begin</p>

@@ -305,7 +305,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
 
           <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold ${
             loadingInitial
-              ? "bg-white/5 border-white/10 text-gray-600"
+              ? "bg-white/5 border-white/10 text-gray-400"
               : session && !expired
               ? "bg-monad-purple/20 border-monad-purple/40 text-monad-purple"
               : expired
@@ -435,10 +435,10 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-gray-400">
                     Authorized Address
-                    <span className="normal-case text-gray-600 ml-1">(optional — leave blank to allow any key holder)</span>
+                    <span className="normal-case text-gray-400 ml-1">(optional — leave blank to allow any key holder)</span>
                   </Label>
                   <div className="relative">
-                    <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
+                    <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input data-testid="input-session-auth-address"
                       placeholder="0x... or any Solana address"
                       value={authAddress}
@@ -450,7 +450,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-gray-400">
                     Session Label
-                    <span className="normal-case text-gray-600 ml-1">(optional)</span>
+                    <span className="normal-case text-gray-400 ml-1">(optional)</span>
                   </Label>
                   <Input data-testid="input-session-label"
                     placeholder="e.g. DeFi bridge, collateral proof…"
@@ -483,7 +483,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                   )}
                 </AnimatePresence>
 
-                <p className="text-xs text-gray-600 text-center leading-relaxed">
+                <p className="text-xs text-gray-400 text-center leading-relaxed">
                   Calls <span className="font-mono text-gray-500">open_session</span> on the Monad Locker contract.
                   Sessions persist across page refreshes.
                 </p>
@@ -507,7 +507,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
               </div>
               <div className="text-left">
                 <p className="text-sm font-semibold text-white">Session History</p>
-                <p className="text-xs text-gray-600">Past sessions for this vault</p>
+                <p className="text-xs text-gray-400">Past sessions for this vault</p>
               </div>
             </div>
             <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${historyOpen ? "rotate-180" : ""}`} />
@@ -552,7 +552,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                         <button
                           data-testid="button-sharing-info"
                           onClick={() => setSharingDisclosureOpen(v => !v)}
-                          className="text-gray-600 hover:text-gray-400 transition-colors"
+                          className="text-gray-400 hover:text-gray-400 transition-colors"
                           aria-label="What is shared?"
                         >
                           <Info className="h-4 w-4" />
@@ -620,14 +620,14 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                   )}
 
                   {!historyLoading && !historyError && history.length === 0 && (
-                    <div data-testid="text-history-empty" className="py-6 text-center text-xs text-gray-600">
+                    <div data-testid="text-history-empty" className="py-6 text-center text-xs text-gray-400">
                       No past sessions recorded for this vault yet.
                     </div>
                   )}
 
                   {!historyLoading && !historyError && history.length > 0 && (
                     <div className="rounded-xl border border-white/10 overflow-hidden">
-                      <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 px-4 py-2 bg-white/5 text-xs uppercase tracking-wider text-gray-600 border-b border-white/5">
+                      <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 px-4 py-2 bg-white/5 text-xs uppercase tracking-wider text-gray-400 border-b border-white/5">
                         <span>Session</span>
                         <span>Authorized</span>
                         <span>Opened</span>
@@ -642,7 +642,7 @@ export function SessionPanel({ vaultId, nftMint, nftName, ownerWallet }: Session
                           >
                             <div className="min-w-0">
                               <p className="font-mono text-white truncate">{entry.sessionId}</p>
-                              <p className="text-gray-600 truncate">{entry.label}</p>
+                              <p className="text-gray-400 truncate">{entry.label}</p>
                             </div>
                             <div className="min-w-0 flex items-center">
                               <span className={`font-mono truncate ${entry.authorizedAddress === "Any holder" ? "text-gray-500" : "text-solana-green"}`}>

@@ -193,7 +193,7 @@ function VaultAlertPanel({ alerts, loading }: { alerts: LockerAlert[]; loading: 
       {/* Category filter chips */}
       {presentCategories.length > 1 && (
         <div className="flex flex-wrap gap-1.5 items-center">
-          <Filter className="h-3 w-3 text-gray-600 shrink-0" />
+          <Filter className="h-3 w-3 text-gray-400 shrink-0" />
           {/* All chip */}
           <button
             onClick={() => setActiveCategories(null)}
@@ -311,7 +311,7 @@ function VaultAlertPanel({ alerts, loading }: { alerts: LockerAlert[]; loading: 
 
       {/* Empty state after filter */}
       {filteredAlerts.length === 0 && (
-        <p className="text-xs text-gray-600 text-center py-4">No alerts match the selected filter.</p>
+        <p className="text-xs text-gray-400 text-center py-4">No alerts match the selected filter.</p>
       )}
     </div>
   );
@@ -520,19 +520,19 @@ export function LockerZoomModal({ isOpen, onClose, locker }: LockerZoomModalProp
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
               <p className="text-xs text-gray-500 mb-1">Capacity</p>
               <p className="text-2xl font-mono text-white">{locker.capacity.toLocaleString()}</p>
-              <p className="text-xs text-gray-600 mt-1">total vault slots</p>
+              <p className="text-xs text-gray-400 mt-1">total vault slots</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
               <p className="text-xs text-gray-500 mb-1">Occupied</p>
               <p className={`text-2xl font-mono ${isDistressed ? "text-red-400" : tierMeta.textColor}`}>
                 {locker.usedSlots.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-600 mt-1">{fillPct}% utilization</p>
+              <p className="text-xs text-gray-400 mt-1">{fillPct}% utilization</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
               <p className="text-xs text-gray-500 mb-1">Available</p>
               <p className="text-2xl font-mono text-white">{freeSlots.toLocaleString()}</p>
-              <p className="text-xs text-gray-600 mt-1">open slots</p>
+              <p className="text-xs text-gray-400 mt-1">open slots</p>
             </div>
             <div className={`border rounded-xl p-4 ${
               hasAlerts
@@ -549,7 +549,7 @@ export function LockerZoomModal({ isOpen, onClose, locker }: LockerZoomModalProp
               }`}>
                 {locker.alertCount ?? 0}
               </p>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-gray-400 mt-1">
                 {locker.alertLevel === "critical" ? "requires immediate action"
                 : locker.alertLevel === "warning"  ? "review recommended"
                 : "no active alerts"}

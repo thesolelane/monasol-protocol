@@ -325,11 +325,11 @@ function WatcherSecurityPanel({ onLogin }: { onLogin?: (token: string) => void }
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-0.5">
-                      <span className="text-xs text-gray-600 font-mono">{e.ip}</span>
+                      <span className="text-xs text-gray-400 font-mono">{e.ip}</span>
                       {e.detail && <span className="text-xs text-gray-500 truncate">{e.detail}</span>}
                     </div>
                   </div>
-                  <span className="text-xs text-gray-600 shrink-0">
+                  <span className="text-xs text-gray-400 shrink-0">
                     {new Date(e.createdAt).toLocaleTimeString()}
                   </span>
                 </div>
@@ -590,22 +590,22 @@ export default function AdminDashboard() {
             <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
               <p className="text-xs text-gray-500 mb-1">Opted-In Vaults</p>
               <p className="text-2xl font-mono text-teal-400">{vaultActivity?.optedInVaults ?? "—"}</p>
-              <p className="text-xs text-gray-600 mt-2">shareWithProtocol = true</p>
+              <p className="text-xs text-gray-400 mt-2">shareWithProtocol = true</p>
             </div>
             <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
               <p className="text-xs text-gray-500 mb-1">Total Sessions</p>
               <p className="text-2xl font-mono text-white">{vaultActivity?.totalSessions ?? "—"}</p>
-              <p className="text-xs text-gray-600 mt-2">Across all opted-in vaults</p>
+              <p className="text-xs text-gray-400 mt-2">Across all opted-in vaults</p>
             </div>
             <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
               <p className="text-xs text-gray-500 mb-1">Combined Duration</p>
               <p className="text-2xl font-mono text-white">{vaultActivity ? formatDurationMs(vaultActivity.totalDurationMs) : "—"}</p>
-              <p className="text-xs text-gray-600 mt-2">All sessions combined</p>
+              <p className="text-xs text-gray-400 mt-2">All sessions combined</p>
             </div>
             <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
               <p className="text-xs text-gray-500 mb-1">Last Activity</p>
               <p className="text-2xl font-mono text-white">{formatRelativeTime(vaultActivity?.lastActivityAt ?? null)}</p>
-              <p className="text-xs text-gray-600 mt-2">Most recent opted-in session</p>
+              <p className="text-xs text-gray-400 mt-2">Most recent opted-in session</p>
             </div>
           </div>
         </div>
@@ -1050,7 +1050,7 @@ export default function AdminDashboard() {
                       </p>
                     )}
                     {!mslTokenAddressMonad && (
-                      <p className="text-xs text-gray-600 mt-1.5">
+                      <p className="text-xs text-gray-400 mt-1.5">
                         Leave blank until bridge is live. NeighborhoodWatch.vy staking on Monad requires this.
                       </p>
                     )}
