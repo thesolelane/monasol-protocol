@@ -157,7 +157,7 @@ function WatcherSecurityPanel({ onLogin }: { onLogin?: (token: string) => void }
       const res = await fetch("/api/watch/admin/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password: password.trim() }),
       });
       const data = await res.json() as { token?: string; expiresAt?: number; error?: string };
       if (!res.ok || !data.token || !data.expiresAt) {

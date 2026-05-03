@@ -42,7 +42,7 @@ const serverFlags = {
 
 // Admin secret
 const ADMIN_SECRET =
-  process.env.WATCH_ADMIN_SECRET || randomBytes(24).toString("hex");
+  (process.env.WATCH_ADMIN_SECRET || randomBytes(24).toString("hex")).trim();
 
 if (!process.env.WATCH_ADMIN_SECRET) {
   logger.warn(
