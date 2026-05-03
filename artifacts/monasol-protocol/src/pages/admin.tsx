@@ -462,17 +462,17 @@ export default function AdminDashboard() {
     const t1 = locker.tier === 1, t3 = locker.tier === 3;
     if (locker.status === "healthy") {
       return (t1 ? "bg-monad-purple/15 border-monad-purple/35"
-               : t3 ? "bg-blue-500/15 border-blue-500/35"
+               : t3 ? "bg-blue-400/30 border-blue-400/55"
                :      "bg-solana-green/15 border-solana-green/35") + alertRing;
     }
     if (locker.status === "filling") {
       return (t1 ? "bg-monad-purple/45 border-monad-purple/65"
-               : t3 ? "bg-blue-500/45 border-blue-500/65"
+               : t3 ? "bg-blue-400/65 border-blue-400/85"
                :      "bg-solana-green/45 border-solana-green/65") + alertRing;
     }
     // full
     return (t1 ? "bg-monad-purple/80 border-monad-purple"
-              : t3 ? "bg-blue-500/80 border-blue-500"
+              : t3 ? "bg-blue-400/90 border-blue-400"
               :      "bg-solana-green/80 border-solana-green") + alertRing;
   }
 
@@ -700,7 +700,7 @@ export default function AdminDashboard() {
                   <div className="flex rounded-sm overflow-hidden border border-white/20" style={{ width: 26, height: 12 }}>
                     <div className="flex-1 bg-monad-purple/80" title="Tier 1" />
                     <div className="flex-1 bg-solana-green/80" title="Tier 2" />
-                    <div className="flex-1 bg-blue-500/80" title="Tier 3" />
+                    <div className="flex-1 bg-blue-400/90" title="Tier 3" />
                   </div>
                   Full Capacity
                 </span>
@@ -708,7 +708,7 @@ export default function AdminDashboard() {
                   <div className="flex rounded-sm overflow-hidden border border-white/20" style={{ width: 26, height: 12 }}>
                     <div className="flex-1 bg-monad-purple/45" title="Tier 1" />
                     <div className="flex-1 bg-solana-green/45" title="Tier 2" />
-                    <div className="flex-1 bg-blue-500/45" title="Tier 3" />
+                    <div className="flex-1 bg-blue-400/65" title="Tier 3" />
                   </div>
                   Accepting Deposits
                 </span>
@@ -716,7 +716,7 @@ export default function AdminDashboard() {
                   <div className="flex rounded-sm overflow-hidden border border-white/20" style={{ width: 26, height: 12 }}>
                     <div className="flex-1 bg-monad-purple/15" title="Tier 1" />
                     <div className="flex-1 bg-solana-green/15" title="Tier 2" />
-                    <div className="flex-1 bg-blue-500/15" title="Tier 3" />
+                    <div className="flex-1 bg-blue-400/30" title="Tier 3" />
                   </div>
                   Live / Empty
                 </span>
