@@ -236,7 +236,7 @@ export default function Home() {
         </div>
 
         {/* Deployed Lockers */}
-        {allLockers.length > 0 && (() => {
+        {(() => {
           const filtered = lockerTierFilter === 0 ? allLockers : allLockers.filter(l => l.tier === lockerTierFilter);
           const statusColor = (s: string) =>
             s === "full"       ? "bg-white/80 text-black" :
@@ -254,75 +254,101 @@ export default function Home() {
                 <div className="flex items-center gap-2">
                   <Server className="h-5 w-5 text-gray-400" />
                   <h2 className="font-display text-lg font-bold text-white">Deployed Lockers</h2>
-                  <span className="text-xs font-mono bg-white/5 border border-white/10 text-gray-400 px-2 py-0.5 rounded">
-                    {allLockers.length} live
-                  </span>
+                  {allLockers.length > 0 && (
+                    <span className="text-xs font-mono bg-white/5 border border-white/10 text-gray-400 px-2 py-0.5 rounded">
+                      {allLockers.length} live
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Filter className="h-3.5 w-3.5 text-gray-500" />
-                  {([0, 1, 2, 3] as const).map(t => (
-                    <button
-                      key={t}
-                      onClick={() => setLockerTierFilter(t)}
-                      className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
-                        lockerTierFilter === t
-                          ? "bg-monad-purple text-white"
-                          : "bg-white/5 text-gray-400 hover:bg-white/10"
-                      }`}
-                    >
-                      {t === 0 ? "All" : `Tier ${t}`}
-                    </button>
-                  ))}
-                </div>
+                {allLockers.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <Filter className="h-3.5 w-3.5 text-gray-500" />
+                    {([0, 1, 2, 3] as const).map(t => (
+                      <button
+                        key={t}
+                        onClick={() => setLockerTierFilter(t)}
+                        className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                          lockerTierFilter === t
+                            ? "bg-monad-purple text-white"
+                            : "bg-white/5 text-gray-400 hover:bg-white/10"
+                        }`}
+                      >
+                        {t === 0 ? "All" : `Tier ${t}`}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="rounded-xl border border-white/5 bg-black/40 backdrop-blur-sm overflow-hidden">
-                <div className="grid grid-cols-[auto_1fr_auto_auto_auto] text-[11px] uppercase tracking-wider text-gray-600 px-4 py-2 border-b border-white/5 gap-4">
-                  <span>Tier</span>
-                  <span>Locker ID</span>
-                  <span className="text-right">Capacity</span>
-                  <span className="text-right">Min Deposit</span>
-                  <span className="text-right">Status</span>
-                </div>
-                <div className="divide-y divide-white/5 max-h-72 overflow-y-auto">
-                  {filtered.map(l => {
-                    const t = tierLabel(l.tier);
-                    const pct = Math.round((l.usedSlots / l.capacity) * 100);
-                    return (
-                      <div key={l.id} className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center px-4 py-2.5 gap-4 hover:bg-white/[0.02] transition-colors">
-                        <span className={`text-[10px] font-bold font-mono border rounded px-1.5 py-0.5 ${t.color}`}>
-                          {t.label}
-                        </span>
-                        <div>
-                          <span className="font-mono text-xs text-white">{l.externalId}</span>
-                          {l.monadAddress && (
-                            <span className="ml-2 text-[10px] text-gray-600 font-mono">{l.monadAddress.slice(0, 10)}…</span>
-                          )}
-                        </div>
-                        <div className="text-right min-w-[80px]">
-                          <div className="text-xs text-gray-300 font-mono">{l.usedSlots}/{l.capacity}</div>
-                          <div className="h-1 bg-white/10 rounded-full mt-1 overflow-hidden w-16 ml-auto">
-                            <div className="h-full bg-monad-purple/60 rounded-full" style={{ width: `${pct}%` }} />
+                {allLockers.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 px-6 text-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                      <Server className="h-6 w-6 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white mb-1">No lockers deployed yet</p>
+                      <p className="text-xs text-gray-500 max-w-xs">
+                        Deploy your first Vyper locker contract from the admin panel. Each locker holds up to 100 vaults (Tier 1), 500 (Tier 2), or 10 institutional slots (Tier 3).
+                      </p>
+                    </div>
+                    <a
+                      href="/admin"
+                      className="px-4 py-2 rounded-lg text-xs font-semibold bg-monad-purple/10 border border-monad-purple/20 text-monad-purple hover:bg-monad-purple/20 transition-colors"
+                    >
+                      Go to Admin → Chain Ops
+                    </a>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-[auto_1fr_auto_auto_auto] text-[11px] uppercase tracking-wider text-gray-600 px-4 py-2 border-b border-white/5 gap-4">
+                      <span>Tier</span>
+                      <span>Locker ID</span>
+                      <span className="text-right">Capacity</span>
+                      <span className="text-right">Min Deposit</span>
+                      <span className="text-right">Status</span>
+                    </div>
+                    <div className="divide-y divide-white/5 max-h-72 overflow-y-auto">
+                      {filtered.map(l => {
+                        const t = tierLabel(l.tier);
+                        const pct = Math.round((l.usedSlots / l.capacity) * 100);
+                        return (
+                          <div key={l.id} className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center px-4 py-2.5 gap-4 hover:bg-white/[0.02] transition-colors">
+                            <span className={`text-[10px] font-bold font-mono border rounded px-1.5 py-0.5 ${t.color}`}>
+                              {t.label}
+                            </span>
+                            <div>
+                              <span className="font-mono text-xs text-white">{l.externalId}</span>
+                              {l.monadAddress && (
+                                <span className="ml-2 text-[10px] text-gray-600 font-mono">{l.monadAddress.slice(0, 10)}…</span>
+                              )}
+                            </div>
+                            <div className="text-right min-w-[80px]">
+                              <div className="text-xs text-gray-300 font-mono">{l.usedSlots}/{l.capacity}</div>
+                              <div className="h-1 bg-white/10 rounded-full mt-1 overflow-hidden w-16 ml-auto">
+                                <div className="h-full bg-monad-purple/60 rounded-full" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                            <span className="text-xs text-gray-400 font-mono text-right min-w-[70px]">
+                              {parseFloat(l.minDepositSol).toFixed(0)} SOL
+                            </span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColor(l.status)}`}>
+                              {l.status}
+                            </span>
                           </div>
-                        </div>
-                        <span className="text-xs text-gray-400 font-mono text-right min-w-[70px]">
-                          {parseFloat(l.minDepositSol).toFixed(0)} SOL
-                        </span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColor(l.status)}`}>
-                          {l.status}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="px-4 py-2 border-t border-white/5 flex gap-4 text-[10px] text-gray-600">
-                  <span>{allLockers.filter(l => l.status === "full").length} full</span>
-                  <span>{allLockers.filter(l => l.status === "filling").length} filling</span>
-                  <span>{allLockers.filter(l => l.status === "healthy").length} available</span>
-                  {allLockers.some(l => l.status === "distressed") && (
-                    <span className="text-red-400">{allLockers.filter(l => l.status === "distressed").length} distressed</span>
-                  )}
-                </div>
+                        );
+                      })}
+                    </div>
+                    <div className="px-4 py-2 border-t border-white/5 flex gap-4 text-[10px] text-gray-600">
+                      <span>{allLockers.filter(l => l.status === "full").length} full</span>
+                      <span>{allLockers.filter(l => l.status === "filling").length} filling</span>
+                      <span>{allLockers.filter(l => l.status === "healthy").length} available</span>
+                      {allLockers.some(l => l.status === "distressed") && (
+                        <span className="text-red-400">{allLockers.filter(l => l.status === "distressed").length} distressed</span>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           );
