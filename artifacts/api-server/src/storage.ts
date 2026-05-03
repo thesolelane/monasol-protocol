@@ -87,12 +87,6 @@ export class DrizzleStorage implements IStorage {
       });
     }
 
-    // Seed lockers if empty
-    const existingLockers = await db.select().from(lockers).limit(1);
-    if (existingLockers.length === 0) {
-      await this._seedLockers();
-    }
-
     // Seed NFT keys if empty
     const existingNfts = await db.select().from(nftKeys).limit(1);
     if (existingNfts.length === 0) {
@@ -109,24 +103,6 @@ export class DrizzleStorage implements IStorage {
     const existingHistory = await db.select().from(sessionHistory).limit(1);
     if (existingHistory.length === 0) {
       await this._seedSessionHistory();
-    }
-  }
-
-  private async _seedLockers(): Promise<void> {
-    const tiers = [
-      { tier: 1, count: 82, capacity: 100, minDepositSol: "10", statusFn: (i: number) => i < 62 ? "full" : i < 75 ? "filling" : "healthy" },
-      { tier: 2, count: 34, capacity: 500, minDepositSol: "1",  statusFn: (i: number) => (i === 12 || i === 18) ? "distressed" : i < 31 ? "full" : "filling" },
-      { tier: 3, count: 12, capacity: 10,  minDepositSol: "1000", statusFn: (i: number) => i < 5 ? "full" : i < 9 ? "filling" : "healthy" },
-    ];
-
-    for (const t of tiers) {
-      const batch = [];
-      for (let i = 0; i < t.count; i++) {
-        const status = t.statusFn(i);
-        const usedSlots = status === "full" ? t.capacity : status === "filling" ? Math.floor(t.capacity * 0.6) : status === "distressed" ? t.capacity : 0;
-        batch.push({ externalId: `LCK-T${t.tier}-${i}`, tier: t.tier, capacity: t.capacity, usedSlots, status, minDepositSol: t.minDepositSol });
-      }
-      await db.insert(lockers).values(batch);
     }
   }
 

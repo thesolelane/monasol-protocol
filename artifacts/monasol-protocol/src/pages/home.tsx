@@ -330,7 +330,7 @@ export default function Home() {
                               </div>
                             </div>
                             <span className="text-xs text-gray-400 font-mono text-right min-w-[70px]">
-                              {parseFloat(l.minDepositSol).toFixed(0)} SOL
+                              {parseFloat(l.minDepositSol).toFixed(3)} MON
                             </span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColor(l.status)}`}>
                               {l.status}
