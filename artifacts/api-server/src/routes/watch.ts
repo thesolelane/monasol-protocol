@@ -322,71 +322,6 @@ async function fetchSolanaSignatures(
   return results;
 }
 
-/**
- * Get the earliest known on-chain activity timestamp for a Solana wallet.
- *
- * Paginates getSignaturesForAddress up to 5000 signatures to find the
- * historically oldest transaction. Returns null when the wallet has no
- * on-chain history (REJECTED_NOT_FOUND).
- */
-async function runVerification(node: WatchNode): Promise<{
-  passed: boolean;
-  reason?: string;
-}> {
-  if (!isValidXHandle(node.xHandle)) {
-    return { passed: false, reason: "REJECTED_X_NOT_FOUND" };
-  }
-
-  const bearerToken = process.env.TWITTER_BEARER_TOKEN;
-  if (bearerToken) {
-    try {
-      const followsCooperanth = await checkTwitterFollow(
-        node.xHandle,
-        "cooperanthllc",
-        bearerToken,
-      );
-      if (!followsCooperanth) {
-        return { passed: false, reason: "REJECTED_NOT_FOLLOWING" };
-      }
-      if (serverFlags.mprotocolFollowCheckEnabled) {
-        const followsMprotocol = await checkTwitterFollow(
-          node.xHandle,
-          "mprotocol",
-          bearerToken,
-        );
-        if (!followsMprotocol) {
-          return { passed: false, reason: "REJECTED_NOT_FOLLOWING_PROTOCOL" };
-        }
-      }
-    } catch (err) {
-      // Fail closed — do not approve nodes when the Twitter check cannot complete.
-      logger.error({ err }, "watch: Twitter API error — failing closed");
-      return { passed: false, reason: "REJECTED_TWITTER_UNAVAILABLE" };
-    }
-  } else {
-    // Simulation mode: sentinel handles for tests
-    if (node.xHandle.toLowerCase() === "invalid") {
-      return { passed: false, reason: "REJECTED_NOT_FOLLOWING" };
-    }
-    // mprotocolFollowCheckEnabled respected even in simulation mode
-    if (serverFlags.mprotocolFollowCheckEnabled && node.xHandle.toLowerCase() === "noprotocol") {
-      return { passed: false, reason: "REJECTED_NOT_FOLLOWING_PROTOCOL" };
-    }
-  }
-
-  const walletValid =
-    node.chain === "solana"
-      ? isSolanaAddress(node.walletAddress)
-      : isMonadAddress(node.walletAddress);
-
-  if (!walletValid) {
-    return { passed: false, reason: "REJECTED_NOT_FOUND" };
-  }
-
-  // On-chain checks (stub — see comments in prior versions for RPC approach)
-  return { passed: true };
-}
-
 async function getSolanaFirstActivityAgeMs(
   address: string,
   rpcUrl: string,
@@ -714,8 +649,6 @@ function getEstimatedRewards(node: WatchNode): number {
   const baseRate = 0.5; // 0.5 MSL/hour base
   return Math.floor(hoursActive * baseRate * node.tier * 10) / 10;
 }
-
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
