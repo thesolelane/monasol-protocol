@@ -542,6 +542,38 @@ async function runOnChainChecks(
 
 // ─── Twitter follow check ─────────────────────────────────────────────────────
 
+interface TwitterErrorBody {
+  reason?: string;
+  title?: string;
+  detail?: string;
+  errors?: Array<{ message?: string; code?: number }>;
+  data?: Array<{ id: string; username: string }>;
+}
+
+/** Thrown when the Twitter app is not enrolled in a Project (HTTP 403 client-not-enrolled). */
+class TwitterNotEnrolledError extends Error {
+  constructor(detail?: string) {
+    super(
+      `Twitter API: app not attached to a Project — visit https://developer.twitter.com/en/portal/dashboard to fix. Detail: ${detail ?? "client-not-enrolled"}`,
+    );
+    this.name = "TwitterNotEnrolledError";
+  }
+}
+
+/**
+ * Parse a Twitter API v2 JSON response body and throw a typed error for
+ * well-known failure modes before the caller inspects the payload.
+ */
+function assertTwitterResponse(status: number, body: TwitterErrorBody, label: string): void {
+  if (status === 403 && body.reason === "client-not-enrolled") {
+    throw new TwitterNotEnrolledError(body.detail);
+  }
+  if (!String(status).startsWith("2")) {
+    const msg = body.detail ?? body.errors?.[0]?.message ?? `HTTP ${status}`;
+    throw new Error(`${label}: ${msg}`);
+  }
+}
+
 async function checkTwitterFollow(
   fromHandle: string,
   toHandle: string,
@@ -552,11 +584,10 @@ async function checkTwitterFollow(
     `https://api.twitter.com/2/users/by?usernames=${fromHandle},${toHandle}`,
     { headers: { Authorization: `Bearer ${bearerToken}` } },
   );
-  if (!lookupRes.ok) throw new Error(`Twitter user lookup failed: ${lookupRes.status}`);
-  const lookupData = (await lookupRes.json()) as {
-    data?: Array<{ id: string; username: string }>;
-  };
-  const users = lookupData.data || [];
+  const lookupBody = (await lookupRes.json()) as TwitterErrorBody;
+  assertTwitterResponse(lookupRes.status, lookupBody, "Twitter user lookup");
+
+  const users = (lookupBody.data as Array<{ id: string; username: string }>) || [];
   const fromUser = users.find(u => u.username.toLowerCase() === fromHandle.toLowerCase());
   const toUser   = users.find(u => u.username.toLowerCase() === toHandle.toLowerCase());
 
@@ -571,8 +602,10 @@ async function checkTwitterFollow(
     `https://api.twitter.com/2/users/${fromUser.id}/following?max_results=1000&target_user_id=${toUser.id}`,
     { headers: { Authorization: `Bearer ${bearerToken}` } },
   );
-  if (!followRes.ok) throw new Error(`Twitter following lookup failed: ${followRes.status}`);
-  const followData = (await followRes.json()) as { data?: Array<{ id: string }> };
+  const followBody = (await followRes.json()) as TwitterErrorBody;
+  assertTwitterResponse(followRes.status, followBody, "Twitter following lookup");
+
+  const followData = followBody as { data?: Array<{ id: string }> };
   return (followData.data || []).some(u => u.id === toUser.id);
 }
 
@@ -614,15 +647,25 @@ async function runVerification(node: WatchNode): Promise<{ passed: boolean; reas
       }
     } catch (err) {
       // XHandleNotFoundError: the watcher supplied a handle that does not exist on X.
-      // All other errors: Twitter API unavailable — fail closed per security policy.
       if (err instanceof XHandleNotFoundError) {
         return { passed: false, reason: "REJECTED_X_NOT_FOUND" };
       }
+      // TwitterNotEnrolledError: developer app not in a Project — operator config issue.
+      if (err instanceof TwitterNotEnrolledError) {
+        logger.error({ err }, "watch: TWITTER_BEARER_TOKEN app is not enrolled in a Twitter Project — attach the app to a Project at https://developer.twitter.com/en/portal/dashboard");
+        return { passed: false, reason: "REJECTED_TWITTER_UNAVAILABLE" };
+      }
+      // All other errors: Twitter API unreachable — fail closed per security policy.
       logger.error({ err }, "watch: Twitter API error — failing closed");
       return { passed: false, reason: "REJECTED_TWITTER_UNAVAILABLE" };
     }
   } else {
-    // Simulation sentinels (no bearer token configured)
+    // No bearer token — fail closed in production; use sentinels only in development.
+    if (process.env.NODE_ENV === "production") {
+      logger.error("watch: TWITTER_BEARER_TOKEN is not set in production — failing closed");
+      return { passed: false, reason: "REJECTED_TWITTER_UNAVAILABLE" };
+    }
+    // Development-only simulation sentinels
     if (node.xHandle.toLowerCase() === "invalid") {
       return { passed: false, reason: "REJECTED_NOT_FOLLOWING" };
     }
