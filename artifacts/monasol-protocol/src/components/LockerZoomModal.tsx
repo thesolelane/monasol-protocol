@@ -10,6 +10,9 @@ interface Locker {
   usedSlots: number;
   status: string;
   minDepositSol: string | null;
+  monadAddress?: string | null;
+  alertLevel?: "none" | "warning" | "critical";
+  alertCount?: number;
 }
 
 interface LockerZoomModalProps {
@@ -115,9 +118,11 @@ export function LockerZoomModal({ isOpen, onClose, locker }: LockerZoomModalProp
         {/* Header */}
         <div className={`shrink-0 flex items-center justify-between p-5 border-b border-white/10 ${headerBorderClass}`}>
           <div className="flex items-center gap-3">
-            <div className={`h-10 w-10 rounded-xl border flex items-center justify-center ${isDistressed ? "bg-red-500/20 border-red-500/30" : `${tierMeta.bg} ${tierMeta.border}`}`}>
-              {isDistressed
+            <div className={`h-10 w-10 rounded-xl border flex items-center justify-center ${isDistressed ? "bg-red-500/20 border-red-500/30" : locker.alertLevel === "critical" ? "bg-red-500/15 border-red-500/40" : locker.alertLevel === "warning" ? "bg-yellow-500/15 border-yellow-400/40" : `${tierMeta.bg} ${tierMeta.border}`}`}>
+              {isDistressed || locker.alertLevel === "critical"
                 ? <ShieldAlert className="h-5 w-5 text-red-500" />
+                : locker.alertLevel === "warning"
+                ? <ShieldAlert className="h-5 w-5 text-yellow-400" />
                 : <Shield className={`h-5 w-5 ${tierMeta.textColor}`} />
               }
             </div>
@@ -130,10 +135,20 @@ export function LockerZoomModal({ isOpen, onClose, locker }: LockerZoomModalProp
                 >
                   {statusMeta.label.toUpperCase()}
                 </Badge>
+                {locker.alertLevel === "critical" && (
+                  <Badge variant="outline" className="text-[10px] border border-red-500/50 text-red-400 bg-red-500/10 animate-pulse">
+                    {locker.alertCount} CRITICAL ALERT{(locker.alertCount ?? 0) > 1 ? "S" : ""}
+                  </Badge>
+                )}
+                {locker.alertLevel === "warning" && (
+                  <Badge variant="outline" className="text-[10px] border border-yellow-400/50 text-yellow-400 bg-yellow-500/10">
+                    {locker.alertCount} FAULT{(locker.alertCount ?? 0) > 1 ? "S" : ""}
+                  </Badge>
+                )}
               </div>
               <p className="text-xs text-gray-400">
                 {tierMeta.label}: {tierMeta.desc} Locker • {locker.capacity.toLocaleString()} Vault Capacity
-                {locker.minDepositSol && ` • ${locker.minDepositSol} SOL min`}
+                {locker.minDepositSol && ` • ${locker.minDepositSol} MON move-in`}
               </p>
             </div>
           </div>

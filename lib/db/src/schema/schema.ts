@@ -191,3 +191,20 @@ export const sessionHistory = pgTable("session_history", {
 export const insertSessionHistorySchema = createInsertSchema(sessionHistory).omit({ id: true, createdAt: true });
 export type InsertSessionHistory = z.infer<typeof insertSessionHistorySchema>;
 export type SessionHistoryEntry = typeof sessionHistory.$inferSelect;
+
+export const vaultAlerts = pgTable("vault_alerts", {
+  id:            varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vaultAddress:  text("vault_address").notNull(),
+  lockerAddress: text("locker_address").notNull(),
+  slotIndex:     integer("slot_index"),
+  severity:      text("severity").notNull().default("warning"),  // 'warning' | 'critical'
+  alertType:     text("alert_type").notNull(),                   // 'intrusion' | 'error' | 'state_mismatch' | 'rpc_timeout' | 'fault' | etc.
+  message:       text("message"),
+  resolved:      boolean("resolved").notNull().default(false),
+  createdAt:     timestamp("created_at").notNull().default(sql`now()`),
+  resolvedAt:    timestamp("resolved_at"),
+});
+
+export const insertVaultAlertSchema = createInsertSchema(vaultAlerts).omit({ id: true, createdAt: true });
+export type InsertVaultAlert = z.infer<typeof insertVaultAlertSchema>;
+export type VaultAlert = typeof vaultAlerts.$inferSelect;

@@ -39,6 +39,16 @@ router.get("/lockers", async (req, res) => {
       ? await storage.getLockersByTier(tier)
       : await storage.getLockers();
 
+    // Fetch alert summaries for all lockers that have a monad address
+    const alertSummaries = await Promise.all(
+      rows.map(async (l) => {
+        if (!l.monadAddress) return { id: l.id, level: "none" as const, count: 0 };
+        const summary = await storage.getLockerAlertSummary(l.monadAddress);
+        return { id: l.id, ...summary };
+      })
+    );
+    const alertMap = new Map(alertSummaries.map(a => [a.id, a]));
+
     res.json({
       lastSyncedAt: getLastSyncedAt()?.toISOString() ?? null,
       lockers: rows.map((l) => ({
@@ -50,6 +60,8 @@ router.get("/lockers", async (req, res) => {
         status: l.status,
         minDepositSol: l.minDepositSol,
         monadAddress: l.monadAddress,
+        alertLevel: alertMap.get(l.id)?.level ?? "none",
+        alertCount: alertMap.get(l.id)?.count ?? 0,
       })),
     });
   } catch (err) {

@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
-  users, protocolStats, lockers, nftKeys, events, ticketTiers, swapSessions, vaultSessions, sessionHistory, vaults, vaultTransactions,
+  users, protocolStats, lockers, nftKeys, events, ticketTiers, swapSessions, vaultSessions, sessionHistory, vaults, vaultTransactions, vaultAlerts,
   type User,
   type InsertUser,
   type ProtocolStats,
@@ -18,6 +18,8 @@ import {
   type InsertSessionHistory,
   type Vault,
   type InsertVault,
+  type VaultAlert,
+  type InsertVaultAlert,
 } from "@workspace/db";
 
 export interface IStorage {
@@ -63,6 +65,13 @@ export interface IStorage {
   setVaultHistorySharing(vaultId: string, ownerWallet: string, share: boolean): Promise<boolean>;
   getSystemSessionAggregate(vaultId: string): Promise<{ totalSessions: number; totalDurationMs: number; lastActivityAt: Date | null } | null>;
   getProtocolVaultActivityAggregate(): Promise<{ optedInVaults: number; totalSessions: number; totalDurationMs: number; lastActivityAt: Date | null }>;
+
+  // Vault alerts
+  createVaultAlert(data: InsertVaultAlert): Promise<VaultAlert>;
+  getActiveAlertsByLocker(lockerAddress: string): Promise<VaultAlert[]>;
+  getLockerAlertSummary(lockerAddress: string): Promise<{ level: "none" | "warning" | "critical"; count: number }>;
+  resolveVaultAlert(alertId: string): Promise<VaultAlert | undefined>;
+  resolveAllVaultAlerts(lockerAddress: string): Promise<void>;
 }
 
 export class DrizzleStorage implements IStorage {
@@ -352,6 +361,47 @@ export class DrizzleStorage implements IStorage {
       return !latest || e.closedAt > latest ? e.closedAt : latest;
     }, null);
     return { optedInVaults, totalSessions, totalDurationMs, lastActivityAt };
+  }
+
+  // ── Vault Alerts ──────────────────────────────────────────────────────────
+
+  async createVaultAlert(data: InsertVaultAlert): Promise<VaultAlert> {
+    const [alert] = await db
+      .insert(vaultAlerts)
+      .values({ ...data, id: randomUUID() })
+      .returning();
+    return alert;
+  }
+
+  async getActiveAlertsByLocker(lockerAddress: string): Promise<VaultAlert[]> {
+    return db
+      .select()
+      .from(vaultAlerts)
+      .where(and(eq(vaultAlerts.lockerAddress, lockerAddress), eq(vaultAlerts.resolved, false)))
+      .orderBy(desc(vaultAlerts.createdAt));
+  }
+
+  async getLockerAlertSummary(lockerAddress: string): Promise<{ level: "none" | "warning" | "critical"; count: number }> {
+    const active = await this.getActiveAlertsByLocker(lockerAddress);
+    if (active.length === 0) return { level: "none", count: 0 };
+    const hasCritical = active.some(a => a.severity === "critical");
+    return { level: hasCritical ? "critical" : "warning", count: active.length };
+  }
+
+  async resolveVaultAlert(alertId: string): Promise<VaultAlert | undefined> {
+    const [alert] = await db
+      .update(vaultAlerts)
+      .set({ resolved: true, resolvedAt: new Date() })
+      .where(eq(vaultAlerts.id, alertId))
+      .returning();
+    return alert;
+  }
+
+  async resolveAllVaultAlerts(lockerAddress: string): Promise<void> {
+    await db
+      .update(vaultAlerts)
+      .set({ resolved: true, resolvedAt: new Date() })
+      .where(and(eq(vaultAlerts.lockerAddress, lockerAddress), eq(vaultAlerts.resolved, false)));
   }
 }
 
