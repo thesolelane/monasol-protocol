@@ -45,6 +45,7 @@ import {
   getWalletActivity,
   registerNode,
   submitReport,
+  sendPing,
 } from "@/utils/api";
 
 export type NodeStatus =
@@ -76,6 +77,7 @@ export interface WatcherState {
   reportCount: number;
   lockerCount: number;
   estimatedRewards: number;
+  onChainPingCount: number;
   rejectionReason?: string;
 }
 
@@ -301,7 +303,7 @@ export function WatcherProvider({ children }: { children: React.ReactNode }) {
         walletAddress, chain, xHandle, telegramHandle, discordHandle,
         tier, registeredAt, verificationDue,
         uptimeSeconds: Math.floor((Date.now() - registeredAt) / 1000),
-        reportCount: 0, lockerCount: 0, estimatedRewards: 0, rejectionReason,
+        reportCount: 0, lockerCount: 0, estimatedRewards: 0, onChainPingCount: 0, rejectionReason,
       });
 
       const resolvedStatus = (nodeStatus as NodeStatus) || "PENDING";
@@ -333,6 +335,7 @@ export function WatcherProvider({ children }: { children: React.ReactNode }) {
               reportCount: data.reportCount,
               lockerCount: data.lockerCount,
               estimatedRewards: data.estimatedRewards,
+              onChainPingCount: data.onChainPingCount ?? prev.onChainPingCount,
               rejectionReason: data.rejectionReason,
             }
           : null,
@@ -470,9 +473,39 @@ export function WatcherProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Run once immediately, then every 5 minutes
+    // Send an uptime ping every 5 minutes when ACTIVE and Tier 1.
+    // Tier 2+ nodes call ping() directly on-chain — no oracle needed.
+    // Each ping is Ed25519-signed with the device key to prevent spoofing.
+    const tier = node?.tier ?? 1;
+    const pingStep = async () => {
+      if (!isActive) return;
+      if (tier !== 1) return;
+      try {
+        const sk = await secureGetSk(STORAGE_KEYS.ED25519_SK);
+        if (!sk) return;
+
+        const ts = Date.now();
+        const canonical = `ping:${walletAddress}:${ts}`;
+        const msgBytes  = new TextEncoder().encode(canonical);
+        const skBytes   = hexToBytes(sk);
+        const sigBytes  = nacl.sign.detached(msgBytes, skBytes);
+        const sig       = bytesToHex(sigBytes);
+
+        await sendPing(walletAddress, ts, sig);
+        // onChainPingCount is refreshed via refreshStatusFor on the next
+        // polling tick (every 30s). No local state mutation needed here.
+      } catch {
+        // Non-fatal: ping queue is best-effort
+      }
+    };
+
+    // Run monitor + ping immediately, then every 5 minutes
     monitorStep();
-    monitorRef.current = setInterval(monitorStep, 5 * 60 * 1000);
+    pingStep();
+    monitorRef.current = setInterval(() => {
+      monitorStep();
+      pingStep();
+    }, 5 * 60 * 1000);
 
     return () => { if (monitorRef.current) clearInterval(monitorRef.current); };
   }, [status, node?.walletAddress]);
@@ -508,7 +541,7 @@ export function WatcherProvider({ children }: { children: React.ReactNode }) {
         xHandle: data.xHandle, telegramHandle: data.telegramHandle,
         discordHandle: data.discordHandle, tier: 1,
         registeredAt: result.registeredAt, verificationDue: result.verificationDue,
-        uptimeSeconds: 0, reportCount: 0, lockerCount: 0, estimatedRewards: 0,
+        uptimeSeconds: 0, reportCount: 0, lockerCount: 0, estimatedRewards: 0, onChainPingCount: 0,
       });
       setStatus("PENDING");
     },

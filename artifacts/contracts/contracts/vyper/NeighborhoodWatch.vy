@@ -66,6 +66,7 @@ owner: public(address)
 multisig: public(address)
 timelock: public(address)
 msl_token: public(address)
+oracle: public(address)  # Off-chain oracle wallet authorized to submit pings for Tier 1 nodes
 
 watchers: public(HashMap[address, Watcher])
 active_watchers: public(DynArray[address, 100])
@@ -147,6 +148,11 @@ event WatcherPinged:
     timestamp: uint256
     uptime_credit: uint256
 
+event OracleSet:
+    old_oracle: address
+    new_oracle: indexed(address)
+    timestamp: uint256
+
 event WatcherUpgraded:
     watcher: indexed(address)
     old_tier: uint8
@@ -160,6 +166,19 @@ def __init__(_multisig: address, _timelock: address, _msl_token: address):
     self.multisig = _multisig
     self.timelock = _timelock
     self.msl_token = _msl_token
+    self.oracle = empty(address)
+
+@external
+def set_oracle(_oracle: address):
+    """
+    Set the off-chain oracle wallet address.
+    Only owner can call this. The oracle is authorized to call ping_for()
+    on behalf of Tier 1 Community Nodes.
+    """
+    assert msg.sender == self.owner, "Only owner"
+    old: address = self.oracle
+    self.oracle = _oracle
+    log OracleSet(old, _oracle, block.timestamp)
 
 # ─── Watcher Management ──────────────────────────────────────────────────────
 
@@ -273,6 +292,33 @@ def ping():
     self.watchers[msg.sender].last_activity = block.timestamp
 
     log WatcherPinged(msg.sender, block.timestamp, uptime_credit)
+
+@external
+def ping_for(_watcher: address):
+    """
+    Oracle-submitted heartbeat on behalf of a Tier 1 Community Node.
+
+    Only the authorized oracle wallet (set via set_oracle) may call this.
+    This allows the off-chain API server to batch-submit heartbeats for
+    Tier 1 nodes who lack on-chain write access (no stake = no gas budget).
+
+    The ping is credited to _watcher's uptime record, not msg.sender,
+    ensuring attribution is correct for reward calculation.
+    """
+    assert msg.sender == self.oracle, "Only oracle"
+    assert self.oracle != empty(address), "Oracle not set"
+
+    watcher: Watcher = self.watchers[_watcher]
+    assert watcher.is_active, "Not an active watcher"
+    assert watcher.tier == TIER_COMMUNITY, "ping_for is only for Tier 1 nodes"
+
+    time_since_last_ping: uint256 = block.timestamp - watcher.last_ping
+    uptime_credit: uint256 = time_since_last_ping
+
+    self.watchers[_watcher].last_ping = block.timestamp
+    self.watchers[_watcher].last_activity = block.timestamp
+
+    log WatcherPinged(_watcher, block.timestamp, uptime_credit)
 
 # ─── Alert System ────────────────────────────────────────────────────────────
 

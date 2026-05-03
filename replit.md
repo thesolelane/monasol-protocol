@@ -66,11 +66,23 @@ All routes under `/api/watch/`:
 | `POST /register` | Public (rate-limited 5/hr/IP) | Register a watcher node |
 | `GET /status/:address` | Public (rate-limited 120/min/IP) | Get node status, triggers lazy verification |
 | `POST /report` | Node signature | Submit anomaly report (rate-limited 200/15min/IP) |
+| `POST /ping` | Public (rate-limited 1/4min/wallet) | Queue a heartbeat ping for oracle batch submission |
+| `GET /ping-stats/:address` | Public | On-chain ping count + pending buffer depth for a node |
 | `POST /device` | None | Rotate device public key |
 | `GET /nodes` | Admin secret | List all nodes |
 | `GET /audit` | Admin secret | Recent security audit log |
 | `GET /flags` | Admin secret | Read feature flags |
 | `PUT /flags` | Admin secret | Update feature flags |
+
+### On-chain ping batching (Task #22)
+Tier 1 Community Nodes lack the stake to call `ping()` directly on NeighborhoodWatch.vy. Instead:
+1. Mobile app (Tier 1 only) signs a heartbeat with its Ed25519 device key and calls `POST /api/watch/ping` every 5 minutes when ACTIVE
+2. Pings accumulate in-memory (`pingBuffer`): max 24 entries per wallet (2 hours), entries older than 2 hours are dropped on flush
+3. `startPingBatchWorker()` (5-min interval) drains the buffer, calls `ping_for(watcher)` on the contract via the oracle wallet — crediting the **Tier 1 node's address** (not the oracle) with a `WatcherPinged` event
+4. `onChainPingCount` increments by **1** per confirmed on-chain tx (one event = one credit); counter stays 0 until oracle is configured
+5. Home dashboard shows "Pings on-chain: N" stat card (Tier 1 ACTIVE nodes only)
+
+Oracle not configured: pings are re-queued (TTL-bounded), counter stays 0. Set `ORACLE_PRIVATE_KEY`, `NEIGHBORHOOD_WATCH_CONTRACT`, and `MONAD_RPC_URL` to enable live on-chain submission.
 
 ### Security layers
 - **IP rate limiting** (`express-rate-limit`) on all endpoints
@@ -85,3 +97,5 @@ All routes under `/api/watch/`:
 - `VITE_WATCH_ADMIN_SECRET` — same value, for admin panel browser requests
 - `TWITTER_BEARER_TOKEN` — Twitter API v2 bearer token for follow verification
 - `MPROTOCOL_FOLLOW_CHECK` — `"true"` to enable @mprotocol follow requirement at startup
+- `ORACLE_PRIVATE_KEY` — EVM private key for the oracle wallet (enables real on-chain ping submission)
+- `NEIGHBORHOOD_WATCH_CONTRACT` — deployed NeighborhoodWatch.vy address on Monad

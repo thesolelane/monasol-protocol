@@ -53,17 +53,18 @@ function formatMSL(amount: number): string {
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { node, observations, refreshStatus, isRefreshing } = useWatcher();
+  const { node, observations, status, refreshStatus, isRefreshing } = useWatcher();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const tier        = (node?.tier || 1) as 1 | 2;
-  const tierLabel   = tier === 1 ? "Community Node" : "Registered Watcher";
-  const tierColor   = tier === 1 ? colors.accent : colors.purple;
-  const uptimeSecs  = node?.uptimeSeconds || 0;
-  const reportCount = node?.reportCount ?? 0;
-  const lockerCount = node?.lockerCount || observations.length;
+  const tier             = (node?.tier || 1) as 1 | 2;
+  const tierLabel        = tier === 1 ? "Community Node" : "Registered Watcher";
+  const tierColor        = tier === 1 ? colors.accent : colors.purple;
+  const uptimeSecs       = node?.uptimeSeconds || 0;
+  const reportCount      = node?.reportCount ?? 0;
+  const lockerCount      = node?.lockerCount || observations.length;
+  const onChainPingCount = node?.onChainPingCount ?? 0;
 
   // Live accrual numbers
   const hoursActive  = hoursFromSeconds(uptimeSecs);
@@ -233,6 +234,15 @@ export default function HomeScreen() {
           color={colors.success}
           colors={colors}
         />
+        {status === "ACTIVE" && (
+          <StatCard
+            icon="radio"
+            label="Pings on-chain"
+            value={String(onChainPingCount)}
+            color={colors.primary}
+            colors={colors}
+          />
+        )}
       </View>
 
       {/* Mainnet bonus explanation */}

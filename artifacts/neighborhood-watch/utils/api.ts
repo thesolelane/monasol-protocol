@@ -23,6 +23,7 @@ export interface NodeStatusResponse {
   reportCount: number;
   lockerCount: number;
   estimatedRewards: number;
+  onChainPingCount: number;
   xHandle?: string;
   telegramHandle?: string;
   discordHandle?: string;
@@ -126,6 +127,29 @@ export async function submitReport(
     const err = await res.json().catch(() => ({ error: "Report failed" }));
     throw new Error(err.error || "Report submission failed");
   }
+  return res.json();
+}
+
+export async function sendPing(
+  walletAddress: string,
+  timestamp: number,
+  signature: string,
+): Promise<{ queued: boolean; pendingPings: number }> {
+  const res = await fetch(`${getBaseUrl()}/api/watch/ping`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ walletAddress, timestamp, signature }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Ping failed" }));
+    throw new Error(err.error || "Ping failed");
+  }
+  return res.json();
+}
+
+export async function getPingStats(walletAddress: string): Promise<{ onChainPingCount: number; pendingPings: number }> {
+  const res = await fetch(`${getBaseUrl()}/api/watch/ping-stats/${encodeURIComponent(walletAddress)}`);
+  if (!res.ok) return { onChainPingCount: 0, pendingPings: 0 };
   return res.json();
 }
 

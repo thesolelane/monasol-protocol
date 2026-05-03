@@ -20,6 +20,7 @@ export const watchNodes = pgTable("watch_nodes", {
   lockerCount:            integer("locker_count").notNull().default(0),
   consecutiveFailedChecks: integer("consecutive_failed_checks").notNull().default(0),
   nextRecheckAt:          timestamp("next_recheck_at").notNull(),
+  onChainPingCount:       integer("on_chain_ping_count").notNull().default(0),
   updatedAt:              timestamp("updated_at").notNull().default(sql`now()`),
 });
 

@@ -16,6 +16,21 @@ import { logger } from "../lib/logger";
 
 const router = Router();
 
+// ─── Ping accumulator (in-memory, flushed by batch worker) ───────────────────
+/**
+ * Accumulates ping timestamps from Tier 1 Community Nodes before the oracle
+ * wallet submits them to NeighborhoodWatch.vy in batches.
+ *
+ * Map<walletAddress, timestamp[]>
+ *
+ * Bounded per-wallet: max PING_BUFFER_MAX_PER_WALLET entries (oldest are
+ * compacted out). Entries older than PING_BUFFER_TTL_MS are dropped at flush
+ * time so the buffer cannot grow unboundedly when oracle submission is down.
+ */
+const pingBuffer = new Map<string, number[]>();
+const PING_BUFFER_MAX_PER_WALLET = 24;   // 24 × 5-min pings = 2 hours max in-memory
+const PING_BUFFER_TTL_MS = 2 * 60 * 60 * 1000; // drop timestamps older than 2 hours
+
 // ─── Server-side feature flags ────────────────────────────────────────────────
 const serverFlags = {
   monadWalletEnabled:          process.env.FLAG_MONAD_WALLET === "true",
@@ -185,6 +200,20 @@ const reportLimiter = rateLimit({
     const ip = getClientIp(req);
     audit("report_rate_limited", ip, req.body?.walletAddress as string | undefined);
     res.status(429).json({ error: "Too many report submissions. Slow down." });
+  },
+});
+
+const pingLimiter = rateLimit({
+  windowMs: 4 * 60 * 1000,
+  max: 1,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const wallet = (req.body as Record<string, string>)?.walletAddress ?? getClientIp(req);
+    return wallet;
+  },
+  handler(_req, res) {
+    res.status(429).json({ error: "Ping already recorded. Minimum interval is 4 minutes." });
   },
 });
 
@@ -941,6 +970,7 @@ router.get("/status/:address", statusLimiter, async (req, res) => {
       nextRecheckAt: fresh.nextRecheckAt.getTime(), uptimeSeconds: getUptimeSeconds(fresh),
       reportCount: fresh.reportCount, lockerCount: fresh.lockerCount,
       estimatedRewards: getEstimatedRewards(fresh),
+      onChainPingCount: fresh.onChainPingCount,
       xHandle: fresh.xHandle, telegramHandle: fresh.telegramHandle,
       discordHandle: fresh.discordHandle, chain: fresh.chain,
     });
@@ -1021,6 +1051,117 @@ router.post("/device", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "watch: device rotation error");
     return res.status(500).json({ error: "Failed to rotate device key" });
+  }
+});
+
+/**
+ * POST /watch/ping
+ * Rate limited: 1 per wallet per 4 minutes.
+ *
+ * Records a heartbeat timestamp from an ACTIVE Tier 1 Community Node. Pings
+ * accumulate in-memory and are flushed to NeighborhoodWatch.vy on-chain by
+ * the oracle batch worker every 5 minutes.
+ *
+ * Security: requires an Ed25519 signature over the canonical message
+ *   ping:<walletAddress>:<timestamp>
+ * using the device key registered for this node. This prevents any actor from
+ * spoofing pings for another wallet's node and inflating uptime credits.
+ *
+ * Body: { walletAddress, timestamp, signature }
+ *   timestamp: ms since epoch (must be within ±60s of server time)
+ *   signature: 128-char hex Ed25519 detached sig of canonical message
+ */
+router.post("/ping", pingLimiter, async (req, res) => {
+  const ip = getClientIp(req);
+  try {
+    const { walletAddress, timestamp, signature } =
+      req.body as { walletAddress: string; timestamp: number; signature: string };
+
+    if (!walletAddress || !timestamp || !signature) {
+      return res.status(400).json({ error: "walletAddress, timestamp, and signature are required" });
+    }
+
+    if (typeof signature !== "string" || signature.length !== 128) {
+      return res.status(400).json({ error: "signature must be a 128-char hex Ed25519 signature" });
+    }
+
+    const now = Date.now();
+    if (Math.abs(now - timestamp) > 60_000) {
+      audit("ping_stale_timestamp", ip, walletAddress, `delta=${Math.abs(now - timestamp)}ms`);
+      return res.status(400).json({ error: "Ping timestamp expired (must be within ±60s)" });
+    }
+
+    const [node] = await db.select({
+      walletAddress: watchNodes.walletAddress,
+      status: watchNodes.status,
+      tier: watchNodes.tier,
+      devicePublicKey: watchNodes.devicePublicKey,
+    }).from(watchNodes).where(eq(watchNodes.walletAddress, walletAddress));
+
+    if (!node) {
+      return res.status(404).json({ error: "Node not found" });
+    }
+    if (node.status !== "ACTIVE") {
+      audit("ping_inactive_node", ip, walletAddress, node.status);
+      return res.status(403).json({ error: "Only ACTIVE nodes can submit pings" });
+    }
+    if (node.tier !== 1) {
+      return res.status(403).json({ error: "ping batching is for Tier 1 nodes only; Tier 2+ call ping() directly on-chain" });
+    }
+
+    // Verify Ed25519 signature: canonical message is "ping:<wallet>:<timestamp>"
+    const canonical = `ping:${walletAddress}:${timestamp}`;
+    let sigValid = false;
+    try {
+      const msg    = Buffer.from(canonical, "utf8");
+      const sig    = Buffer.from(signature, "hex");
+      const pubKey = Buffer.from(node.devicePublicKey, "hex");
+      sigValid = nacl.sign.detached.verify(
+        new Uint8Array(msg),
+        new Uint8Array(sig),
+        new Uint8Array(pubKey),
+      );
+    } catch {
+      sigValid = false;
+    }
+
+    if (!sigValid) {
+      audit("ping_bad_signature", ip, walletAddress);
+      return res.status(403).json({ error: "Invalid ping signature" });
+    }
+
+    const existing = pingBuffer.get(walletAddress) ?? [];
+    existing.push(timestamp);
+    // Compact: keep only the newest PING_BUFFER_MAX_PER_WALLET entries
+    const bounded = existing.length > PING_BUFFER_MAX_PER_WALLET
+      ? existing.slice(-PING_BUFFER_MAX_PER_WALLET)
+      : existing;
+    pingBuffer.set(walletAddress, bounded);
+
+    audit("ping_queued", ip, walletAddress, `buffer=${bounded.length}`);
+    return res.json({ queued: true, pendingPings: bounded.length });
+  } catch (err) {
+    req.log.error({ err }, "watch: ping error");
+    return res.status(500).json({ error: "Failed to record ping" });
+  }
+});
+
+/**
+ * GET /watch/ping-stats/:address
+ * Returns on-chain ping count and current buffer depth for a node.
+ */
+router.get("/ping-stats/:address", async (req, res) => {
+  try {
+    const address = String(req.params.address);
+    const [node] = await db.select({ onChainPingCount: watchNodes.onChainPingCount })
+      .from(watchNodes).where(eq(watchNodes.walletAddress, address));
+    if (!node) return res.status(404).json({ error: "Node not found" });
+
+    const pendingPings = pingBuffer.get(address)?.length ?? 0;
+    return res.json({ onChainPingCount: node.onChainPingCount, pendingPings });
+  } catch (err) {
+    req.log.error({ err }, "watch: ping-stats error");
+    return res.status(500).json({ error: "Failed to fetch ping stats" });
   }
 });
 
@@ -1547,6 +1688,150 @@ router.get("/audit", async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch audit log" });
   }
 });
+
+// ─── On-chain ping batch worker ───────────────────────────────────────────────
+
+/**
+ * Oracle private key for submitting batched pings to NeighborhoodWatch.vy.
+ *
+ * When ORACLE_PRIVATE_KEY is set, the batch worker submits accumulated pings
+ * to the contract on behalf of Tier 1 nodes via ping_for(watcher).
+ * Without it, the worker logs what it would submit, re-queues fresh timestamps,
+ * and does NOT increment onChainPingCount — the counter only reflects confirmed
+ * on-chain events so it is never overstated in dry-run mode.
+ */
+const ORACLE_PRIVATE_KEY = process.env.ORACLE_PRIVATE_KEY ?? "";
+const NEIGHBORHOOD_WATCH_CONTRACT = process.env.NEIGHBORHOOD_WATCH_CONTRACT ?? "";
+
+/**
+ * Submits a batch of ping timestamps for a single Tier 1 node to
+ * NeighborhoodWatch.vy using the oracle wallet and the `ping_for(watcher)`
+ * function. This correctly attributes uptime to the Tier 1 node's address,
+ * not to the oracle wallet.
+ *
+ * Returns the number of pings confirmed on-chain (0 if unconfigured or failed).
+ * Does NOT increment the counter in dry-run mode — the counter must only
+ * reflect actual on-chain events to remain truthful.
+ */
+async function submitPingBatchOnChain(
+  walletAddress: string,
+  timestamps: number[],
+): Promise<number> {
+  if (!ORACLE_PRIVATE_KEY || !NEIGHBORHOOD_WATCH_CONTRACT || !MONAD_RPC_URL) {
+    logger.info(
+      {
+        walletAddress,
+        count: timestamps.length,
+        contract: NEIGHBORHOOD_WATCH_CONTRACT || "(not set)",
+        reason: "ORACLE_PRIVATE_KEY / NEIGHBORHOOD_WATCH_CONTRACT / MONAD_RPC_URL not configured",
+      },
+      "ping-batch: oracle not configured — skipping on-chain submission (set env vars to enable)",
+    );
+    return 0;
+  }
+
+  try {
+    const { ethers } = await import("ethers");
+    const provider = new ethers.JsonRpcProvider(MONAD_RPC_URL);
+    const signer   = new ethers.Wallet(ORACLE_PRIVATE_KEY, provider);
+
+    // Use ping_for(watcher) — oracle-authorized function that credits the
+    // Tier 1 node's address (not msg.sender) in the contract's watcher map.
+    // One tx per flush is sufficient; the API-side buffer is the audit trail.
+    const abi = ["function ping_for(address _watcher) external"];
+    const contract = new ethers.Contract(NEIGHBORHOOD_WATCH_CONTRACT, abi, signer);
+
+    const tx = await contract.ping_for(walletAddress) as { hash: string; wait: () => Promise<unknown> };
+    await tx.wait();
+
+    logger.info(
+      { walletAddress, bufferedCount: timestamps.length, txHash: tx.hash },
+      "ping-batch: on-chain ping_for confirmed — crediting 1 on-chain ping",
+    );
+    // One tx = one on-chain heartbeat event, regardless of how many timestamps
+    // were buffered in the flush window. The buffer is an activity audit trail;
+    // the on-chain record is the confirmed WatcherPinged event.
+    return 1;
+  } catch (err) {
+    logger.error({ err, walletAddress }, "ping-batch: on-chain submission failed");
+    return 0;
+  }
+}
+
+/**
+ * Starts the ping batch worker. Runs every 5 minutes, drains the in-memory
+ * ping buffer for all active Tier 1 nodes, submits pings to NeighborhoodWatch.vy
+ * via the oracle wallet, and increments onChainPingCount in the DB.
+ *
+ * onChainPingCount is only incremented when a confirmed tx is received.
+ * Failed submissions re-queue their timestamps to prevent data loss.
+ *
+ * Must be called once at server startup alongside startVerificationWorker().
+ */
+export function startPingBatchWorker(): void {
+  const BATCH_INTERVAL = 5 * 60 * 1000;
+
+  async function flushPingBuffer(): Promise<void> {
+    if (pingBuffer.size === 0) return;
+
+    const snapshot = new Map(pingBuffer);
+    pingBuffer.clear();
+
+    for (const [walletAddress, timestamps] of snapshot) {
+      if (timestamps.length === 0) continue;
+      let submitted = 0;
+      try {
+        submitted = await submitPingBatchOnChain(walletAddress, timestamps);
+      } catch (err) {
+        logger.error({ err, walletAddress }, "ping-batch: unexpected error during submission");
+      }
+
+      if (submitted > 0) {
+        try {
+          await db.update(watchNodes)
+            .set({
+              onChainPingCount: sql`${watchNodes.onChainPingCount} + ${submitted}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(watchNodes.walletAddress, walletAddress));
+          audit("ping_batch_submitted", "oracle-worker", walletAddress, `onChainIncrement=${submitted}`);
+        } catch (dbErr) {
+          logger.error({ dbErr, walletAddress }, "ping-batch: DB update failed after on-chain success");
+        }
+      } else {
+        // On-chain submission failed or oracle not configured.
+        // Re-queue only timestamps that are still within the TTL window so the
+        // buffer stays bounded even when the oracle is persistently down.
+        const cutoff = Date.now() - PING_BUFFER_TTL_MS;
+        const fresh  = timestamps.filter((t) => t > cutoff);
+        if (fresh.length > 0) {
+          const current = pingBuffer.get(walletAddress) ?? [];
+          // Merge and keep newest PING_BUFFER_MAX_PER_WALLET entries
+          const merged = [...fresh, ...current];
+          pingBuffer.set(
+            walletAddress,
+            merged.length > PING_BUFFER_MAX_PER_WALLET
+              ? merged.slice(-PING_BUFFER_MAX_PER_WALLET)
+              : merged,
+          );
+          logger.info(
+            { walletAddress, requeued: fresh.length, dropped: timestamps.length - fresh.length },
+            "ping-batch: timestamps re-queued (oracle unavailable)",
+          );
+        } else {
+          logger.info(
+            { walletAddress, dropped: timestamps.length },
+            "ping-batch: all timestamps expired (TTL), dropping",
+          );
+        }
+      }
+    }
+  }
+
+  setInterval(() => { flushPingBuffer().catch(() => {}); }, BATCH_INTERVAL);
+
+  logger.info({ batchIntervalSec: BATCH_INTERVAL / 1000 }, "watch: ping batch worker started");
+}
 
 // ─── Background verification worker ──────────────────────────────────────────
 
