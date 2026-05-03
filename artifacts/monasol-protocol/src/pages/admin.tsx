@@ -696,41 +696,53 @@ export default function AdminDashboard() {
             <div className="mt-6 pt-4 border-t border-white/10 space-y-3">
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-gray-500">
                 <span className="text-[10px] uppercase tracking-widest text-gray-600 font-semibold mr-1">Locker State</span>
+
+                {/* Full — solid fill */}
                 <span className="flex items-center gap-2">
-                  <div className="flex rounded-sm overflow-hidden border border-white/20" style={{ width: 26, height: 12 }}>
-                    <div className="flex-1 bg-monad-purple/80" title="Tier 1" />
-                    <div className="flex-1 bg-solana-green/80" title="Tier 2" />
-                    <div className="flex-1 bg-blue-400/90" title="Tier 3" />
+                  <div className="relative w-4 h-4 rounded-sm border border-white/30 overflow-hidden">
+                    <div className="absolute inset-0 bg-white/70" />
                   </div>
                   Full Capacity
                 </span>
+
+                {/* Accepting — half fill from bottom */}
                 <span className="flex items-center gap-2">
-                  <div className="flex rounded-sm overflow-hidden border border-white/20" style={{ width: 26, height: 12 }}>
-                    <div className="flex-1 bg-monad-purple/45" title="Tier 1" />
-                    <div className="flex-1 bg-solana-green/45" title="Tier 2" />
-                    <div className="flex-1 bg-blue-400/65" title="Tier 3" />
+                  <div className="relative w-4 h-4 rounded-sm border border-white/30 overflow-hidden bg-black/40">
+                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-white/50" />
                   </div>
                   Accepting Deposits
                 </span>
+
+                {/* Live/Empty — border only */}
                 <span className="flex items-center gap-2">
-                  <div className="flex rounded-sm overflow-hidden border border-white/20" style={{ width: 26, height: 12 }}>
-                    <div className="flex-1 bg-monad-purple/15" title="Tier 1" />
-                    <div className="flex-1 bg-solana-green/15" title="Tier 2" />
-                    <div className="flex-1 bg-blue-400/30" title="Tier 3" />
-                  </div>
+                  <div className="w-4 h-4 rounded-sm border-2 border-white/35 bg-transparent" />
                   Live / Empty
                 </span>
+
+                <span className="text-[10px] text-gray-700 mx-1">·</span>
+
+                {/* Tier color dots */}
+                <span className="flex items-center gap-1.5 text-gray-600">
+                  <span className="text-[10px] uppercase tracking-widest font-semibold mr-0.5">Tier</span>
+                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-monad-purple/80" /> T1</span>
+                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-solana-green/80" /> T2</span>
+                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-blue-400/90" /> T3</span>
+                </span>
+
+                <span className="text-[10px] text-gray-700 mx-1">·</span>
+
                 <span className="flex items-center gap-2 text-red-400">
                   <div className="w-3 h-3 rounded-sm bg-red-500 border border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" />
                   Distressed / Frozen
                 </span>
+
                 <span className="text-[10px] uppercase tracking-widest text-gray-600 font-semibold mx-1">Alert Ring</span>
                 <span className="flex items-center gap-2 text-yellow-400">
-                  <div className="w-3 h-3 rounded-sm bg-green-500/15 border border-green-500/35 ring-2 ring-yellow-400 shadow-[0_0_5px_rgba(234,179,8,0.4)]" />
+                  <div className="w-3 h-3 rounded-sm border border-white/20 ring-2 ring-yellow-400 shadow-[0_0_5px_rgba(234,179,8,0.4)]" />
                   Fault Warning
                 </span>
                 <span className="flex items-center gap-2 text-red-400">
-                  <div className="w-3 h-3 rounded-sm bg-green-500/15 border border-green-500/35 ring-2 ring-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse" />
+                  <div className="w-3 h-3 rounded-sm border border-white/20 ring-2 ring-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse" />
                   Critical Alert
                 </span>
               </div>
