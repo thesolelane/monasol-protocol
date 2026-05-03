@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DeployLockerModal } from "@/components/DeployLockerModal";
 import { LockerZoomModal } from "@/components/LockerZoomModal";
-import { Shield, Server, Users, ArrowLeft, ShieldAlert, KeyRound, Link as LinkIcon, EyeOff, FileCode2, FlaskConical, Eye, AlertTriangle, CheckCircle, XCircle, Clock, Radio, Activity } from "lucide-react";
+import { Shield, Server, Users, ArrowLeft, ShieldAlert, KeyRound, Link as LinkIcon, EyeOff, FileCode2, FlaskConical, Eye, AlertTriangle, CheckCircle, XCircle, Clock, Radio, Activity, Youtube, Instagram, Mail, Send, Hash, MessageSquare } from "lucide-react";
 import { getFeatureFlags, setFeatureFlag, pushFlagToServer } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -374,6 +374,15 @@ export default function AdminDashboard() {
   const [mslSolanaSaved, setMslSolanaSaved] = useState(false);
   const [mslMonadSaved, setMslMonadSaved] = useState(false);
   const [mprotocolFollowCheckEnabled, setMprotocolFollowCheckEnabled] = useState(() => getFeatureFlags().mprotocolFollowCheckEnabled);
+  const [discordUrl, setDiscordUrl] = useState(() => getFeatureFlags().discordUrl);
+  const [telegramUrl, setTelegramUrl] = useState(() => getFeatureFlags().telegramUrl);
+  const [youtubeUrl, setYoutubeUrl] = useState(() => getFeatureFlags().youtubeUrl);
+  const [redditUrl, setRedditUrl] = useState(() => getFeatureFlags().redditUrl);
+  const [instagramUrl, setInstagramUrl] = useState(() => getFeatureFlags().instagramUrl);
+  const [contactEmail, setContactEmail] = useState(() => getFeatureFlags().contactEmail);
+  const [noreplyEmail, setNoreplyEmail] = useState(() => getFeatureFlags().noreplyEmail);
+  const [socialsSaved, setSocialsSaved] = useState(false);
+  const [emailsSaved, setEmailsSaved] = useState(false);
 
   async function handleAdminLogin(token: string) {
     try {
@@ -388,9 +397,32 @@ export default function AdminDashboard() {
       if (typeof f.mslTokenAddressSolana === "string") { setFeatureFlag("mslTokenAddressSolana", f.mslTokenAddressSolana); setMslTokenAddressSolana(f.mslTokenAddressSolana); }
       if (typeof f.mslTokenAddressMonad === "string") { setFeatureFlag("mslTokenAddressMonad", f.mslTokenAddressMonad); setMslTokenAddressMonad(f.mslTokenAddressMonad); }
       if (typeof f.mprotocolFollowCheckEnabled === "boolean") { setFeatureFlag("mprotocolFollowCheckEnabled", f.mprotocolFollowCheckEnabled); setMprotocolFollowCheckEnabled(f.mprotocolFollowCheckEnabled); }
+      if (typeof f.discordUrl === "string")   { setFeatureFlag("discordUrl", f.discordUrl);     setDiscordUrl(f.discordUrl as string); }
+      if (typeof f.telegramUrl === "string")  { setFeatureFlag("telegramUrl", f.telegramUrl);   setTelegramUrl(f.telegramUrl as string); }
+      if (typeof f.youtubeUrl === "string")   { setFeatureFlag("youtubeUrl", f.youtubeUrl);     setYoutubeUrl(f.youtubeUrl as string); }
+      if (typeof f.redditUrl === "string")    { setFeatureFlag("redditUrl", f.redditUrl);       setRedditUrl(f.redditUrl as string); }
+      if (typeof f.instagramUrl === "string") { setFeatureFlag("instagramUrl", f.instagramUrl); setInstagramUrl(f.instagramUrl as string); }
+      if (typeof f.contactEmail === "string") { setFeatureFlag("contactEmail", f.contactEmail); setContactEmail(f.contactEmail as string); }
+      if (typeof f.noreplyEmail === "string") { setFeatureFlag("noreplyEmail", f.noreplyEmail); setNoreplyEmail(f.noreplyEmail as string); }
     } catch {
       // Non-critical — flags already loaded from localStorage
     }
+  }
+
+  async function saveSocials() {
+    const patch = { discordUrl, telegramUrl, youtubeUrl, redditUrl, instagramUrl };
+    (Object.entries(patch) as [keyof typeof patch, string][]).forEach(([k, v]) => setFeatureFlag(k, v));
+    await pushFlagToServer(patch);
+    setSocialsSaved(true);
+    setTimeout(() => setSocialsSaved(false), 2000);
+  }
+
+  async function saveEmails() {
+    const patch = { contactEmail, noreplyEmail };
+    (Object.entries(patch) as [keyof typeof patch, string][]).forEach(([k, v]) => setFeatureFlag(k, v));
+    await pushFlagToServer(patch);
+    setEmailsSaved(true);
+    setTimeout(() => setEmailsSaved(false), 2000);
   }
 
   async function saveMslSolana(value: string) {
@@ -1014,7 +1046,7 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            <div className="pt-5 space-y-5">
+            <div className="pt-5 space-y-6">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <p className="text-sm font-semibold text-gray-200">MSL Token — Solana</p>
@@ -1075,6 +1107,91 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Community Channels */}
+          <div className="bg-black/40 border border-white/5 rounded-xl p-6 backdrop-blur-sm mt-4">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <p className="text-sm font-semibold text-white">Community Channels</p>
+                <p className="text-xs text-gray-400 mt-0.5">Official social links — leave blank until live. Stored server-side.</p>
+              </div>
+              <button
+                onClick={saveSocials}
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition-colors shrink-0"
+              >
+                {socialsSaved ? "Saved ✓" : "Save All"}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                { label: "Discord",   icon: <Hash      className="h-3.5 w-3.5 text-indigo-400" />, value: discordUrl,   setter: setDiscordUrl,   placeholder: "https://discord.gg/…",         color: "focus:border-indigo-400/50" },
+                { label: "Telegram",  icon: <Send      className="h-3.5 w-3.5 text-sky-400"    />, value: telegramUrl,  setter: setTelegramUrl,  placeholder: "https://t.me/…",               color: "focus:border-sky-400/50"    },
+                { label: "YouTube",   icon: <Youtube   className="h-3.5 w-3.5 text-red-400"    />, value: youtubeUrl,   setter: setYoutubeUrl,   placeholder: "https://youtube.com/@…",       color: "focus:border-red-400/50"    },
+                { label: "Reddit",    icon: <MessageSquare className="h-3.5 w-3.5 text-orange-400" />, value: redditUrl, setter: setRedditUrl,    placeholder: "https://reddit.com/r/…",       color: "focus:border-orange-400/50" },
+                { label: "Instagram", icon: <Instagram className="h-3.5 w-3.5 text-pink-400"   />, value: instagramUrl, setter: setInstagramUrl, placeholder: "@handle",                      color: "focus:border-pink-400/50"   },
+              ].map(({ label, icon, value, setter, placeholder, color }) => (
+                <div key={label}>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    {icon}
+                    <p className="text-xs font-medium text-gray-300">{label}</p>
+                  </div>
+                  <input
+                    type="text"
+                    value={value}
+                    onChange={e => setter(e.target.value)}
+                    placeholder={placeholder}
+                    className={`w-full bg-black/60 border border-white/30 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors ${color}`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Contact & Email */}
+          <div className="bg-black/40 border border-white/5 rounded-xl p-6 backdrop-blur-sm mt-4">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <p className="text-sm font-semibold text-white">Contact & Email</p>
+                <p className="text-xs text-gray-400 mt-0.5">Public contact address and internal no-reply sender.</p>
+              </div>
+              <button
+                onClick={saveEmails}
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition-colors shrink-0"
+              >
+                {emailsSaved ? "Saved ✓" : "Save All"}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Mail className="h-3.5 w-3.5 text-teal-400" />
+                  <p className="text-xs font-medium text-gray-300">Contact Email</p>
+                </div>
+                <input
+                  type="email"
+                  value={contactEmail}
+                  onChange={e => setContactEmail(e.target.value)}
+                  placeholder="hello@cooperantllc.com"
+                  className="w-full bg-black/60 border border-white/30 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-teal-400/50 transition-colors"
+                />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Mail className="h-3.5 w-3.5 text-gray-400" />
+                  <p className="text-xs font-medium text-gray-300">No-Reply Email</p>
+                </div>
+                <input
+                  type="email"
+                  value={noreplyEmail}
+                  onChange={e => setNoreplyEmail(e.target.value)}
+                  placeholder="noreply@cooperantllc.com"
+                  className="w-full bg-black/60 border border-white/30 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gray-400/50 transition-colors"
+                />
+                <p className="text-xs text-gray-500 mt-1.5">Internal only — not exposed publicly.</p>
+              </div>
+            </div>
+          </div>
+
         </div>
         </div>
 

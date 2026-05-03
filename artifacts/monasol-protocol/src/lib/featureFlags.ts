@@ -7,6 +7,13 @@ interface FeatureFlags {
   mslTokenAddressSolana: string;
   mslTokenAddressMonad: string;
   mprotocolFollowCheckEnabled: boolean;
+  discordUrl: string;
+  telegramUrl: string;
+  youtubeUrl: string;
+  redditUrl: string;
+  instagramUrl: string;
+  contactEmail: string;
+  noreplyEmail: string;
 }
 
 const DEFAULTS: FeatureFlags = {
@@ -15,6 +22,13 @@ const DEFAULTS: FeatureFlags = {
   mslTokenAddressSolana: "",
   mslTokenAddressMonad: "",
   mprotocolFollowCheckEnabled: false,
+  discordUrl: "",
+  telegramUrl: "",
+  youtubeUrl: "",
+  redditUrl: "",
+  instagramUrl: "",
+  contactEmail: "",
+  noreplyEmail: "",
 };
 
 export function getFeatureFlags(): FeatureFlags {

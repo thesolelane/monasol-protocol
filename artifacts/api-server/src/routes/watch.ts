@@ -38,6 +38,13 @@ const serverFlags = {
   mslTokenAddressSolana:       process.env.MSL_TOKEN_SOLANA ?? "",
   mslTokenAddressMonad:        process.env.MSL_TOKEN_MONAD ?? "",
   mprotocolFollowCheckEnabled: process.env.MPROTOCOL_FOLLOW_CHECK === "true",
+  discordUrl:                  process.env.DISCORD_URL ?? "",
+  telegramUrl:                 process.env.TELEGRAM_URL ?? "",
+  youtubeUrl:                  process.env.YOUTUBE_URL ?? "",
+  redditUrl:                   process.env.REDDIT_URL ?? "",
+  instagramUrl:                process.env.INSTAGRAM_URL ?? "",
+  contactEmail:                process.env.CONTACT_EMAIL ?? "",
+  noreplyEmail:                process.env.NOREPLY_EMAIL ?? "",
 };
 
 // Admin secret
@@ -815,6 +822,13 @@ router.put("/flags", (req, res) => {
     serverFlags.mprotocolFollowCheckEnabled = body.mprotocolFollowCheckEnabled;
     audit("admin_flag_updated", ip, undefined, `mprotocolFollowCheckEnabled=${body.mprotocolFollowCheckEnabled}`);
   }
+  if (typeof body.discordUrl === "string")   { serverFlags.discordUrl   = body.discordUrl;   audit("admin_flag_updated", ip, undefined, "discordUrl updated"); }
+  if (typeof body.telegramUrl === "string")  { serverFlags.telegramUrl  = body.telegramUrl;  audit("admin_flag_updated", ip, undefined, "telegramUrl updated"); }
+  if (typeof body.youtubeUrl === "string")   { serverFlags.youtubeUrl   = body.youtubeUrl;   audit("admin_flag_updated", ip, undefined, "youtubeUrl updated"); }
+  if (typeof body.redditUrl === "string")    { serverFlags.redditUrl    = body.redditUrl;    audit("admin_flag_updated", ip, undefined, "redditUrl updated"); }
+  if (typeof body.instagramUrl === "string") { serverFlags.instagramUrl = body.instagramUrl; audit("admin_flag_updated", ip, undefined, "instagramUrl updated"); }
+  if (typeof body.contactEmail === "string") { serverFlags.contactEmail = body.contactEmail; audit("admin_flag_updated", ip, undefined, "contactEmail updated"); }
+  if (typeof body.noreplyEmail === "string") { serverFlags.noreplyEmail = body.noreplyEmail; audit("admin_flag_updated", ip, undefined, "noreplyEmail updated"); }
   return res.json({ success: true, flags: { ...serverFlags } });
 });
 
@@ -830,6 +844,12 @@ router.get("/public-flags", (_req, res) => {
     neighborhoodWatchEnabled: serverFlags.neighborhoodWatchEnabled,
     mslTokenAddressSolana:    serverFlags.mslTokenAddressSolana,
     mslTokenAddressMonad:     serverFlags.mslTokenAddressMonad,
+    discordUrl:               serverFlags.discordUrl,
+    telegramUrl:              serverFlags.telegramUrl,
+    youtubeUrl:               serverFlags.youtubeUrl,
+    redditUrl:                serverFlags.redditUrl,
+    instagramUrl:             serverFlags.instagramUrl,
+    contactEmail:             serverFlags.contactEmail,
   });
 });
 
