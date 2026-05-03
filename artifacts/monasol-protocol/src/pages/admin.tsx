@@ -446,21 +446,21 @@ export default function AdminDashboard() {
   const syncLatency = stats ? `~${stats.syncLatencyMs}ms` : "~400ms";
   const circuitBreakerActive = stats?.circuitBreakerActive ?? false;
 
-  function lockerColor(locker: Locker, index: number): string {
+  function lockerColor(locker: Locker, _index: number): string {
     if (locker.status === "distressed") return "bg-red-500 border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse z-10 relative cursor-pointer";
     if (locker.tier === 1) {
-      return locker.status === "full" ? "bg-monad-purple/80 border-monad-purple" :
-        locker.status === "filling" ? "bg-monad-purple/40 border-monad-purple/50" :
-        "bg-white/5 border-white/10";
+      return locker.status === "full"     ? "bg-monad-purple/80 border-monad-purple" :
+             locker.status === "filling"  ? "bg-monad-purple/40 border-monad-purple/50" :
+                                           "bg-monad-purple/15 border-monad-purple/35";
     }
     if (locker.tier === 2) {
-      return locker.status === "full" ? "bg-solana-green/80 border-solana-green" :
-        locker.status === "filling" ? "bg-solana-green/40 border-solana-green/50" :
-        "bg-white/5 border-white/10";
+      return locker.status === "full"     ? "bg-solana-green/80 border-solana-green" :
+             locker.status === "filling"  ? "bg-solana-green/40 border-solana-green/50" :
+                                           "bg-solana-green/15 border-solana-green/35";
     }
-    return locker.status === "full" ? "bg-blue-500/80 border-blue-500" :
-      locker.status === "filling" ? "bg-blue-500/40 border-blue-500/50" :
-      "bg-white/5 border-white/10";
+    return locker.status === "full"     ? "bg-blue-500/80 border-blue-500" :
+           locker.status === "filling"  ? "bg-blue-500/40 border-blue-500/50" :
+                                         "bg-blue-500/15 border-blue-500/35";
   }
 
   const tier1Full = tier1Lockers.filter(l => l.status === "full").length;
