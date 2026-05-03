@@ -69,6 +69,45 @@ router.get("/lockers", async (req, res) => {
   }
 });
 
+// ── Per-locker alert drill-down ────────────────────────────────────────────
+const NEXT_STEP: Record<string, string> = {
+  state_mismatch:    "Re-verify Merkle proof for this vault slot. Force state sync if this repeats within 2 cycles.",
+  intrusion:         "Quarantine vault immediately. Escalate to security team. Do not interact until cleared.",
+  rpc_timeout:       "Check RPC node health. Retry sync in 30s. If persistent, rotate RPC endpoint.",
+  fault:             "Run vault diagnostic scan. Inspect storage slot for on-chain corruption.",
+  error:             "Review on-chain transaction logs for this slot. Manual intervention may be required.",
+  honeypot:          "Vault quarantined by circuit breaker. Await security clearance before any interaction.",
+  oracle_failure:    "Oracle feed is stale or unreachable. Verify oracle keypair and devnet connectivity.",
+  front_run:         "Suspicious MEV pattern detected. Review recent block history for this vault slot.",
+  storage_collision: "Two vaults share this storage slot. Halt new deposits and remap PDA derivation.",
+  init_error:        "Vault failed initialization. Re-deploy with fresh PDA derivation.",
+};
+
+router.get("/lockers/:lockerId/alerts", async (req, res) => {
+  try {
+    const locker = (await storage.getLockers()).find(l => l.id === req.params.lockerId);
+    if (!locker) return res.status(404).json({ error: "Locker not found" });
+    const monadAddress = locker.monadAddress;
+    if (!monadAddress) return res.json({ lockerId: locker.id, alerts: [] });
+
+    const rows = await storage.getActiveAlertsByLocker(monadAddress);
+    const alerts = rows.map(a => ({
+      id:           a.id,
+      vaultAddress: a.vaultAddress,
+      slotIndex:    a.slotIndex,
+      severity:     a.severity,
+      alertType:    a.alertType,
+      message:      a.message,
+      createdAt:    a.createdAt.toISOString(),
+      nextStep:     NEXT_STEP[a.alertType] ?? "Investigate root cause and resolve, or escalate to protocol team.",
+    }));
+
+    return res.json({ lockerId: locker.id, alerts });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to fetch locker alerts" });
+  }
+});
+
 router.get("/nfts", async (req, res) => {
   try {
     const wallet = (req.query.wallet as string) || "8xR...3kL";
