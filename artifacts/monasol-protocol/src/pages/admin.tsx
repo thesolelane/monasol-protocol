@@ -693,59 +693,66 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/10 space-y-3">
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-400">
-                <span className="text-xs uppercase tracking-widest text-gray-500 font-semibold mr-1">Locker State</span>
+            <div className="mt-6 pt-4 border-t border-white/10">
+              <div className="grid grid-cols-3 gap-6 text-sm text-gray-400">
 
-                {/* Full — solid fill */}
-                <span className="flex items-center gap-2">
-                  <div className="relative w-5 h-5 rounded-sm border border-white/30 overflow-hidden">
-                    <div className="absolute inset-0 bg-white/70" />
-                  </div>
-                  Full Capacity
-                </span>
+                {/* Column 1 — Locker State */}
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-3">Locker State</p>
+                  <span className="flex items-center gap-2.5">
+                    <div className="relative w-5 h-5 rounded-sm border border-white/30 overflow-hidden shrink-0">
+                      <div className="absolute inset-0 bg-white/70" />
+                    </div>
+                    Full Capacity
+                  </span>
+                  <span className="flex items-center gap-2.5">
+                    <div className="relative w-5 h-5 rounded-sm border border-white/30 overflow-hidden bg-black/40 shrink-0">
+                      <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-white/50" />
+                    </div>
+                    Accepting Deposits
+                  </span>
+                  <span className="flex items-center gap-2.5">
+                    <div className="w-5 h-5 rounded-sm border-2 border-white/35 bg-transparent shrink-0" />
+                    Live / Empty
+                  </span>
+                </div>
 
-                {/* Accepting — half fill from bottom */}
-                <span className="flex items-center gap-2">
-                  <div className="relative w-5 h-5 rounded-sm border border-white/30 overflow-hidden bg-black/40">
-                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-white/50" />
-                  </div>
-                  Accepting Deposits
-                </span>
+                {/* Column 2 — Alert Ring */}
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-3">Alert Ring</p>
+                  <span className="flex items-center gap-2.5 text-red-400">
+                    <div className="w-5 h-5 rounded-sm bg-red-500 border border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse shrink-0" />
+                    Distressed / Frozen
+                  </span>
+                  <span className="flex items-center gap-2.5 text-yellow-400">
+                    <div className="w-5 h-5 rounded-sm border border-white/20 ring-2 ring-yellow-400 shadow-[0_0_5px_rgba(234,179,8,0.4)] shrink-0" />
+                    Fault Warning
+                  </span>
+                  <span className="flex items-center gap-2.5 text-red-400">
+                    <div className="w-5 h-5 rounded-sm border border-white/20 ring-2 ring-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse shrink-0" />
+                    Critical Alert
+                  </span>
+                </div>
 
-                {/* Live/Empty — border only */}
-                <span className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-sm border-2 border-white/35 bg-transparent" />
-                  Live / Empty
-                </span>
+                {/* Column 3 — Tier Colors */}
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-3">Tier Color</p>
+                  <span className="flex items-center gap-2.5 text-gray-400">
+                    <div className="w-5 h-5 rounded-sm bg-monad-purple/80 shrink-0" />
+                    Tier 1 — High Capacity
+                  </span>
+                  <span className="flex items-center gap-2.5 text-gray-400">
+                    <div className="w-5 h-5 rounded-sm bg-solana-green/80 shrink-0" />
+                    Tier 2 — Standard
+                  </span>
+                  <span className="flex items-center gap-2.5 text-gray-400">
+                    <div className="w-5 h-5 rounded-sm bg-blue-400/90 shrink-0" />
+                    Tier 3 — Institutional
+                  </span>
+                </div>
 
-                <span className="text-gray-700 mx-1">·</span>
-
-                <span className="text-xs uppercase tracking-widest text-gray-500 font-semibold mx-1">Alert Ring</span>
-                <span className="flex items-center gap-2 text-red-400">
-                  <div className="w-4 h-4 rounded-sm bg-red-500 border border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" />
-                  Distressed / Frozen
-                </span>
-                <span className="flex items-center gap-2 text-yellow-400">
-                  <div className="w-4 h-4 rounded-sm border border-white/20 ring-2 ring-yellow-400 shadow-[0_0_5px_rgba(234,179,8,0.4)]" />
-                  Fault Warning
-                </span>
-                <span className="flex items-center gap-2 text-red-400">
-                  <div className="w-4 h-4 rounded-sm border border-white/20 ring-2 ring-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse" />
-                  Critical Alert
-                </span>
-
-                <span className="text-gray-700 mx-1">·</span>
-
-                {/* Tier color dots */}
-                <span className="flex items-center gap-2 text-gray-500">
-                  <span className="text-xs uppercase tracking-widest font-semibold mr-0.5">Tier</span>
-                  <span className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded-sm bg-monad-purple/80" /> T1</span>
-                  <span className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded-sm bg-solana-green/80" /> T2</span>
-                  <span className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded-sm bg-blue-400/90" /> T3</span>
-                </span>
               </div>
-              <p className="text-[10px] text-gray-600">
+              <p className="text-[10px] text-gray-600 mt-4">
                 {lastSyncedAt
                   ? `Chain sync: ${new Date(lastSyncedAt).toLocaleTimeString()} · refreshes every 12s`
                   : "Syncing from chain…"}
