@@ -3,13 +3,15 @@ const FLAGS_KEY = "monasol_feature_flags";
 interface FeatureFlags {
   monadWalletEnabled: boolean;
   neighborhoodWatchEnabled: boolean;
-  mslTokenAddress: string;
+  mslTokenAddressSolana: string;
+  mslTokenAddressMonad: string;
 }
 
 const DEFAULTS: FeatureFlags = {
   monadWalletEnabled: false,
   neighborhoodWatchEnabled: false,
-  mslTokenAddress: "",
+  mslTokenAddressSolana: "",
+  mslTokenAddressMonad: "",
 };
 
 export function getFeatureFlags(): FeatureFlags {
