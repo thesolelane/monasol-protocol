@@ -1026,7 +1026,7 @@ export default function AdminDashboard() {
                     value={mslTokenAddressSolana}
                     onChange={e => setMslTokenAddressSolana(e.target.value)}
                     placeholder="Base58 mint address… paste when deployed"
-                    className="flex-1 bg-black/60 border border-white/15 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-gray-500 focus:outline-none focus:border-solana-green/50 transition-colors"
+                    className="flex-1 bg-black/60 border border-white/30 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-gray-500 focus:outline-none focus:border-solana-green/60 transition-colors"
                   />
                   <button
                     onClick={() => saveMslSolana(mslTokenAddressSolana)}
@@ -1053,7 +1053,7 @@ export default function AdminDashboard() {
                     value={mslTokenAddressMonad}
                     onChange={e => setMslTokenAddressMonad(e.target.value)}
                     placeholder="0x… paste bridged ERC-20 address when live"
-                    className="flex-1 bg-black/60 border border-white/15 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-gray-500 focus:outline-none focus:border-monad-purple/50 transition-colors"
+                    className="flex-1 bg-black/60 border border-white/30 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-gray-500 focus:outline-none focus:border-monad-purple/60 transition-colors"
                   />
                   <button
                     onClick={() => saveMslMonad(mslTokenAddressMonad)}
