@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, integer, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, uniqueIndex, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -39,7 +39,10 @@ export const watchNonces = pgTable(
     nonce:         text("nonce").notNull(),
     createdAt:     timestamp("created_at").notNull().default(sql`now()`),
   },
-  (t) => [uniqueIndex("watch_nonces_wallet_nonce_idx").on(t.walletAddress, t.nonce)],
+  (t) => [
+    uniqueIndex("watch_nonces_wallet_nonce_idx").on(t.walletAddress, t.nonce),
+    index("watch_nonces_created_at_idx").on(t.createdAt),
+  ],
 );
 
 export type WatchNonce = typeof watchNonces.$inferSelect;

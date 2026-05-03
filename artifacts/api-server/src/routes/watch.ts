@@ -1508,15 +1508,18 @@ router.get("/audit", async (req, res) => {
 // ─── Background verification worker ──────────────────────────────────────────
 
 /**
- * Starts two scheduled jobs:
+ * Starts three scheduled jobs:
  *  - Pending check (every 5 min): verifies PENDING nodes past their 48h window.
  *  - Active recheck (every 30 min): re-runs verification for ACTIVE nodes past nextRecheckAt.
+ *  - Nonce cleanup (every 10 min): globally deletes watch_nonces rows older than the TTL
+ *    window, ensuring the table stays bounded regardless of wallet activity.
  *
  * Runs in-process. Must be called once at server startup.
  */
 export function startVerificationWorker(): void {
-  const PENDING_INTERVAL = 5  * 60 * 1000;
-  const ACTIVE_INTERVAL  = 30 * 60 * 1000;
+  const PENDING_INTERVAL       = 5  * 60 * 1000;
+  const ACTIVE_INTERVAL        = 30 * 60 * 1000;
+  const NONCE_CLEANUP_INTERVAL = 10 * 60 * 1000;
 
   async function processPendingNodes(): Promise<void> {
     const now = new Date();
@@ -1591,11 +1594,25 @@ export function startVerificationWorker(): void {
     }
   }
 
+  async function purgeExpiredNonces(): Promise<void> {
+    try {
+      const expiry = new Date(Date.now() - NONCE_TTL_MS);
+      await db.delete(watchNonces).where(lt(watchNonces.createdAt, expiry));
+    } catch (err) {
+      logger.error({ err }, "watch-worker: nonce cleanup failed");
+    }
+  }
+
   setInterval(() => { processPendingNodes().catch(() => {}); }, PENDING_INTERVAL);
   setInterval(() => { processActiveNodes().catch(() => {}); }, ACTIVE_INTERVAL);
+  setInterval(() => { purgeExpiredNonces().catch(() => {}); }, NONCE_CLEANUP_INTERVAL);
 
   logger.info(
-    { pendingIntervalSec: PENDING_INTERVAL / 1000, activeIntervalSec: ACTIVE_INTERVAL / 1000 },
+    {
+      pendingIntervalSec: PENDING_INTERVAL / 1000,
+      activeIntervalSec: ACTIVE_INTERVAL / 1000,
+      nonceCleanupIntervalSec: NONCE_CLEANUP_INTERVAL / 1000,
+    },
     "watch: background verification worker started",
   );
 }
