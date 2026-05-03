@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/neighborhood-watch/"
+title = "Neighborhood Watch"
+version = "1.0.0"
+id = "artifacts/neighborhood-watch"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/neighborhood-watch/" ]
+localPort = 23440
+
+[services.development]
+run = "pnpm --filter @workspace/neighborhood-watch run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/neighborhood-watch", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/neighborhood-watch", "run", "serve" ]
+
+[services.env]
+PORT = "23440"
+BASE_PATH = "/neighborhood-watch/"

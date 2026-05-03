@@ -20,8 +20,10 @@
     "drizzle-orm": "catalog:",
     "ethers": "^6.16.0",
     "express": "^5",
+    "express-rate-limit": "^8.4.1",
     "pino": "^9",
     "pino-http": "^10",
+    "tweetnacl": "^1.0.3",
     "zod": "catalog:"
   },
   "devDependencies": {

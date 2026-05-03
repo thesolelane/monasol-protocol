@@ -5,6 +5,7 @@ interface FeatureFlags {
   neighborhoodWatchEnabled: boolean;
   mslTokenAddressSolana: string;
   mslTokenAddressMonad: string;
+  mprotocolFollowCheckEnabled: boolean;
 }
 
 const DEFAULTS: FeatureFlags = {
@@ -12,6 +13,7 @@ const DEFAULTS: FeatureFlags = {
   neighborhoodWatchEnabled: false,
   mslTokenAddressSolana: "",
   mslTokenAddressMonad: "",
+  mprotocolFollowCheckEnabled: false,
 };
 
 export function getFeatureFlags(): FeatureFlags {

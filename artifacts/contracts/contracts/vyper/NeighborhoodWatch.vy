@@ -3,6 +3,7 @@
 MonaSol Neighborhood Watch Contract
 Deployed per Locker on Monad (EVM)
 Handles watcher staking, alert reporting, collective locks, and slashing.
+Supports Tier 1 (Community Node) and Tier 2 (Registered Watcher) with tier multipliers.
 """
 
 # Structs
@@ -14,6 +15,8 @@ struct Watcher:
     successful_alerts: uint256
     last_activity: uint256
     backup_node: address
+    tier: uint8  # 1 = Community Node (no stake), 2 = Registered Watcher (MSL stake), 3 = KYC/Verified (future)
+    last_ping: uint256  # Timestamp of last heartbeat
 
 struct Alert:
     reporter: address
@@ -40,12 +43,23 @@ struct VaultSecurity:
     sub_vault_count: uint256
 
 # Constants
-MIN_STAKE: constant(uint256) = 10000 * 10**18  # 10,000 MSL
+MIN_STAKE: constant(uint256) = 10000 * 10**18  # 10,000 MSL (Tier 2+)
 MAX_VAULTS: constant(uint256) = 20000
 MODE_SYSTEM: constant(uint8) = 1
 MODE_SELF: constant(uint8) = 2
 SEVERITY_CRITICAL: constant(uint8) = 4
 HEALTH_THRESHOLD: constant(uint256) = 950  # 95.0%
+
+TIER_COMMUNITY: constant(uint8) = 1    # Community Node — no stake, 1x multiplier
+TIER_REGISTERED: constant(uint8) = 2  # Registered Watcher — MSL stake, 2x multiplier
+TIER_VERIFIED: constant(uint8) = 3    # KYC/Verified — future, 3x multiplier
+
+PING_INTERVAL: constant(uint256) = 300  # 5 minutes (300 seconds)
+
+# Reward multipliers (basis points, 100 = 1x)
+MULTIPLIER_TIER1: constant(uint256) = 100   # 1x
+MULTIPLIER_TIER2: constant(uint256) = 200   # 2x
+MULTIPLIER_TIER3: constant(uint256) = 300   # 3x (future)
 
 # State Variables
 owner: public(address)
@@ -87,6 +101,12 @@ event CollectiveLockReleased:
 event WatcherRegistered:
     watcher: indexed(address)
     stake: uint256
+    tier: uint8
+    timestamp: uint256
+
+event CommunityNodeRegistered:
+    watcher: indexed(address)
+    tier: uint8
     timestamp: uint256
 
 event WatcherSlashed:
@@ -122,6 +142,17 @@ event HealthScoreUpdated:
     new_score: uint256
     timestamp: uint256
 
+event WatcherPinged:
+    watcher: indexed(address)
+    timestamp: uint256
+    uptime_credit: uint256
+
+event WatcherUpgraded:
+    watcher: indexed(address)
+    old_tier: uint8
+    new_tier: uint8
+    timestamp: uint256
+
 # Initialization
 @external
 def __init__(_multisig: address, _timelock: address, _msl_token: address):
@@ -130,13 +161,43 @@ def __init__(_multisig: address, _timelock: address, _msl_token: address):
     self.timelock = _timelock
     self.msl_token = _msl_token
 
-# Watcher Management
+# ─── Watcher Management ──────────────────────────────────────────────────────
+
+@external
+def register_community_node():
+    """
+    Register as a Tier 1 Community Node.
+    No MSL stake required. Verified via the off-chain API gateway
+    (wallet age + X follow check). Earns 1x reward multiplier.
+    """
+    assert not self.watchers[msg.sender].is_active, "Already registered"
+
+    self.watchers[msg.sender] = Watcher({
+        is_active: True,
+        stake: 0,
+        reputation_score: 500,
+        false_positives: 0,
+        successful_alerts: 0,
+        last_activity: block.timestamp,
+        backup_node: empty(address),
+        tier: TIER_COMMUNITY,
+        last_ping: block.timestamp,
+    })
+
+    self.active_watchers.append(msg.sender)
+
+    log CommunityNodeRegistered(msg.sender, TIER_COMMUNITY, block.timestamp)
+
 @external
 def register_watcher(_backup_node: address):
+    """
+    Register as a Tier 2 Registered Watcher.
+    Requires MSL stake (10,000 MSL). Earns 2x reward multiplier.
+    """
     assert not self.watchers[msg.sender].is_active, "Already registered"
 
     # Transfer MSL stake from watcher to contract
-    # (In production, use ERC20 transferFrom)
+    # (In production, use ERC20 transferFrom with IERC20(self.msl_token).transferFrom(...))
 
     self.watchers[msg.sender] = Watcher({
         is_active: True,
@@ -145,39 +206,85 @@ def register_watcher(_backup_node: address):
         false_positives: 0,
         successful_alerts: 0,
         last_activity: block.timestamp,
-        backup_node: _backup_node
+        backup_node: _backup_node,
+        tier: TIER_REGISTERED,
+        last_ping: block.timestamp,
     })
 
     self.active_watchers.append(msg.sender)
 
-    log WatcherRegistered(msg.sender, MIN_STAKE, block.timestamp)
+    log WatcherRegistered(msg.sender, MIN_STAKE, TIER_REGISTERED, block.timestamp)
+
+@external
+def upgrade_to_registered(_backup_node: address):
+    """
+    Upgrade from Community Node (Tier 1) to Registered Watcher (Tier 2).
+    Requires MSL stake deposit.
+    """
+    watcher: Watcher = self.watchers[msg.sender]
+    assert watcher.is_active, "Not registered"
+    assert watcher.tier == TIER_COMMUNITY, "Already Tier 2 or higher"
+
+    # Transfer MSL stake
+    # (In production, use ERC20 transferFrom)
+
+    old_tier: uint8 = watcher.tier
+    watcher.stake = MIN_STAKE
+    watcher.tier = TIER_REGISTERED
+    watcher.backup_node = _backup_node
+
+    self.watchers[msg.sender] = watcher
+
+    log WatcherUpgraded(msg.sender, old_tier, TIER_REGISTERED, block.timestamp)
 
 @external
 def unregister_watcher():
     assert self.watchers[msg.sender].is_active, "Not registered"
 
-    # Return stake if no pending alerts
-    # (In production, check for unresolved alerts)
+    watcher: Watcher = self.watchers[msg.sender]
+
+    # Return stake for Tier 2 (if no pending alerts)
+    # (In production, check for unresolved alerts and use ERC20 transfer)
 
     self.watchers[msg.sender].is_active = False
 
-    # Remove from active_watchers array (simplified)
-
-    # Return stake
-    # (In production, use ERC20 transfer)
+    # Remove from active_watchers array (simplified — full impl uses index tracking)
 
 @external
 def rotate_backup_node(_new_backup: address):
     assert self.watchers[msg.sender].is_active, "Not registered"
     self.watchers[msg.sender].backup_node = _new_backup
 
-# Alert System
+@external
+def ping():
+    """
+    Heartbeat function. Called every 5 minutes by the mobile app background
+    service (ACTIVE nodes only). Records uptime for reward calculation.
+    Tier 1 nodes without on-chain write access call the API instead, which
+    batches pings. This on-chain version is for Tier 2+ nodes.
+    """
+    watcher: Watcher = self.watchers[msg.sender]
+    assert watcher.is_active, "Not an active watcher"
+
+    time_since_last_ping: uint256 = block.timestamp - watcher.last_ping
+    uptime_credit: uint256 = time_since_last_ping  # seconds of credited uptime
+
+    self.watchers[msg.sender].last_ping = block.timestamp
+    self.watchers[msg.sender].last_activity = block.timestamp
+
+    log WatcherPinged(msg.sender, block.timestamp, uptime_credit)
+
+# ─── Alert System ────────────────────────────────────────────────────────────
+
 @external
 def report_alert(_locker: address, _vault_id: uint256, _alert_type: String[16]):
     watcher: Watcher = self.watchers[msg.sender]
     assert watcher.is_active, "Not an active watcher"
-    assert watcher.stake >= MIN_STAKE, "Insufficient stake"
     assert watcher.reputation_score >= 200, "Reputation too low"
+
+    # Tier 2+ requires minimum stake; Tier 1 has no stake requirement
+    if watcher.tier >= TIER_REGISTERED:
+        assert watcher.stake >= MIN_STAKE, "Insufficient stake"
 
     # Generate unique alert ID
     alert_id: bytes32 = keccak256(concat(
@@ -230,7 +337,8 @@ def _get_severity(_alert_type: String[16]) -> uint8:
     else:
         return 2
 
-# Collective Lock Mechanism
+# ─── Collective Lock Mechanism ───────────────────────────────────────────────
+
 @internal
 def _initiate_collective_lock(_locker: address, _triggered_by: address, _reason: String[64]):
     state: LockerState = self.locker_states[_locker]
@@ -277,7 +385,8 @@ def release_collective_lock(_locker: address):
 
     log CollectiveLockReleased(_locker, msg.sender, block.timestamp)
 
-# Self-Mode Vault Control (Owner Only)
+# ─── Self-Mode Vault Control (Owner Only) ────────────────────────────────────
+
 @external
 def self_lock_vault(_locker: address, _vault_id: uint256):
     # In production, verify NFT ownership via light client
@@ -297,7 +406,8 @@ def self_unlock_vault(_locker: address, _vault_id: uint256):
     vault_sec.locked = False
     log VaultUnlocked(_locker, _vault_id, True, block.timestamp)
 
-# Alert Resolution & Slashing
+# ─── Alert Resolution & Slashing ─────────────────────────────────────────────
+
 @external
 def resolve_alert(_alert_id: bytes32, _valid: bool):
     assert msg.sender == self.multisig, "Only multisig"
@@ -319,24 +429,44 @@ def resolve_alert(_alert_id: bytes32, _valid: bool):
 
         log WatcherRewarded(reporter, reward, "Valid alert", watcher.reputation_score, block.timestamp)
     else:
-        # Slash watcher
+        # Slash watcher (only Tier 2+ have stake to slash)
         watcher.false_positives += 1
-        slash_amount: uint256 = self._calculate_slash(watcher)
-        watcher.stake -= slash_amount
+        if watcher.tier >= TIER_REGISTERED and watcher.stake > 0:
+            slash_amount: uint256 = self._calculate_slash(watcher)
+            watcher.stake -= slash_amount
         watcher.reputation_score = max(watcher.reputation_score - 100, 0)
 
         if watcher.reputation_score < 200:
             watcher.is_active = False
 
-        log WatcherSlashed(reporter, slash_amount, "False positive", watcher.reputation_score, block.timestamp)
+        slash_logged: uint256 = 0
+        if watcher.tier >= TIER_REGISTERED:
+            slash_logged = self._calculate_slash(watcher)
+        log WatcherSlashed(reporter, slash_logged, "False positive", watcher.reputation_score, block.timestamp)
 
     self.watchers[reporter] = watcher
 
 @internal
 def _calculate_reward(_watcher: Watcher) -> uint256:
-    base: uint256 = 100 * 10**18  # 100 MSL
-    multiplier: uint256 = _watcher.reputation_score / 500
-    return base * multiplier
+    """
+    Reward calculation with tier multipliers:
+    - Tier 1 (Community Node):   1x multiplier
+    - Tier 2 (Registered):       2x multiplier
+    - Tier 3 (KYC/Verified):     3x multiplier (future)
+    """
+    base: uint256 = 100 * 10**18  # 100 MSL base reward
+
+    tier_multiplier: uint256 = MULTIPLIER_TIER1  # default 1x
+    if _watcher.tier == TIER_REGISTERED:
+        tier_multiplier = MULTIPLIER_TIER2
+    elif _watcher.tier == TIER_VERIFIED:
+        tier_multiplier = MULTIPLIER_TIER3
+
+    rep_multiplier: uint256 = _watcher.reputation_score / 500
+    if rep_multiplier == 0:
+        rep_multiplier = 1
+
+    return (base * tier_multiplier * rep_multiplier) / 100
 
 @internal
 def _calculate_slash(_watcher: Watcher) -> uint256:
@@ -344,7 +474,8 @@ def _calculate_slash(_watcher: Watcher) -> uint256:
     fp_multiplier: uint256 = _watcher.false_positives
     return base * (1 + fp_multiplier)
 
-# Health Score Management
+# ─── Health Score Management ──────────────────────────────────────────────────
+
 @external
 def update_locker_health(_locker: address, _uptime: uint256, _sig_success: uint256):
     # Called by authorized oracle/node monitoring service
@@ -364,9 +495,16 @@ def update_locker_health(_locker: address, _uptime: uint256, _sig_success: uint2
 
 @internal
 def _is_watcher(_addr: address) -> bool:
-    return self.watchers[_addr].is_active and self.watchers[_addr].stake >= MIN_STAKE
+    watcher: Watcher = self.watchers[_addr]
+    if not watcher.is_active:
+        return False
+    # Tier 1 needs only active status; Tier 2+ needs stake
+    if watcher.tier == TIER_COMMUNITY:
+        return True
+    return watcher.stake >= MIN_STAKE
 
-# View Functions
+# ─── View Functions ──────────────────────────────────────────────────────────
+
 @view
 @external
 def get_watcher_info(_watcher: address) -> Watcher:
@@ -391,3 +529,16 @@ def get_vault_security(_locker: address, _vault_id: uint256) -> VaultSecurity:
 @external
 def is_collective_locked(_locker: address) -> bool:
     return self.locker_states[_locker].collective_lock_active
+
+@view
+@external
+def get_tier_multiplier(_watcher: address) -> uint256:
+    """Returns the reward multiplier in basis points (100 = 1x, 200 = 2x, 300 = 3x)."""
+    watcher: Watcher = self.watchers[_watcher]
+    if not watcher.is_active:
+        return 0
+    if watcher.tier == TIER_REGISTERED:
+        return MULTIPLIER_TIER2
+    elif watcher.tier == TIER_VERIFIED:
+        return MULTIPLIER_TIER3
+    return MULTIPLIER_TIER1

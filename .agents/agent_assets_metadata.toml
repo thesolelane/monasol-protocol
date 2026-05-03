@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "OyEMtNq5C2BTkQWCVafyX"
+uri = "file://artifacts/neighborhood-watch/assets/images/icon.png"
+type = "image"
+title = "neighborhood watch shield icon"
 
 [[outputs]]
 id = "mSF7Eal_zRBmEkHQVzvQT"
