@@ -74,7 +74,33 @@ All transactions below are confirmed and verifiable.
 
 ---
 
-## 4. Session Lifecycle
+## 4. Brand Identity & Domains
+
+**Entity:** Cooperanth Consulting LLC
+
+### On-Chain Identity
+
+| Name | Type | Purpose |
+|------|------|---------|
+| `monasolpro.sol` | Solana Name Service (SNS) | Protocol wallet identity, token mint authority, on-chain canonical address |
+
+> Fresh keypair to be generated and linked to `monasolpro.sol`. Seed phrase stored air-gapped outside cloud environments. This keypair will sign the MSL SPL token creation.
+
+### Web Domains
+
+| Domain | Role |
+|--------|------|
+| `monasolpro.com` | Primary canonical domain — official site, token metadata, all external links |
+| `monasolpro.org` | Redirect to `.com` now; reserved for foundation/DAO/governance structure |
+| `monasolpro.online` | Redirect to `.com` |
+| `monasolpro.live` | Real-time protocol surface — Neighborhood Watch node map, uptime stats, alert feed |
+| `monasolpro.cloud` | Infrastructure/API surface — reserved for cloud-facing protocol endpoints |
+
+> All non-primary domains redirect to `monasolpro.com` until purpose-built. DNS to be pointed at production host when app is deployed.
+
+---
+
+## 5. Session Lifecycle
 
 ```
 ACTIVE → PLEDGED → SETTLING → RELEASED → CLOSED
