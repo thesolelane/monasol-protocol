@@ -42,6 +42,15 @@ export default function AdminDashboard() {
   const [zoomedLockerId, setZoomedLockerId] = useState<string | null>(null);
   const [monadWalletEnabled, setMonadWalletEnabled] = useState(() => getFeatureFlags().monadWalletEnabled);
   const [neighborhoodWatchEnabled, setNeighborhoodWatchEnabled] = useState(() => getFeatureFlags().neighborhoodWatchEnabled);
+  const [mslTokenAddress, setMslTokenAddress] = useState(() => getFeatureFlags().mslTokenAddress);
+  const [mslAddressSaved, setMslAddressSaved] = useState(false);
+
+  function saveMslTokenAddress(value: string) {
+    setFeatureFlag("mslTokenAddress", value);
+    setMslTokenAddress(value);
+    setMslAddressSaved(true);
+    setTimeout(() => setMslAddressSaved(false), 2000);
+  }
 
   function toggleMonadWallet() {
     const next = !monadWalletEnabled;
@@ -439,6 +448,35 @@ export default function AdminDashboard() {
                   }`}
                 />
               </button>
+            </div>
+
+            <div className="py-4">
+              <div className="flex items-start gap-3">
+                <div className="h-4 w-4 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs text-gray-400 mb-2 font-medium">MSL Token Contract Address (Monad)</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={mslTokenAddress}
+                      onChange={e => setMslTokenAddress(e.target.value)}
+                      placeholder="0x… paste address when deployed"
+                      className="flex-1 bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500/40 transition-colors"
+                    />
+                    <button
+                      onClick={() => saveMslTokenAddress(mslTokenAddress)}
+                      className="px-3 py-2 rounded-lg text-xs font-semibold bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 hover:bg-yellow-500/20 transition-colors shrink-0"
+                    >
+                      {mslAddressSaved ? "Saved" : "Save"}
+                    </button>
+                  </div>
+                  {mslTokenAddress && (
+                    <p className="text-[10px] text-yellow-400/60 mt-1.5">
+                      Address stored — will be used by Neighborhood Watch contract on activation.
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
