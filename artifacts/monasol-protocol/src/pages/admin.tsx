@@ -449,7 +449,6 @@ export default function AdminDashboard() {
   const circuitBreakerActive = stats?.circuitBreakerActive ?? false;
 
   function lockerColor(locker: Locker, _index: number): string {
-    // Alert ring — applied on top of fill colour
     const alertRing =
       locker.alertLevel === "critical"
         ? " ring-2 ring-red-500 shadow-[0_0_10px_rgba(239,68,68,0.7)] animate-pulse"
@@ -457,23 +456,21 @@ export default function AdminDashboard() {
         ? " ring-2 ring-yellow-400 shadow-[0_0_8px_rgba(234,179,8,0.5)]"
         : "";
 
-    if (locker.status === "distressed") return "bg-red-500 border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse z-10 relative cursor-pointer";
-
-    let fill: string;
-    if (locker.tier === 1) {
-      fill = locker.status === "full"    ? "bg-monad-purple/80 border-monad-purple" :
-             locker.status === "filling" ? "bg-monad-purple/40 border-monad-purple/50" :
-                                          "bg-monad-purple/15 border-monad-purple/35";
-    } else if (locker.tier === 2) {
-      fill = locker.status === "full"    ? "bg-solana-green/80 border-solana-green" :
-             locker.status === "filling" ? "bg-solana-green/40 border-solana-green/50" :
-                                          "bg-solana-green/15 border-solana-green/35";
-    } else {
-      fill = locker.status === "full"    ? "bg-blue-500/80 border-blue-500" :
-             locker.status === "filling" ? "bg-blue-500/40 border-blue-500/50" :
-                                          "bg-blue-500/15 border-blue-500/35";
+    if (locker.status === "distressed") {
+      return "bg-red-500 border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse z-10 relative cursor-pointer";
     }
-    return fill + alertRing;
+    if (locker.status === "healthy") {
+      return "bg-green-500/15 border-green-500/35" + alertRing;
+    }
+    if (locker.status === "filling") {
+      return "bg-green-500/45 border-green-500/65" + alertRing;
+    }
+    // full — use tier accent
+    const tierFill =
+      locker.tier === 1 ? "bg-monad-purple/80 border-monad-purple" :
+      locker.tier === 2 ? "bg-solana-green/80 border-solana-green" :
+                          "bg-blue-500/80 border-blue-500";
+    return tierFill + alertRing;
   }
 
   const tier1Full = tier1Lockers.filter(l => l.status === "full").length;
@@ -693,16 +690,40 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap justify-between items-center text-xs text-gray-500 gap-y-2">
-              <div className="flex flex-wrap gap-4">
-                <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-white/80" /> Full Capacity</span>
-                <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-white/40 border border-white/50" /> Accepting Deposits</span>
-                <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-white/10 border border-white/20" /> Empty / Ready</span>
-                <span className="flex items-center gap-2 text-red-400"><div className="w-3 h-3 rounded-sm bg-red-500 border border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" /> Distressed / Frozen</span>
-                <span className="flex items-center gap-2 text-yellow-400"><div className="w-3 h-3 rounded-sm bg-white/10 border border-white/20 ring-2 ring-yellow-400 shadow-[0_0_6px_rgba(234,179,8,0.4)]" /> Vault Fault</span>
-                <span className="flex items-center gap-2 text-red-400"><div className="w-3 h-3 rounded-sm bg-white/10 border border-white/20 ring-2 ring-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)] animate-pulse" /> Error / Intrusion Alert</span>
+            <div className="mt-6 pt-4 border-t border-white/10 space-y-3">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-gray-500">
+                <span className="text-[10px] uppercase tracking-widest text-gray-600 font-semibold mr-1">Locker State</span>
+                <span className="flex items-center gap-2">
+                  <div className="flex rounded-sm overflow-hidden border border-white/20" style={{ width: 26, height: 12 }}>
+                    <div className="flex-1 bg-monad-purple/80" title="Tier 1" />
+                    <div className="flex-1 bg-solana-green/80" title="Tier 2" />
+                    <div className="flex-1 bg-blue-500/80" title="Tier 3" />
+                  </div>
+                  Full Capacity
+                </span>
+                <span className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-sm bg-green-500/45 border border-green-500/65" />
+                  Accepting Deposits
+                </span>
+                <span className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-sm bg-green-500/15 border border-green-500/35" />
+                  Live / Empty
+                </span>
+                <span className="flex items-center gap-2 text-red-400">
+                  <div className="w-3 h-3 rounded-sm bg-red-500 border border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" />
+                  Distressed / Frozen
+                </span>
+                <span className="text-[10px] uppercase tracking-widest text-gray-600 font-semibold mx-1">Alert Ring</span>
+                <span className="flex items-center gap-2 text-yellow-400">
+                  <div className="w-3 h-3 rounded-sm bg-green-500/15 border border-green-500/35 ring-2 ring-yellow-400 shadow-[0_0_5px_rgba(234,179,8,0.4)]" />
+                  Fault Warning
+                </span>
+                <span className="flex items-center gap-2 text-red-400">
+                  <div className="w-3 h-3 rounded-sm bg-green-500/15 border border-green-500/35 ring-2 ring-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse" />
+                  Critical Alert
+                </span>
               </div>
-              <p>
+              <p className="text-[10px] text-gray-600">
                 {lastSyncedAt
                   ? `Chain sync: ${new Date(lastSyncedAt).toLocaleTimeString()} · refreshes every 12s`
                   : "Syncing from chain…"}

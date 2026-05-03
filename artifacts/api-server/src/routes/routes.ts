@@ -71,16 +71,36 @@ router.get("/lockers", async (req, res) => {
 
 // ── Per-locker alert drill-down ────────────────────────────────────────────
 const NEXT_STEP: Record<string, string> = {
+  // State & Consensus
   state_mismatch:    "Re-verify Merkle proof for this vault slot. Force state sync if this repeats within 2 cycles.",
+  merkle_fraud:      "Reject proof submission and flag submitter. Escalate to protocol team for root-cause review.",
+  finality_exploit:  "Pause cross-chain bridge for this locker. Wait for chain finality before resuming state reads.",
+  double_spend:      "Halt deposits on this slot immediately. Trigger chain-reorg detection and rollback verification.",
+  // Access & Intrusion
   intrusion:         "Quarantine vault immediately. Escalate to security team. Do not interact until cleared.",
-  rpc_timeout:       "Check RPC node health. Retry sync in 30s. If persistent, rotate RPC endpoint.",
-  fault:             "Run vault diagnostic scan. Inspect storage slot for on-chain corruption.",
-  error:             "Review on-chain transaction logs for this slot. Manual intervention may be required.",
-  honeypot:          "Vault quarantined by circuit breaker. Await security clearance before any interaction.",
-  oracle_failure:    "Oracle feed is stale or unreachable. Verify oracle keypair and devnet connectivity.",
+  key_compromise:    "Revoke NFT key access for this vault. Notify key holder and initiate re-issuance flow.",
+  sig_replay:        "Invalidate nonce for this vault's authority. Re-derive PDA and rotate signing keypair.",
+  phishing_probe:    "Log source address for monitoring. Increase auth challenge threshold for this vault.",
+  // MEV & Transaction
   front_run:         "Suspicious MEV pattern detected. Review recent block history for this vault slot.",
+  sandwich_attack:   "Widen slippage tolerance window or route through private mempool. Review tx ordering.",
+  flashloan_probe:   "Review flash loan exposure on this vault. Add flash-loan guard to entry function.",
+  gas_manipulation:  "Set gas price floor on vault transactions. Monitor for abnormal priority fee patterns.",
+  // Storage & PDA
   storage_collision: "Two vaults share this storage slot. Halt new deposits and remap PDA derivation.",
   init_error:        "Vault failed initialization. Re-deploy with fresh PDA derivation.",
+  account_hijack:    "Account ownership change detected. Freeze vault and verify authority chain on-chain.",
+  data_corruption:   "On-chain data integrity check failed. Halt reads/writes. Re-derive state from event log.",
+  // Oracle & RPC
+  oracle_failure:    "Oracle feed is stale or unreachable. Verify oracle keypair and devnet connectivity.",
+  rpc_timeout:       "Check RPC node health. Retry sync in 30s. If persistent, rotate RPC endpoint.",
+  stale_price:       "Price feed timestamp exceeded threshold. Reject settlement until fresh tick is confirmed.",
+  oracle_sybil:      "Multiple oracle identities submitting conflicting values. Pause settlement and audit feed.",
+  // Circuit Breaker
+  honeypot:          "Vault quarantined by circuit breaker. Await security clearance before any interaction.",
+  circuit_breaker:   "Automatic circuit breaker engaged. Identify trigger condition before manual reset.",
+  fault:             "Run vault diagnostic scan. Inspect storage slot for on-chain corruption.",
+  error:             "Review on-chain transaction logs for this slot. Manual intervention may be required.",
 };
 
 router.get("/lockers/:lockerId/alerts", async (req, res) => {
