@@ -620,7 +620,7 @@ export default function AdminDashboard() {
               <div>
                 <div className="flex justify-between items-end mb-3">
                   <div>
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-monad-purple flex items-center gap-2">
                       Tier 1: High Capacity <Badge variant="outline" className="border-green-500/30 text-green-400 bg-green-500/10 text-[10px] ml-2">Healthy</Badge>
                     </h3>
                     <p className="text-xs text-gray-500">{tier1Lockers[0] ? `${tier1Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier1Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
@@ -645,7 +645,7 @@ export default function AdminDashboard() {
               <div>
                 <div className="flex justify-between items-end mb-3">
                   <div>
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-solana-green flex items-center gap-2">
                       Tier 2: Standard {tier2HasDistressed && <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10 text-[10px] ml-2 animate-pulse">Critical Alert</Badge>}
                     </h3>
                     <p className="text-xs text-gray-500">{tier2Lockers[0] ? `${tier2Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier2Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
@@ -670,7 +670,7 @@ export default function AdminDashboard() {
               <div>
                 <div className="flex justify-between items-end mb-3">
                   <div>
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-blue-400 flex items-center gap-2">
                       Tier 3: Institutional <Badge variant="outline" className="border-blue-400/30 text-blue-400 bg-blue-400/10 text-[10px] ml-2">Scaling</Badge>
                     </h3>
                     <p className="text-xs text-gray-500">{tier3Lockers[0] ? `${tier3Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier3Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
@@ -694,25 +694,33 @@ export default function AdminDashboard() {
             </div>
 
             <div className="mt-6 pt-4 border-t border-white/10">
-              <div className="grid grid-cols-3 gap-6 text-sm text-gray-400">
+              <div className="grid grid-cols-3 gap-6 text-sm text-gray-200">
 
                 {/* Column 1 — Locker State */}
                 <div className="space-y-2">
                   <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-3">Locker State</p>
                   <span className="flex items-center gap-2.5">
-                    <div className="relative w-5 h-5 rounded-sm border border-white/30 overflow-hidden shrink-0">
-                      <div className="absolute inset-0 bg-white/70" />
+                    <div className="flex rounded-sm overflow-hidden border border-white/20 shrink-0" style={{ width: 20, height: 20 }}>
+                      <div className="flex-1 bg-monad-purple/80" />
+                      <div className="flex-1 bg-solana-green/80" />
+                      <div className="flex-1 bg-blue-400/90" />
                     </div>
                     Full Capacity
                   </span>
                   <span className="flex items-center gap-2.5">
-                    <div className="relative w-5 h-5 rounded-sm border border-white/30 overflow-hidden bg-black/40 shrink-0">
-                      <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-white/50" />
+                    <div className="flex rounded-sm overflow-hidden border border-white/20 shrink-0" style={{ width: 20, height: 20 }}>
+                      <div className="flex-1 bg-monad-purple/45" />
+                      <div className="flex-1 bg-solana-green/45" />
+                      <div className="flex-1 bg-blue-400/65" />
                     </div>
                     Accepting Deposits
                   </span>
                   <span className="flex items-center gap-2.5">
-                    <div className="w-5 h-5 rounded-sm border-2 border-white/35 bg-transparent shrink-0" />
+                    <div className="flex rounded-sm overflow-hidden border border-white/20 shrink-0" style={{ width: 20, height: 20 }}>
+                      <div className="flex-1 bg-monad-purple/15" />
+                      <div className="flex-1 bg-solana-green/15" />
+                      <div className="flex-1 bg-blue-400/30" />
+                    </div>
                     Live / Empty
                   </span>
                 </div>
@@ -737,15 +745,15 @@ export default function AdminDashboard() {
                 {/* Column 3 — Tier Colors */}
                 <div className="space-y-2">
                   <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-3">Tier Color</p>
-                  <span className="flex items-center gap-2.5 text-gray-400">
+                  <span className="flex items-center gap-2.5 text-monad-purple">
                     <div className="w-5 h-5 rounded-sm bg-monad-purple/80 shrink-0" />
                     Tier 1 — High Capacity
                   </span>
-                  <span className="flex items-center gap-2.5 text-gray-400">
+                  <span className="flex items-center gap-2.5 text-solana-green">
                     <div className="w-5 h-5 rounded-sm bg-solana-green/80 shrink-0" />
                     Tier 2 — Standard
                   </span>
-                  <span className="flex items-center gap-2.5 text-gray-400">
+                  <span className="flex items-center gap-2.5 text-blue-400">
                     <div className="w-5 h-5 rounded-sm bg-blue-400/90 shrink-0" />
                     Tier 3 — Institutional
                   </span>
