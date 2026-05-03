@@ -71,85 +71,21 @@ export class DrizzleStorage implements IStorage {
     if (this.seeded) return;
     this.seeded = true;
 
-    // Seed protocol stats if empty
+    // Initialise protocol stats singleton if not yet present
     const existingStats = await db.select().from(protocolStats).limit(1);
     if (existingStats.length === 0) {
       await db.insert(protocolStats).values({
         id: "singleton",
-        tvlUsd: "4200000.00",
-        tvlTrend: "+12% this week",
-        activeVaults: 1284,
-        maxVaults: 1500,
-        nftKeysMinted: 4291,
-        nftUtilizationPct: 89,
+        tvlUsd: "0.00",
+        tvlTrend: "Testnet live",
+        activeVaults: 0,
+        maxVaults: 41150,
+        nftKeysMinted: 0,
+        nftUtilizationPct: 0,
         syncLatencyMs: 400,
         circuitBreakerActive: false,
       });
     }
-
-    // Seed NFT keys if empty
-    const existingNfts = await db.select().from(nftKeys).limit(1);
-    if (existingNfts.length === 0) {
-      await this._seedNftKeys();
-    }
-
-    // Seed events if empty
-    const existingEvents = await db.select().from(events).limit(1);
-    if (existingEvents.length === 0) {
-      await this._seedEvents();
-    }
-
-    // Seed session history if empty
-    const existingHistory = await db.select().from(sessionHistory).limit(1);
-    if (existingHistory.length === 0) {
-      await this._seedSessionHistory();
-    }
-  }
-
-  private async _seedNftKeys(): Promise<void> {
-    const demoWallet = "8xR...3kL";
-    await db.insert(nftKeys).values([
-      { mint: "7x2...9aB", name: "Vault Key #042",   image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?w=100&h=100&fit=crop", vaultRef: "VLT-042", lockerRef: "LCK-99A", walletAddress: demoWallet, isTicket: false, transferLockDays: 0, kycLevel: "none" },
-      { mint: "3vP...m1K", name: "Alpha Access Pass", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop", vaultRef: "VLT-881", lockerRef: "LCK-22B", walletAddress: demoWallet, isTicket: false, transferLockDays: 0, kycLevel: "none" },
-      { mint: "9qZ...4tY", name: "Genesis Locker Key", image: "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=100&h=100&fit=crop", vaultRef: "VLT-112", lockerRef: "LCK-45C", walletAddress: demoWallet, isTicket: false, transferLockDays: 0, kycLevel: "none" },
-      { mint: "9mK2...7pR", name: "🎵 #021*025-15", walletAddress: demoWallet, isTicket: true, transferLockDays: 18, kycLevel: "soft", eventName: "The Midnight — MSG, June 14 2027" },
-      { mint: "4bX8...2qL", name: "🎵 #VIP-014",    walletAddress: demoWallet, isTicket: true, transferLockDays: 0, kycLevel: "hard", eventName: "The Midnight — MSG, June 14 2027" },
-    ]);
-  }
-
-  private async _seedSessionHistory(): Promise<void> {
-    const demoWallet = "8xR...3kL";
-    const now = Date.now();
-    const hour = 3_600_000;
-    const entries = [
-      { vaultId: "VLT-042", ownerWallet: demoWallet, sessionId: "SES-A1B2C3", label: "DeFi bridge access",  authorizedAddress: "0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE", openedAt: new Date(now - 10 * 24 * hour), closedAt: new Date(now - 10 * 24 * hour + 8 * hour),   durationMs: 8 * hour, shareWithProtocol: false },
-      { vaultId: "VLT-042", ownerWallet: demoWallet, sessionId: "SES-D4E5F6", label: "Collateral proof",     authorizedAddress: "Any holder",                                                    openedAt: new Date(now - 7 * 24 * hour),  closedAt: new Date(now - 7 * 24 * hour + hour),      durationMs: hour,     shareWithProtocol: false },
-      { vaultId: "VLT-042", ownerWallet: demoWallet, sessionId: "SES-G7H8I9", label: "Governance vote",      authorizedAddress: "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B", openedAt: new Date(now - 3 * 24 * hour),  closedAt: new Date(now - 3 * 24 * hour + 24 * hour), durationMs: 24 * hour, shareWithProtocol: false },
-      { vaultId: "VLT-881", ownerWallet: demoWallet, sessionId: "SES-J1K2L3", label: "General session",      authorizedAddress: "Any holder",                                                    openedAt: new Date(now - 14 * 24 * hour), closedAt: new Date(now - 14 * 24 * hour + hour),     durationMs: hour,     shareWithProtocol: false },
-      { vaultId: "VLT-881", ownerWallet: demoWallet, sessionId: "SES-M4N5O6", label: "Alpha access check",   authorizedAddress: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", openedAt: new Date(now - 5 * 24 * hour),  closedAt: new Date(now - 5 * 24 * hour + 8 * hour),  durationMs: 8 * hour, shareWithProtocol: false },
-      { vaultId: "VLT-112", ownerWallet: demoWallet, sessionId: "SES-P7Q8R9", label: "Genesis vault unlock", authorizedAddress: "Any holder",                                                    openedAt: new Date(now - 20 * 24 * hour), closedAt: new Date(now - 20 * 24 * hour + 8 * hour), durationMs: 8 * hour, shareWithProtocol: false },
-    ];
-    await db.insert(sessionHistory).values(entries);
-  }
-
-  private async _seedEvents(): Promise<void> {
-    const eventId = randomUUID();
-    await db.insert(events).values({
-      id: eventId,
-      name: "The Midnight — Endless Summer Tour",
-      venue: "Madison Square Garden, New York",
-      eventDate: "June 14, 2027 — 8:00 PM EDT",
-      lockerRef: "LCK-7821...449",
-      saleDate: "May 1, 2027 — 10:00 AM EDT",
-      registrationDeadline: "April 29, 2027",
-      isActive: true,
-    });
-    await db.insert(ticketTiers).values([
-      { eventId, tierId: "general",    label: "General",    prefix: "#",      capacity: 8000, maxSeats: 5, basePriceUsd: 85,  releaseOffsetHours: 0,  transferLockDays: 30, kycLevel: "soft",     discounts: JSON.stringify([{qty:2,amount:5},{qty:3,amount:10},{qty:5,amount:15}]) },
-      { eventId, tierId: "premium",    label: "Premium",    prefix: "#PRE-",  capacity: 2000, maxSeats: 3, basePriceUsd: 175, releaseOffsetHours: 0,  transferLockDays: 14, kycLevel: "standard", discounts: JSON.stringify([{qty:2,amount:10},{qty:3,amount:20}]) },
-      { eventId, tierId: "vip",        label: "VIP",        prefix: "#VIP-",  capacity: 200,  maxSeats: 2, basePriceUsd: 350, releaseOffsetHours: 48, transferLockDays: 0,  kycLevel: "hard",     discounts: JSON.stringify([]) },
-      { eventId, tierId: "accessible", label: "Accessible", prefix: "#ACC-",  capacity: 100,  maxSeats: 2, basePriceUsd: 85,  releaseOffsetHours: 0,  transferLockDays: 30, kycLevel: "soft",     discounts: JSON.stringify([]) },
-    ]);
   }
 
   async getUser(id: string): Promise<User | undefined> {

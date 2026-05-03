@@ -426,10 +426,10 @@ export default function AdminDashboard() {
   const tier2Lockers = lockers.filter(l => l.tier === 2);
   const tier3Lockers = lockers.filter(l => l.tier === 3);
 
-  const tvl = stats ? formatTvl(stats.tvlUsd) : "$42.5M";
-  const activeLockers = stats ? lockers.length : 128;
-  const nftsMinted = stats?.nftKeysMinted ?? 4291;
-  const nftUtil = stats?.nftUtilizationPct ?? 89;
+  const tvl = stats ? formatTvl(stats.tvlUsd) : "$0";
+  const activeLockers = lockers.length;
+  const nftsMinted = stats?.nftKeysMinted ?? 0;
+  const nftUtil = stats?.nftUtilizationPct ?? 0;
   const syncLatency = stats ? `~${stats.syncLatencyMs}ms` : "~400ms";
   const circuitBreakerActive = stats?.circuitBreakerActive ?? false;
 
@@ -458,9 +458,9 @@ export default function AdminDashboard() {
   const tier3Full = tier3Lockers.filter(l => l.status === "full").length;
   const tier3Total = tier3Lockers.length;
 
-  const tier1Pct = tier1Total > 0 ? Math.round((tier1Full / tier1Total) * 100) : 76;
-  const tier2Pct = tier2Total > 0 ? Math.round(((tier2Total - tier2Lockers.filter(l => l.status === "healthy").length) / tier2Total) * 100) : 92;
-  const tier3Pct = tier3Total > 0 ? Math.round((tier3Full / tier3Total) * 100) : 45;
+  const tier1Pct = tier1Total > 0 ? Math.round((tier1Full / tier1Total) * 100) : 0;
+  const tier2Pct = tier2Total > 0 ? Math.round(((tier2Total - tier2Lockers.filter(l => l.status === "healthy").length) / tier2Total) * 100) : 0;
+  const tier3Pct = tier3Total > 0 ? Math.round((tier3Full / tier3Total) * 100) : 0;
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-black text-white p-4 sm:p-8">
@@ -597,15 +597,15 @@ export default function AdminDashboard() {
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
                       Tier 1: High Capacity <Badge variant="outline" className="border-green-500/30 text-green-400 bg-green-500/10 text-[10px] ml-2">Healthy</Badge>
                     </h3>
-                    <p className="text-xs text-gray-500">100 Vaults per Locker • 10 SOL Min Deposit</p>
+                    <p className="text-xs text-gray-500">{tier1Lockers[0] ? `${tier1Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier1Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-mono text-white">{tier1Total || 82} Lockers</p>
+                    <p className="text-sm font-mono text-white">{tier1Total} Lockers</p>
                     <p className="text-xs text-gray-500">{tier1Pct}% full</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {(tier1Lockers.length > 0 ? tier1Lockers : Array.from({ length: 82 }, (_, i) => ({ id: `t1-${i}`, externalId: `LCK-T1-${i}`, status: i < 62 ? "full" : i < 75 ? "filling" : "healthy", tier: 1, capacity: 100, usedSlots: i < 62 ? 100 : i < 75 ? 60 : 0, minDepositSol: "10" }))).map((l, i) => (
+                  {tier1Lockers.map((l, i) => (
                     <div
                       key={l.id}
                       onClick={() => setZoomedLocker(l)}
@@ -622,15 +622,15 @@ export default function AdminDashboard() {
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
                       Tier 2: Standard {tier2HasDistressed && <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10 text-[10px] ml-2 animate-pulse">Critical Alert</Badge>}
                     </h3>
-                    <p className="text-xs text-gray-500">500 Vaults per Locker • 1 SOL Min Deposit</p>
+                    <p className="text-xs text-gray-500">{tier2Lockers[0] ? `${tier2Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier2Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-mono text-white">{tier2Total || 34} Lockers</p>
+                    <p className="text-sm font-mono text-white">{tier2Total} Lockers</p>
                     <p className="text-xs text-gray-500">{tier2Pct}% full</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {(tier2Lockers.length > 0 ? tier2Lockers : Array.from({ length: 34 }, (_, i) => ({ id: `t2-${i}`, externalId: `LCK-T2-${i}`, status: (i === 12 || i === 18) ? "distressed" : i < 31 ? "full" : "filling", tier: 2, capacity: 500, usedSlots: (i === 12 || i === 18) ? 500 : i < 31 ? 500 : 300, minDepositSol: "1" }))).map((l, i) => (
+                  {tier2Lockers.map((l, i) => (
                     <div
                       key={l.id}
                       onClick={() => setZoomedLocker(l)}
@@ -647,15 +647,15 @@ export default function AdminDashboard() {
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
                       Tier 3: Institutional <Badge variant="outline" className="border-blue-400/30 text-blue-400 bg-blue-400/10 text-[10px] ml-2">Scaling</Badge>
                     </h3>
-                    <p className="text-xs text-gray-500">10 Vaults per Locker • 1000 SOL Min Deposit</p>
+                    <p className="text-xs text-gray-500">{tier3Lockers[0] ? `${tier3Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier3Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-mono text-white">{tier3Total || 12} Lockers</p>
+                    <p className="text-sm font-mono text-white">{tier3Total} Lockers</p>
                     <p className="text-xs text-gray-500">{tier3Pct}% full</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {(tier3Lockers.length > 0 ? tier3Lockers : Array.from({ length: 12 }, (_, i) => ({ id: `t3-${i}`, externalId: `LCK-T3-${i}`, status: i < 5 ? "full" : i < 9 ? "filling" : "healthy", tier: 3, capacity: 10, usedSlots: i < 5 ? 10 : i < 9 ? 6 : 0, minDepositSol: "1000" }))).map((l, i) => (
+                  {tier3Lockers.map((l, i) => (
                     <div
                       key={l.id}
                       onClick={() => setZoomedLocker(l)}
