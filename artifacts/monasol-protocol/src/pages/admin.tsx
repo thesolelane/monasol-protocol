@@ -721,14 +721,6 @@ export default function AdminDashboard() {
 
                 <span className="text-[10px] text-gray-700 mx-1">·</span>
 
-                {/* Tier color dots */}
-                <span className="flex items-center gap-1.5 text-gray-600">
-                  <span className="text-[10px] uppercase tracking-widest font-semibold mr-0.5">Tier</span>
-                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-monad-purple/80" /> T1</span>
-                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-solana-green/80" /> T2</span>
-                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-blue-400/90" /> T3</span>
-                </span>
-
                 <span className="text-[10px] uppercase tracking-widest text-gray-600 font-semibold mx-1">Alert Ring</span>
                 <span className="flex items-center gap-2 text-red-400">
                   <div className="w-3 h-3 rounded-sm bg-red-500 border border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" />
@@ -741,6 +733,16 @@ export default function AdminDashboard() {
                 <span className="flex items-center gap-2 text-red-400">
                   <div className="w-3 h-3 rounded-sm border border-white/20 ring-2 ring-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse" />
                   Critical Alert
+                </span>
+
+                <span className="text-[10px] text-gray-700 mx-1">·</span>
+
+                {/* Tier color dots */}
+                <span className="flex items-center gap-1.5 text-gray-600">
+                  <span className="text-[10px] uppercase tracking-widest font-semibold mr-0.5">Tier</span>
+                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-monad-purple/80" /> T1</span>
+                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-solana-green/80" /> T2</span>
+                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-blue-400/90" /> T3</span>
                 </span>
               </div>
               <p className="text-[10px] text-gray-600">
