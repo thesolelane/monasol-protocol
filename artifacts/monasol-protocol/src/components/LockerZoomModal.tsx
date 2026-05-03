@@ -518,19 +518,19 @@ export function LockerZoomModal({ isOpen, onClose, locker }: LockerZoomModalProp
           {/* Stats row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-1">Capacity</p>
+              <p className="text-xs text-gray-400 mb-1">Capacity</p>
               <p className="text-2xl font-mono text-white">{locker.capacity.toLocaleString()}</p>
               <p className="text-xs text-gray-400 mt-1">total vault slots</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-1">Occupied</p>
+              <p className="text-xs text-gray-400 mb-1">Occupied</p>
               <p className={`text-2xl font-mono ${isDistressed ? "text-red-400" : tierMeta.textColor}`}>
                 {locker.usedSlots.toLocaleString()}
               </p>
               <p className="text-xs text-gray-400 mt-1">{fillPct}% utilization</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-1">Available</p>
+              <p className="text-xs text-gray-400 mb-1">Available</p>
               <p className="text-2xl font-mono text-white">{freeSlots.toLocaleString()}</p>
               <p className="text-xs text-gray-400 mt-1">open slots</p>
             </div>
@@ -541,7 +541,7 @@ export function LockerZoomModal({ isOpen, onClose, locker }: LockerZoomModalProp
                   : "bg-yellow-950/15 border-yellow-400/20"
                 : "bg-white/5 border-white/10"
             }`}>
-              <p className="text-xs text-gray-500 mb-1">Active Alerts</p>
+              <p className="text-xs text-gray-400 mb-1">Active Alerts</p>
               <p className={`text-2xl font-mono ${
                 locker.alertLevel === "critical" ? "text-red-400"
                 : locker.alertLevel === "warning" ? "text-yellow-400"
@@ -605,14 +605,14 @@ export function LockerZoomModal({ isOpen, onClose, locker }: LockerZoomModalProp
               <div className="bg-white/5 border border-white/10 rounded-xl p-5 flex flex-col justify-center">
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Affected Vaults</p>
+                    <p className="text-xs text-gray-400 mb-1">Affected Vaults</p>
                     <p className="text-2xl font-mono text-red-400">
                       {alertSlots.size > 0 ? alertSlots.size : "—"}
-                      <span className="text-sm text-gray-500"> / {locker.capacity}</span>
+                      <span className="text-sm text-gray-400"> / {locker.capacity}</span>
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Locked TVL at Risk</p>
+                    <p className="text-xs text-gray-400 mb-1">Locked TVL at Risk</p>
                     <p className="text-xl font-mono text-white">—</p>
                   </div>
                 </div>

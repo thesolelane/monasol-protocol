@@ -558,22 +558,22 @@ export default function AdminDashboard() {
         <div className={activeTab !== "protocol" ? "hidden" : ""}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
-            <p className="text-sm text-gray-500 mb-1">Total Value Locked (EVM)</p>
+            <p className="text-sm text-gray-400 mb-1">Total Value Locked (EVM)</p>
             <p className="text-2xl font-mono text-white">{tvl}</p>
             <p className="text-xs text-green-400 mt-2">{stats?.tvlTrend ?? "+5.2% 24h"}</p>
           </div>
           <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
-            <p className="text-sm text-gray-500 mb-1">Active Lockers (Monad)</p>
+            <p className="text-sm text-gray-400 mb-1">Active Lockers (Monad)</p>
             <p className="text-2xl font-mono text-white">{activeLockers}</p>
             <p className="text-xs text-gray-400 mt-2">Across 3 Tiers</p>
           </div>
           <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
-            <p className="text-sm text-gray-500 mb-1">NFT Keys Minted (Solana)</p>
+            <p className="text-sm text-gray-400 mb-1">NFT Keys Minted (Solana)</p>
             <p className="text-2xl font-mono text-white">{nftsMinted.toLocaleString()}</p>
             <p className="text-xs text-monad-purple mt-2">{nftUtil}% Utilization</p>
           </div>
           <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
-            <p className="text-sm text-gray-500 mb-1">Cross-Chain Sync Latency</p>
+            <p className="text-sm text-gray-400 mb-1">Cross-Chain Sync Latency</p>
             <p className="text-2xl font-mono text-white">{syncLatency}</p>
             <p className="text-xs text-solana-green mt-2">Optimal</p>
           </div>
@@ -585,25 +585,25 @@ export default function AdminDashboard() {
             Vault Activity
             <span className="text-xs font-mono bg-teal-500/10 border border-teal-500/20 text-teal-400 px-1.5 py-0.5 rounded ml-1">OPTED-IN ONLY</span>
           </h2>
-          <p className="text-xs text-gray-500 mb-4">Anonymized aggregate statistics from vaults that have enabled protocol sharing. No identifying information is stored or displayed.</p>
+          <p className="text-xs text-gray-400 mb-4">Anonymized aggregate statistics from vaults that have enabled protocol sharing. No identifying information is stored or displayed.</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
-              <p className="text-xs text-gray-500 mb-1">Opted-In Vaults</p>
+              <p className="text-xs text-gray-400 mb-1">Opted-In Vaults</p>
               <p className="text-2xl font-mono text-teal-400">{vaultActivity?.optedInVaults ?? "—"}</p>
               <p className="text-xs text-gray-400 mt-2">shareWithProtocol = true</p>
             </div>
             <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
-              <p className="text-xs text-gray-500 mb-1">Total Sessions</p>
+              <p className="text-xs text-gray-400 mb-1">Total Sessions</p>
               <p className="text-2xl font-mono text-white">{vaultActivity?.totalSessions ?? "—"}</p>
               <p className="text-xs text-gray-400 mt-2">Across all opted-in vaults</p>
             </div>
             <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
-              <p className="text-xs text-gray-500 mb-1">Combined Duration</p>
+              <p className="text-xs text-gray-400 mb-1">Combined Duration</p>
               <p className="text-2xl font-mono text-white">{vaultActivity ? formatDurationMs(vaultActivity.totalDurationMs) : "—"}</p>
               <p className="text-xs text-gray-400 mt-2">All sessions combined</p>
             </div>
             <div className="bg-black/40 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
-              <p className="text-xs text-gray-500 mb-1">Last Activity</p>
+              <p className="text-xs text-gray-400 mb-1">Last Activity</p>
               <p className="text-2xl font-mono text-white">{formatRelativeTime(vaultActivity?.lastActivityAt ?? null)}</p>
               <p className="text-xs text-gray-400 mt-2">Most recent opted-in session</p>
             </div>
@@ -623,11 +623,11 @@ export default function AdminDashboard() {
                     <h3 className="text-sm font-bold text-monad-purple flex items-center gap-2">
                       Tier 1: High Capacity <Badge variant="outline" className="border-green-500/30 text-green-400 bg-green-500/10 text-xs ml-2">Healthy</Badge>
                     </h3>
-                    <p className="text-xs text-gray-500">{tier1Lockers[0] ? `${tier1Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier1Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
+                    <p className="text-xs text-gray-400">{tier1Lockers[0] ? `${tier1Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier1Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-mono text-white">{tier1Total} Lockers</p>
-                    <p className="text-xs text-gray-500">{tier1Pct}% full</p>
+                    <p className="text-xs text-gray-400">{tier1Pct}% full</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
@@ -648,11 +648,11 @@ export default function AdminDashboard() {
                     <h3 className="text-sm font-bold text-solana-green flex items-center gap-2">
                       Tier 2: Standard {tier2HasDistressed && <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10 text-xs ml-2 animate-pulse">Critical Alert</Badge>}
                     </h3>
-                    <p className="text-xs text-gray-500">{tier2Lockers[0] ? `${tier2Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier2Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
+                    <p className="text-xs text-gray-400">{tier2Lockers[0] ? `${tier2Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier2Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-mono text-white">{tier2Total} Lockers</p>
-                    <p className="text-xs text-gray-500">{tier2Pct}% full</p>
+                    <p className="text-xs text-gray-400">{tier2Pct}% full</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
@@ -673,11 +673,11 @@ export default function AdminDashboard() {
                     <h3 className="text-sm font-bold text-blue-400 flex items-center gap-2">
                       Tier 3: Institutional <Badge variant="outline" className="border-blue-400/30 text-blue-400 bg-blue-400/10 text-xs ml-2">Scaling</Badge>
                     </h3>
-                    <p className="text-xs text-gray-500">{tier3Lockers[0] ? `${tier3Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier3Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
+                    <p className="text-xs text-gray-400">{tier3Lockers[0] ? `${tier3Lockers[0].capacity.toLocaleString()} slots • ${parseFloat(tier3Lockers[0].minDepositSol ?? "0").toFixed(3)} MON move-in` : "No lockers deployed"}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-mono text-white">{tier3Total} Lockers</p>
-                    <p className="text-xs text-gray-500">{tier3Pct}% full</p>
+                    <p className="text-xs text-gray-400">{tier3Pct}% full</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
@@ -698,7 +698,7 @@ export default function AdminDashboard() {
 
                 {/* Column 1 — Locker State */}
                 <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-3">Locker State</p>
+                  <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-3">Locker State</p>
                   <span className="flex items-center gap-2.5">
                     <div className="flex rounded-sm overflow-hidden border border-white/20 shrink-0" style={{ width: 20, height: 20 }}>
                       <div className="flex-1 bg-monad-purple/80" />
@@ -727,7 +727,7 @@ export default function AdminDashboard() {
 
                 {/* Column 2 — Alert Ring */}
                 <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-3">Alert Ring</p>
+                  <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-3">Alert Ring</p>
                   <span className="flex items-center gap-2.5 text-red-400">
                     <div className="w-5 h-5 rounded-sm bg-red-500 border border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse shrink-0" />
                     Distressed / Frozen
@@ -744,7 +744,7 @@ export default function AdminDashboard() {
 
                 {/* Column 3 — Tier Colors */}
                 <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-3">Tier Color</p>
+                  <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-3">Tier Color</p>
                   <span className="flex items-center gap-2.5 text-monad-purple">
                     <div className="w-5 h-5 rounded-sm bg-monad-purple/80 shrink-0" />
                     Tier 1 — High Capacity
@@ -760,7 +760,7 @@ export default function AdminDashboard() {
                 </div>
 
               </div>
-              <p className="text-xs text-gray-500 mt-4">
+              <p className="text-xs text-gray-400 mt-4">
                 {lastSyncedAt
                   ? `Chain sync: ${new Date(lastSyncedAt).toLocaleTimeString()} · refreshes every 12s`
                   : "Syncing from chain…"}
@@ -912,13 +912,13 @@ export default function AdminDashboard() {
             Feature Flags
           </h2>
           <div className="bg-black/40 border border-white/5 rounded-xl p-6 backdrop-blur-sm">
-            <p className="text-xs text-gray-500 mb-5">
+            <p className="text-xs text-gray-400 mb-5">
               Enable features that are in development. Changes take effect immediately — no page reload needed.
             </p>
             <div className="flex items-center justify-between py-4 border-b border-white/5">
               <div>
                 <p className="text-sm font-semibold text-white">Monad Wallet Connection</p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-400 mt-0.5">
                   Shows the "Connect Monad" button on the main app. Off until Monad integration is live.
                 </p>
               </div>
@@ -945,7 +945,7 @@ export default function AdminDashboard() {
                     <span className="text-sm font-semibold text-white">Neighborhood Watch</span>
                     <Badge variant="outline" className="text-xs border-yellow-500/30 text-yellow-400 bg-yellow-500/10">Contract Ready</Badge>
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-400 mt-0.5">
                     Community watcher network — alert reporting, collective locks, health scoring. Requires MSL token to activate staking rewards.
                   </p>
                 </div>
@@ -973,7 +973,7 @@ export default function AdminDashboard() {
                     <span className="text-sm font-semibold text-white">@mprotocol Follow Check</span>
                     <Badge variant="outline" className="text-xs border-blue-400/30 text-blue-400 bg-blue-400/10">Neighborhood Watch</Badge>
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-400 mt-0.5">
                     When enabled, the 48h verification also checks that applicants follow @mprotocol on X in addition to @cooperanthllc. Requires Twitter API v2 bearer token.
                   </p>
                 </div>
@@ -1018,7 +1018,7 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                     {mslTokenAddressSolana && (
-                      <p className="text-xs text-solana-green/60 mt-1.5">
+                      <p className="text-xs text-solana-green/80 mt-1.5">
                         Solana SPL mint stored — used for staking, rewards, and Neighborhood Watch on Solana.
                       </p>
                     )}
@@ -1045,7 +1045,7 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                     {mslTokenAddressMonad && (
-                      <p className="text-xs text-monad-purple/60 mt-1.5">
+                      <p className="text-xs text-monad-purple/80 mt-1.5">
                         Monad ERC-20 stored — wired into NeighborhoodWatch.vy on activation.
                       </p>
                     )}

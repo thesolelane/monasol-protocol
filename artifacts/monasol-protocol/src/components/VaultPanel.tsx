@@ -62,7 +62,7 @@ function VaultLogin({ onSuccess }: { onSuccess: (token: string) => void }) {
           </div>
           <div className="text-center">
             <h2 className="text-xl font-bold text-white">Secrets Vault</h2>
-            <p className="text-sm text-gray-500 mt-1">Owner access only · Enter vault password</p>
+            <p className="text-sm text-gray-400 mt-1">Owner access only · Enter vault password</p>
           </div>
         </div>
 
@@ -370,13 +370,13 @@ export function VaultPanel() {
                 {secrets.length} stored
               </span>
             </h2>
-            <p className="text-xs text-gray-500">AES-256-GCM encrypted · Owner access only</p>
+            <p className="text-xs text-gray-400">AES-256-GCM encrypted · Owner access only</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => loadSecrets(token)}
-            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            className="text-xs text-gray-400 hover:text-gray-200 transition-colors"
           >
             Refresh
           </button>
@@ -396,9 +396,9 @@ export function VaultPanel() {
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-xs text-gray-500">Decrypting vault…</div>
+          <div className="py-12 text-center text-xs text-gray-400">Decrypting vault…</div>
         ) : filtered.length === 0 ? (
-          <div className="py-12 text-center text-xs text-gray-500">
+          <div className="py-12 text-center text-xs text-gray-400">
             {search ? "No secrets match your filter" : "No secrets stored yet — add your first one"}
           </div>
         ) : (
